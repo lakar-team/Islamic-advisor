@@ -26,6 +26,8 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
     // WBW: cache per "surahNumber:ayahNumber" key, value = array of {text,translation}
     const [wbwCache, setWbwCache] = useState<Record<string, any[]>>({});
     const [wbwActive, setWbwActive] = useState<string | null>(null); // which ayah key has WBW open
+    const [targetAyah, setTargetAyah] = useState<string | null>(null); // "surah:ayah" to scroll-to after load
+    const [highlightedAyah, setHighlightedAyah] = useState<string | null>(null); // flashing highlight
 
     // Tafsir modal state
     const [tafsirAyah, setTafsirAyah] = useState<any | null>(null); // the verse object
@@ -99,10 +101,18 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
         setIsLoading(true);
         setViewMode('search');
         stopAudio();
+
+        // Detect "surah:ayah" format (e.g. "2:255") from chat deep-links
+        const deepLinkMatch = typeof query === 'string' ? query.match(/^(\d+):(\d+)$/) : null;
+        const surahOnlyQuery = deepLinkMatch ? parseInt(deepLinkMatch[1]) : query;
+        const deepAyah = deepLinkMatch ? `${deepLinkMatch[1]}:${deepLinkMatch[2]}` : null;
+        if (deepAyah) {
+            setTargetAyah(deepAyah);
+        }
         try {
-            const isNumber = !isNaN(Number(query));
+            const isNumber = !isNaN(Number(surahOnlyQuery));
             if (isNumber) {
-                const num = Number(query);
+                const num = Number(surahOnlyQuery);
                 setCurrentSurah(num);
                 const res = await fetch(`https://api.alquran.cloud/v1/surah/${num}/editions/quran-uthmani,en.asad`);
                 const data = await res.json();
@@ -112,18 +122,14 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                 const surahNumber = data.data[0].number;
 
                 setResults(arabicAyahs.map((a: any, idx: number) => {
-                    // Strip Bismillah prefix from ayah 1 of every surah except Al-Fatiha (1)
-                    // The API prepends "بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ " to ayah 1
                     let arabicText = a.text;
                     if (a.numberInSurah === 1 && surahNumber !== 1) {
-                        // Remove the Bismillah (first word group before a space-separated break)
-                        // It occupies the first 4 words in the API response
                         arabicText = arabicText.replace(/^بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ[ \u200f]*/u, '');
                     }
                     return {
                         text: englishAyahs[idx].text,
                         arabic: arabicText,
-                        reference: `${surahName} ${query}:${a.numberInSurah}`,
+                        reference: `${surahName} ${surahOnlyQuery}:${a.numberInSurah}`,
                         type: 'Quran',
                         surahNumber,
                         ayahNumber: a.numberInSurah,
@@ -318,6 +324,23 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
     // Get WBW words for a cached ayah key
     const getWbwWords = (surahNum: number, ayahNum: number): any[] =>
         wbwCache[`${surahNum}:${ayahNum}`] || [];
+
+    // Scroll-to and highlight target ayah after results finish loading
+    useEffect(() => {
+        if (!targetAyah || results.length === 0 || isLoading) return;
+        // Small delay to let the DOM render the cards
+        const timer = setTimeout(() => {
+            const el = document.getElementById(`ayah-${targetAyah.replace(':', '-')}`);
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setHighlightedAyah(targetAyah);
+                // Fade out highlight after 3.5s
+                setTimeout(() => setHighlightedAyah(null), 3500);
+            }
+            setTargetAyah(null); // only scroll once
+        }, 400);
+        return () => clearTimeout(timer);
+    }, [results, isLoading, targetAyah]);
 
     const isPlayingSurah = currentSurah && playingAyah?.startsWith(`${currentSurah}:`);
 
@@ -630,10 +653,16 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                                     return (
                                         <motion.div
                                             key={idx}
+                                            id={`ayah-${res.surahNumber}-${res.ayahNumber}`}
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             transition={{ delay: idx * 0.02 }}
-                                            className={`glass p-8 rounded-[2.5rem] border transition-all group ${isThisPlaying ? 'border-amber-500/40 bg-amber-500/5 shadow-lg shadow-amber-900/20' : 'border-white/5 border-l-4 border-l-transparent hover:border-l-emerald-500'}`}
+                                            className={`glass p-8 rounded-[2.5rem] border transition-all group ${highlightedAyah === ayahKey
+                                                ? 'border-amber-400/60 bg-amber-500/10 shadow-xl shadow-amber-900/30 ring-2 ring-amber-400/30'
+                                                : isThisPlaying
+                                                    ? 'border-amber-500/40 bg-amber-500/5 shadow-lg shadow-amber-900/20'
+                                                    : 'border-white/5 border-l-4 border-l-transparent hover:border-l-emerald-500'
+                                                }`}
                                         >
                                             {/* Card header */}
                                             <div className="flex flex-wrap items-center justify-between gap-4 mb-6 pb-4 border-b border-white/5">

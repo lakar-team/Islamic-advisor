@@ -67,14 +67,15 @@ const renderMarkdown = (text: string) => {
 };
 
 // Convert a reference string like "Al-Imran 3:185" into a searchable query
+// Returns "surahNum:ayahNum" for Quran so the library can scroll to the exact verse
 const resolveLibraryQuery = (ref: { type: 'quran' | 'hadith'; source: string }): string => {
     if (ref.type === 'quran') {
-        // Extract surah number from patterns like "Al-Baqarah 2:255" or "2:30"
-        const surahNumMatch = ref.source.match(/\b(\d+):\d+/);
-        if (surahNumMatch) return surahNumMatch[1]; // Return surah number to load the full surah
+        // Extract "surahNum:ayahNum" e.g. "2:255" from patterns like "Al-Baqarah 2:255" or "2:30"
+        const surahAyahMatch = ref.source.match(/(\d+):(\d+)/);
+        if (surahAyahMatch) return `${surahAyahMatch[1]}:${surahAyahMatch[2]}`;
         return ref.source;
     }
-    // For hadith, extract just the topic word (e.g. "Bukhari - Hadith 1234" → "1234" or just the source)
+    // For hadith, extract just the number (e.g. "Bukhari - Hadith 1234" → "1234")
     const hadithNumMatch = ref.source.match(/Hadith\s+(\d+)/i);
     if (hadithNumMatch) return hadithNumMatch[1];
     return ref.source;
