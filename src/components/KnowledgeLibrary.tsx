@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Book, Info, Star, Filter, ChevronRight, Hash, LayoutGrid, List, Languages } from 'lucide-react';
+import { Search, Book, Info, Filter, ChevronRight, Hash, LayoutGrid, CheckCircle2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const KnowledgeLibrary: React.FC = () => {
@@ -11,6 +11,9 @@ const KnowledgeLibrary: React.FC = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [selectedCollection, setSelectedCollection] = useState('eng-bukhari');
     const [hadithPage, setHadithPage] = useState(0);
+    const [hadithSections, setHadithSections] = useState<Record<string, string>>({});
+    const [selectedHadithSection, setSelectedHadithSection] = useState<string | null>(null);
+    const [gradeFilter, setGradeFilter] = useState<string | null>(null);
 
     const collections = [
         { id: 'eng-bukhari', name: 'Sahih Bukhari' },
@@ -39,12 +42,9 @@ const KnowledgeLibrary: React.FC = () => {
         setViewMode('search');
         try {
             const isNumber = !isNaN(Number(query));
-
             if (isNumber) {
-                // Fetch both Arabic (uthmani) and English (asad)
                 const res = await fetch(`https://api.alquran.cloud/v1/surah/${query}/editions/quran-uthmani,en.asad`);
                 const data = await res.json();
-
                 const arabicAyahs = data.data[0].ayahs;
                 const englishAyahs = data.data[1].ayahs;
                 const surahName = data.data[0].englishName;
@@ -58,7 +58,6 @@ const KnowledgeLibrary: React.FC = () => {
             } else {
                 const res = await fetch(`https://api.alquran.cloud/v1/search/${query}/all/en.asad`);
                 const data = await res.json();
-
                 setResults(data.data.results.slice(0, 20).map((r: any) => ({
                     text: r.text,
                     reference: `${r.surah.englishName} ${r.surah.number}:${r.numberInSurah}`,
@@ -72,17 +71,29 @@ const KnowledgeLibrary: React.FC = () => {
         }
     };
 
-    const fetchHadith = async (query: string = '', page: number = 0) => {
+    const fetchHadith = async (query: string = '', page: number = 0, sectionNo: string | null = null) => {
         setIsLoading(true);
         setViewMode('search');
         try {
-            const res = await fetch(`https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/${selectedCollection}.json`);
+            const url = sectionNo
+                ? `https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/${selectedCollection}/sections/${sectionNo}.json`
+                : `https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/${selectedCollection}.json`;
+
+            const res = await fetch(url);
             const data = await res.json();
+
+            // Store sections if they exist (only in the full edition JSON)
+            if (!sectionNo && data.metadata?.sections) {
+                setHadithSections(data.metadata.sections);
+            }
 
             let filtered = data.hadiths;
             if (query) {
+                filtered = filtered.filter((h: any) => h.text.toLowerCase().includes(query.toLowerCase()));
+            }
+            if (gradeFilter) {
                 filtered = filtered.filter((h: any) =>
-                    h.text.toLowerCase().includes(query.toLowerCase())
+                    h.grades?.some((g: any) => g.grade.toLowerCase().includes(gradeFilter.toLowerCase()))
                 );
             }
 
@@ -93,7 +104,7 @@ const KnowledgeLibrary: React.FC = () => {
                 text: h.text,
                 reference: `${collections.find(c => c.id === selectedCollection)?.name} - Hadith ${h.hadithnumber}`,
                 type: 'Hadith',
-                grade: h.grades?.[0]?.grade || 'Sahih'
+                grades: h.grades || []
             })));
         } catch (err) {
             console.error(err);
@@ -104,14 +115,16 @@ const KnowledgeLibrary: React.FC = () => {
 
     useEffect(() => {
         if (viewMode === 'browse' && subTab === 'quran') fetchSurahList();
-        if (subTab === 'hadith' && !searchQuery) fetchHadith('', 0);
-    }, [subTab, viewMode, selectedCollection]);
+        if (subTab === 'hadith' && !searchQuery) {
+            fetchHadith('', 0, selectedHadithSection);
+        }
+    }, [subTab, viewMode, selectedCollection, selectedHadithSection, gradeFilter]);
 
     useEffect(() => {
         if (searchQuery.length > 2) {
             const delayDebounceFn = setTimeout(() => {
                 if (subTab === 'quran') fetchQuran(searchQuery);
-                else fetchHadith(searchQuery, 0);
+                else fetchHadith(searchQuery, 0, null);
             }, 600);
             return () => clearTimeout(delayDebounceFn);
         }
@@ -119,24 +132,24 @@ const KnowledgeLibrary: React.FC = () => {
 
     return (
         <div className="max-w-7xl mx-auto py-12 px-6 animate-fade-in">
-            {/* Header / Tabs */}
+            {/* Header */}
             <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8 mb-12">
                 <div>
                     <h2 className="text-5xl font-black mb-3 gold-text tracking-tighter">Knowledge Library</h2>
-                    <p className="text-slate-400 text-lg font-medium">Authentic reference with full Arabic text and graded narrations.</p>
+                    <p className="text-slate-400 text-lg font-medium">Browse by tradition, collection, or spiritual grade.</p>
                 </div>
 
-                <div className="flex gap-4 p-1.5 bg-slate-900/50 rounded-2xl border border-white/5 backdrop-blur-xl">
+                <div className="flex gap-4 p-1.5 bg-slate-900/50 rounded-2xl border border-white/5 backdrop-blur-xl shrink-0">
                     <button
                         onClick={() => { setSubTab('quran'); setViewMode('browse'); setResults([]); setSearchQuery(''); }}
-                        className={`px-8 py-3 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${subTab === 'quran' ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20' : 'text-slate-400 hover:text-white'}`}
+                        className={`px-8 py-3 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${subTab === 'quran' ? 'bg-amber-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
                     >
                         <Book className="w-4 h-4" />
                         Holy Quran
                     </button>
                     <button
-                        onClick={() => { setSubTab('hadith'); setViewMode('search'); setResults([]); setSearchQuery(''); }}
-                        className={`px-8 py-3 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${subTab === 'hadith' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20' : 'text-slate-400 hover:text-white'}`}
+                        onClick={() => { setSubTab('hadith'); setViewMode('search'); setResults([]); setSearchQuery(''); setHadithSections({}); setSelectedHadithSection(null); }}
+                        className={`px-8 py-3 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${subTab === 'hadith' ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
                     >
                         <Hash className="w-4 h-4" />
                         Hadith Corpus
@@ -144,49 +157,53 @@ const KnowledgeLibrary: React.FC = () => {
                 </div>
             </div>
 
-            {/* View Selection & Search */}
-            <div className="flex flex-col md:flex-row gap-6 mb-12">
-                <div className="relative flex-1 group">
-                    <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-emerald-400 transition-colors" />
-                    <input
-                        type="text"
-                        placeholder={subTab === 'quran' ? "Search by keyword or verse number..." : "Search across collections..."}
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full bg-black/40 border border-white/10 px-16 py-6 rounded-[2rem] text-xl focus:outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all placeholder:text-slate-700 font-medium"
-                    />
+            {/* Filters Row */}
+            <div className="flex flex-col gap-6 mb-12">
+                <div className="flex flex-col md:flex-row gap-6">
+                    <div className="relative flex-1 group">
+                        <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-emerald-400 transition-colors" />
+                        <input
+                            type="text"
+                            placeholder={subTab === 'quran' ? "Search verses..." : "Search in selected corpus..."}
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full bg-black/40 border border-white/10 px-16 py-6 rounded-[2rem] text-xl focus:outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all font-medium"
+                        />
+                    </div>
                 </div>
 
-                <div className="flex bg-slate-900/40 p-1.5 rounded-2xl border border-white/5 shrink-0">
-                    <button
-                        onClick={() => setViewMode('browse')}
-                        className={`p-3 rounded-xl transition-all ${viewMode === 'browse' ? 'bg-white/10 text-white' : 'text-slate-500 hover:text-white'}`}
-                        title="Browse Mode"
-                    >
-                        <LayoutGrid className="w-5 h-5" />
-                    </button>
-                    <button
-                        onClick={() => setViewMode('search')}
-                        className={`p-3 rounded-xl transition-all ${viewMode === 'search' ? 'bg-white/10 text-white' : 'text-slate-500 hover:text-white'}`}
-                        title="Search Results"
-                    >
-                        <List className="w-5 h-5" />
-                    </button>
-                </div>
+                {subTab === 'hadith' && (
+                    <div className="flex flex-wrap gap-3 items-center">
+                        <span className="text-xs font-black uppercase tracking-[0.2em] text-slate-500 mr-2">Authenticity:</span>
+                        {['Sahih', 'Hasan', 'Daif'].map(grade => (
+                            <button
+                                key={grade}
+                                onClick={() => setGradeFilter(gradeFilter === grade ? null : grade)}
+                                className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${gradeFilter === grade ? 'bg-emerald-500 border-emerald-400 text-white shadow-lg' : 'bg-slate-900 border-white/5 text-slate-400 hover:border-emerald-500/30'}`}
+                            >
+                                {grade === 'Daif' ? 'Dha\'eef' : grade} Only
+                            </button>
+                        ))}
+                        {gradeFilter && (
+                            <button onClick={() => setGradeFilter(null)} className="text-[10px] font-bold text-slate-500 hover:text-white ml-2 underline underline-offset-4">Reset</button>
+                        )}
+                    </div>
+                )}
             </div>
 
-            <div className="grid lg:grid-cols-[280px_1fr] gap-12">
+            <div className="grid lg:grid-cols-[320px_1fr] gap-12">
                 {/* Sidebar Navigation */}
                 <div className="space-y-8 order-2 lg:order-1">
+                    {/* Collection Selector */}
                     <div className="glass p-6 rounded-[2rem] border border-white/5">
                         <h4 className={`font-black text-xs tracking-[0.2em] uppercase mb-6 flex items-center gap-2 ${subTab === 'quran' ? 'text-amber-500' : 'text-emerald-500'}`}>
-                            <Filter className="w-4 h-4" /> {subTab === 'quran' ? 'Browse Index' : 'Hadith Sources'}
+                            <Filter className="w-4 h-4" /> {subTab === 'quran' ? 'Chapters' : 'Collections'}
                         </h4>
-                        <div className="space-y-2 max-h-[500px] overflow-y-auto scrollbar-hide pr-2">
+                        <div className="space-y-2 max-h-[400px] overflow-y-auto scrollbar-hide pr-2">
                             {subTab === 'hadith' ? collections.map(c => (
                                 <button
                                     key={c.id}
-                                    onClick={() => { setSelectedCollection(c.id); setResults([]); }}
+                                    onClick={() => { setSelectedCollection(c.id); setResults([]); setSelectedHadithSection(null); }}
                                     className={`w-full text-left px-5 py-4 rounded-2xl text-sm font-bold transition-all flex items-center justify-between group ${selectedCollection === c.id ? 'bg-emerald-500 text-white' : 'text-slate-400 hover:bg-white/5'}`}
                                 >
                                     {c.name}
@@ -198,18 +215,39 @@ const KnowledgeLibrary: React.FC = () => {
                                     onClick={() => fetchQuran(s.number)}
                                     className="w-full text-left px-4 py-3 rounded-xl text-[13px] font-bold text-slate-400 hover:bg-white/5 hover:text-white transition-all flex items-center gap-3"
                                 >
-                                    <span className="text-amber-500/50 w-6">{s.number}</span>
+                                    <span className="text-amber-500/50 w-6 font-black">{s.number}</span>
                                     {s.englishName}
                                 </button>
                             ))}
                         </div>
                     </div>
 
+                    {/* Book/Section Index for Hadith */}
+                    {subTab === 'hadith' && Object.keys(hadithSections).length > 0 && (
+                        <div className="glass p-6 rounded-[2rem] border border-white/5 bg-emerald-500/5">
+                            <h4 className="font-black text-xs tracking-[0.2em] uppercase text-emerald-400 mb-6 flex items-center gap-2">
+                                <LayoutGrid className="w-4 h-4" /> Book Index
+                            </h4>
+                            <div className="space-y-2 max-h-[400px] overflow-y-auto scrollbar-hide pr-2">
+                                {Object.entries(hadithSections).map(([no, title]) => (
+                                    <button
+                                        key={no}
+                                        onClick={() => { setSelectedHadithSection(no); setHadithPage(0); }}
+                                        className={`w-full text-left px-4 py-3 rounded-xl text-xs font-bold transition-all border border-transparent ${selectedHadithSection === no ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-300' : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'}`}
+                                    >
+                                        <span className="opacity-40 mr-2 text-[10px]">{no}</span>
+                                        {title || 'Untitled Section'}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     <div className="glass p-8 rounded-[2rem] border border-white/5 bg-gradient-to-br from-amber-500/5 to-transparent">
-                        <Languages className="w-8 h-8 text-amber-500 mb-6" />
-                        <h4 className="font-black text-xs tracking-[0.2em] uppercase text-amber-500 mb-4">Dual Language</h4>
+                        <Info className="w-8 h-8 text-amber-500 mb-6" />
+                        <h4 className="font-black text-xs tracking-[0.2em] uppercase text-amber-500 mb-4">Grading System</h4>
                         <p className="text-slate-400 text-sm leading-relaxed font-medium">
-                            Quranic results now show the original Uthmani Arabic text alongside English translations.
+                            Authenticity is marked based on classical scholarship. Always consult with learned scholars for specific rulings.
                         </p>
                     </div>
                 </div>
@@ -219,30 +257,7 @@ const KnowledgeLibrary: React.FC = () => {
                     {isLoading ? (
                         <div className="flex flex-col items-center justify-center py-32 opacity-30">
                             <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-6"></div>
-                            <p className="font-bold tracking-[0.3em] text-[10px] uppercase">Retrieving Sacred Text...</p>
-                        </div>
-                    ) : viewMode === 'browse' && subTab === 'quran' ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                            {surahs.map(s => (
-                                <motion.button
-                                    key={s.number}
-                                    whileHover={{ y: -4, scale: 1.02 }}
-                                    onClick={() => fetchQuran(s.number)}
-                                    className="glass p-6 rounded-3xl border border-white/5 text-left group hover:border-amber-500/30 transition-all flex items-center gap-4 bg-white/[0.02]"
-                                >
-                                    <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center shrink-0 group-hover:bg-amber-500 transition-colors">
-                                        <span className="font-black text-amber-500 group-hover:text-white transition-colors">{s.number}</span>
-                                    </div>
-                                    <div>
-                                        <h3 className="font-bold text-slate-100 group-hover:text-amber-400 transition-colors">{s.englishName}</h3>
-                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{s.englishNameTranslation}</p>
-                                    </div>
-                                    <div className="ml-auto text-right">
-                                        <p className="text-xl font-arabic text-amber-500/40 font-bold">{s.name.replace('سُورَةُ ', '')}</p>
-                                        <p className="text-[10px] text-slate-600 font-bold">{s.numberOfAyahs} V</p>
-                                    </div>
-                                </motion.button>
-                            ))}
+                            <p className="font-bold tracking-[0.3em] text-[10px] uppercase">Retrieving Traditional Texts...</p>
                         </div>
                     ) : (
                         <div className="space-y-6">
@@ -253,19 +268,24 @@ const KnowledgeLibrary: React.FC = () => {
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: idx * 0.03 }}
-                                        className="glass p-10 rounded-[2.5rem] border border-white/5 border-l-4 border-l-transparent hover:border-l-emerald-500 transition-all"
+                                        className="glass p-10 rounded-[2.5rem] border border-white/5 border-l-4 border-l-transparent hover:border-l-emerald-500 transition-all group"
                                     >
-                                        <div className="flex items-center justify-between mb-8 pb-4 border-b border-white/5 opacity-60">
-                                            <div className="flex items-center gap-4">
+                                        <div className="flex flex-wrap items-center justify-between gap-4 mb-8 pb-4 border-b border-white/5">
+                                            <div className="flex items-center gap-3 font-bold">
                                                 <span className={`text-[10px] font-black uppercase tracking-[0.2em] px-4 py-1.5 rounded-full ${res.type === 'Quran' ? 'bg-amber-500/10 text-amber-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
                                                     {res.type}
                                                 </span>
-                                                <span className="text-sm font-bold text-slate-500 tracking-tight">{res.reference}</span>
+                                                <span className="text-sm text-slate-500">{res.reference}</span>
                                             </div>
-                                            {res.grade && (
-                                                <div className="flex items-center gap-2 text-[10px] font-black text-emerald-400 bg-emerald-400/5 px-4 py-2 rounded-xl border border-emerald-400/20">
-                                                    <Star className="w-3.5 h-3.5 fill-current" />
-                                                    {res.grade.toUpperCase()}
+
+                                            {res.grades && res.grades.length > 0 && (
+                                                <div className="flex flex-wrap gap-2">
+                                                    {res.grades.map((g: any, i: number) => (
+                                                        <div key={i} className={`flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border shadow-sm ${g.grade.toLowerCase().includes('sahih') ? 'bg-emerald-400/5 border-emerald-400/20 text-emerald-400' : 'bg-amber-400/5 border-amber-400/20 text-amber-400'}`}>
+                                                            <CheckCircle2 className="w-3 h-3" />
+                                                            {g.grade} <span className="opacity-40 ml-1 font-medium">— {g.name}</span>
+                                                        </div>
+                                                    ))}
                                                 </div>
                                             )}
                                         </div>
@@ -276,7 +296,7 @@ const KnowledgeLibrary: React.FC = () => {
                                             </p>
                                         )}
 
-                                        <p className={`text-2xl text-slate-300 selection:bg-emerald-500/30 font-medium leading-relaxed ${res.type === 'Quran' ? 'font-serif' : 'font-sans'}`}>
+                                        <p className={`text-2xl text-slate-200 selection:bg-emerald-500/30 font-medium leading-relaxed ${res.type === 'Quran' ? 'font-serif' : 'font-sans'}`}>
                                             {res.text}
                                         </p>
                                     </motion.div>
@@ -284,23 +304,23 @@ const KnowledgeLibrary: React.FC = () => {
                             ) : (
                                 <div className="text-center py-32 text-slate-600">
                                     <Info className="w-16 h-16 mx-auto mb-6 opacity-10" />
-                                    <p className="text-2xl font-bold tracking-tight mb-2 uppercase">End of Index</p>
-                                    <p className="text-slate-500 max-w-sm mx-auto">Selected source is currently being indexed. Try searching for a specific topic above.</p>
+                                    <p className="text-2xl font-bold tracking-tight mb-2 uppercase">No Index Matches</p>
+                                    <p className="text-slate-500 max-w-sm mx-auto">Selected filter or section returned no direct results. Try broadening your keywords.</p>
                                 </div>
                             )}
 
-                            {subTab === 'hadith' && results.length > 0 && !searchQuery && (
-                                <div className="flex justify-center gap-4 pt-8">
+                            {results.length > 0 && !searchQuery && (
+                                <div className="flex justify-center gap-4 pt-12">
                                     <button
                                         disabled={hadithPage === 0}
-                                        onClick={() => { setHadithPage(p => p - 1); fetchHadith('', hadithPage - 1); window.scrollTo(0, 0); }}
-                                        className="px-8 py-3 bg-slate-900 border border-white/5 rounded-2xl font-bold disabled:opacity-20 transition-all hover:bg-slate-800"
+                                        onClick={() => { setHadithPage(p => p - 1); fetchHadith('', hadithPage - 1, selectedHadithSection); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                                        className="px-8 py-3 bg-slate-900 border border-white/10 rounded-2xl font-black text-xs uppercase tracking-widest disabled:opacity-20 transition-all hover:bg-slate-800"
                                     >
                                         Previous
                                     </button>
                                     <button
-                                        onClick={() => { setHadithPage(p => p + 1); fetchHadith('', hadithPage + 1); window.scrollTo(0, 0); }}
-                                        className="px-8 py-3 bg-emerald-600 shadow-lg shadow-emerald-600/20 rounded-2xl font-bold transition-all hover:scale-105 active:scale-95"
+                                        onClick={() => { setHadithPage(p => p + 1); fetchHadith('', hadithPage + 1, selectedHadithSection); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                                        className="px-8 py-3 bg-emerald-600 shadow-lg shadow-emerald-500/20 rounded-2xl font-black text-xs uppercase tracking-widest transition-all hover:scale-105 active:scale-95 text-white"
                                     >
                                         Next Page
                                     </button>
