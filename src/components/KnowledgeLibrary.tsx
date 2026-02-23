@@ -216,36 +216,44 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
 
         if (source === 'both' || source === 'quran') {
             phase1.push(
-                // Step 1: search in English only
                 fetch(`https://api.alquran.cloud/v1/search/${encodeURIComponent(query)}/all/en.asad`)
                     .then(r => r.ok ? r.json() : null)
                     .catch(() => null)
                     .then(async (enData) => {
                         if (!enData?.data?.matches) return [];
                         const matches = enData.data.matches.slice(0, 15);
-                        // Step 2: fetch Arabic text for each matched ayah in parallel
-                        const arabicTexts = await Promise.allSettled(
-                            matches.map((m: any) =>
-                                fetch(`https://api.alquran.cloud/v1/ayah/${m.surah.number}:${m.numberInSurah}/quran-uthmani`)
+
+                        // Dedupe into unique surahs — typically 4-8 per search,
+                        // vs 15 individual ayah requests which hit rate limits
+                        const uniqueSurahs: number[] = [...new Set<number>(matches.map((m: any) => m.surah.number as number))];
+                        const surahResponses = await Promise.allSettled(
+                            uniqueSurahs.map((surahNum: number) =>
+                                fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/quran-uthmani`)
                                     .then(r => r.ok ? r.json() : null)
                                     .catch(() => null)
                             )
                         );
-                        return matches.map((r: any, i: number) => {
-                            const arResult = arabicTexts[i];
-                            const arabicText = arResult.status === 'fulfilled' && arResult.value?.data?.text
-                                ? arResult.value.data.text
-                                : '';
-                            return {
-                                text: r.text,
-                                arabic: arabicText,
-                                reference: `${r.surah.englishName} ${r.surah.number}:${r.numberInSurah}`,
-                                type: 'Quran',
-                                surahNumber: r.surah.number,
-                                ayahNumber: r.numberInSurah,
-                                score: 20,
-                            };
+
+                        // Build surahNum:ayahNum → arabic text lookup
+                        const arMap: Record<string, string> = {};
+                        surahResponses.forEach((res, i) => {
+                            if (res.status === 'fulfilled' && res.value?.data?.ayahs) {
+                                const surahNum = uniqueSurahs[i];
+                                res.value.data.ayahs.forEach((ayah: any) => {
+                                    arMap[`${surahNum}:${ayah.numberInSurah}`] = ayah.text;
+                                });
+                            }
                         });
+
+                        return matches.map((r: any) => ({
+                            text: r.text,
+                            arabic: arMap[`${r.surah.number}:${r.numberInSurah}`] || '',
+                            reference: `${r.surah.englishName} ${r.surah.number}:${r.numberInSurah}`,
+                            type: 'Quran',
+                            surahNumber: r.surah.number,
+                            ayahNumber: r.numberInSurah,
+                            score: 20,
+                        }));
                     })
             );
         }
