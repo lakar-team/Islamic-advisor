@@ -348,11 +348,25 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
 
     useEffect(() => {
         if (initialQuery) {
-            setSearchQuery(initialQuery);
-            if (initialTab) {
-                setSubTab(initialTab);
-                if (initialTab === 'quran') fetchQuran(initialQuery);
-                else fetchHadith(initialQuery, 0);
+            if (initialTab === 'quran') {
+                setSubTab('quran');
+                setSearchQuery(initialQuery);
+                fetchQuran(initialQuery);
+            } else if (initialTab === 'hadith') {
+                setSubTab('hadith');
+                // For deep-link format "eng-collection:number", pre-switch the collection
+                const deepLink = initialQuery.match(/^(eng-[\w]+):(\d+)$/);
+                if (deepLink) {
+                    const [, collId] = deepLink;
+                    setSelectedCollection(collId);
+                    // Set a readable label for the search box
+                    const colName = collections.find(c => c.id === collId)?.name || collId;
+                    setSearchQuery(`${colName} – Hadith ${deepLink[2]}`);
+                } else {
+                    setSearchQuery(initialQuery);
+                }
+                // Use setTimeout to let selectedCollection state propagate before fetch
+                setTimeout(() => fetchHadith(initialQuery, 0), 50);
             }
         }
     }, [initialQuery, initialTab]);
