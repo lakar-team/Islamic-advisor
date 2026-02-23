@@ -150,89 +150,130 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
         }
     };
 
-    // ── Unified keyword search across Quran + Hadith (Search tab) ──
-    const fetchSearchBoth = async (query: string, source: 'both' | 'quran' | 'hadith') => {
+    // ── Grade priority score for sorting (higher = more authentic) ──
+    const gradePriority = (grades: any[]): number => {
+        if (!grades?.length) return 1;
+        const g = grades[0].grade.toLowerCase();
+        if (g.includes('sahih')) return 3;
+        if (g.includes('hasan')) return 2;
+        return 1;
+    };
+
+    // ── Streaming unified search: show Quran + top-3 Hadith immediately,
+    //    then append remaining 6 collections as they arrive ──
+    const fetchSearchBoth = (query: string, source: 'both' | 'quran' | 'hadith') => {
         if (!query || query.length < 2) return;
         setIsLoading(true);
         setResults([]);
-        try {
-            const tasks: Promise<any[]>[] = [];
 
-            // Quran search
-            if (source === 'both' || source === 'quran') {
-                tasks.push(
-                    fetch(`https://api.alquran.cloud/v1/search/${encodeURIComponent(query)}/all/en.asad`)
-                        .then(r => r.ok ? r.json() : null)
-                        .then(data => {
-                            if (!data?.data?.matches) return [];
-                            return data.data.matches.slice(0, 25).map((r: any) => ({
-                                text: r.text,
-                                reference: `${r.surah.englishName} ${r.surah.number}:${r.numberInSurah}`,
-                                type: 'Quran',
-                                surahNumber: r.surah.number,
-                                ayahNumber: r.numberInSurah,
-                            }));
-                        })
-                        .catch(() => [])
-                );
-            }
+        const scoreAndMap = (data: any, c: { id: string; name: string }) => {
+            if (!data?.hadiths) return [];
+            const terms = query.toLowerCase().split(' ').filter((t: string) => t.length > 2);
+            return data.hadiths
+                .filter((h: any) => h.text?.trim())
+                .map((h: any) => {
+                    const lower = h.text.toLowerCase();
+                    let score = lower.includes(query.toLowerCase()) ? 10 : 0;
+                    terms.forEach((t: string) => { if (lower.includes(t)) score += (lower.split(t).length - 1); });
+                    return { ...h, score, _collId: c.id, _collName: c.name };
+                })
+                .filter((h: any) => h.score > 0)
+                .slice(0, 8)
+                .map((h: any) => {
+                    let hGrades = h.grades || [];
+                    if (!hGrades.length && (c.id === 'eng-bukhari' || c.id === 'eng-muslim'))
+                        hGrades = [{ grade: 'Sahih', name: 'Al-Bukhari & Muslim' }];
+                    return {
+                        text: h.text,
+                        reference: `${h._collName} — Hadith ${h.hadithnumber}`,
+                        type: 'Hadith',
+                        grades: hGrades,
+                        hadithNumber: h.hadithnumber,
+                        collectionId: h._collId,
+                        score: h.score,
+                    };
+                });
+        };
 
-            // Hadith keyword search (across all collections if 'both', single if 'hadith')
-            if (source === 'both' || source === 'hadith') {
-                const collsToSearch = collections; // always search all 9 collections
-                tasks.push(
-                    Promise.allSettled(
-                        collsToSearch.map(c =>
-                            fetch(`https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/${c.id}.json`)
-                                .then(r => r.ok ? r.json() : null)
-                                .catch(() => null)
-                                .then(data => {
-                                    if (!data?.hadiths) return [];
-                                    const terms = query.toLowerCase().split(' ').filter((t: string) => t.length > 2);
-                                    return data.hadiths
-                                        .filter((h: any) => h.text?.trim())
-                                        .map((h: any) => {
-                                            const lower = h.text.toLowerCase();
-                                            let score = lower.includes(query.toLowerCase()) ? 10 : 0;
-                                            terms.forEach((t: string) => { if (lower.includes(t)) score += (lower.split(t).length - 1); });
-                                            return { ...h, score, _collId: c.id, _collName: c.name };
-                                        })
-                                        .filter((h: any) => h.score > 0)
-                                        .slice(0, 8)
-                                        .map((h: any) => {
-                                            let hGrades = h.grades || [];
-                                            if (!hGrades.length && (c.id === 'eng-bukhari' || c.id === 'eng-muslim'))
-                                                hGrades = [{ grade: 'Sahih', name: 'Al-Bukhari & Muslim' }];
-                                            return {
-                                                text: h.text,
-                                                reference: `${h._collName} — Hadith ${h.hadithnumber}`,
-                                                type: 'Hadith',
-                                                grades: hGrades,
-                                                hadithNumber: h.hadithnumber,
-                                                collectionId: h._collId,
-                                                score: h.score,
-                                            };
-                                        });
-                                })
-                        )
-                    ).then(results => {
-                        const all: any[] = [];
-                        results.forEach(r => { if (r.status === 'fulfilled') all.push(...r.value); });
-                        all.sort((a, b) => (b.score || 0) - (a.score || 0));
-                        return all.slice(0, 25);
+        const sortResults = (arr: any[]) => {
+            // Quran first, then by authenticity grade, then by score
+            return [...arr].sort((a, b) => {
+                if (a.type === 'Quran' && b.type !== 'Quran') return -1;
+                if (b.type === 'Quran' && a.type !== 'Quran') return 1;
+                const gDiff = gradePriority(b.grades) - gradePriority(a.grades);
+                if (gDiff !== 0) return gDiff;
+                return (b.score || 0) - (a.score || 0);
+            });
+        };
+
+        // Priority collections shown first
+        const PRIORITY_COLLS = ['eng-bukhari', 'eng-muslim', 'eng-abudawud'];
+        const priorityColls = collections.filter(c => PRIORITY_COLLS.includes(c.id));
+        const restColls = collections.filter(c => !PRIORITY_COLLS.includes(c.id));
+
+        // Phase 1: fetch Quran + priority Hadith simultaneously, show immediately
+        const phase1: Promise<any[]>[] = [];
+
+        if (source === 'both' || source === 'quran') {
+            phase1.push(
+                fetch(`https://api.alquran.cloud/v1/search/${encodeURIComponent(query)}/all/en.asad`)
+                    .then(r => r.ok ? r.json() : null)
+                    .then(data => {
+                        if (!data?.data?.matches) return [];
+                        return data.data.matches.slice(0, 15).map((r: any) => ({
+                            text: r.text,
+                            reference: `${r.surah.englishName} ${r.surah.number}:${r.numberInSurah}`,
+                            type: 'Quran',
+                            surahNumber: r.surah.number,
+                            ayahNumber: r.numberInSurah,
+                            score: 20, // Quran always ranks first
+                        }));
                     })
-                );
-            }
-
-            const resolved = await Promise.all(tasks);
-            const combined = resolved.flat();
-            setResults(combined);
-        } catch (err) {
-            console.error(err);
-            setResults([]);
-        } finally {
-            setIsLoading(false);
+                    .catch(() => [])
+            );
         }
+
+        if (source === 'both' || source === 'hadith') {
+            const priority = source === 'both' ? priorityColls : priorityColls;
+            priority.forEach(c => {
+                phase1.push(
+                    fetch(`https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/${c.id}.json`)
+                        .then(r => r.ok ? r.json() : null)
+                        .catch(() => null)
+                        .then(data => scoreAndMap(data, c))
+                );
+            });
+        }
+
+        Promise.allSettled(phase1).then(settled => {
+            const phase1Results: any[] = [];
+            settled.forEach(r => { if (r.status === 'fulfilled') phase1Results.push(...r.value); });
+            const top10 = sortResults(phase1Results).slice(0, 10);
+            setResults(top10);
+            setIsLoading(false); // show top 10 immediately
+
+            // Phase 2: stream remaining collections in
+            if (source !== 'quran' && restColls.length > 0) {
+                let accumulated = [...phase1Results];
+                let remaining = restColls.length;
+                restColls.forEach(c => {
+                    fetch(`https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/${c.id}.json`)
+                        .then(r => r.ok ? r.json() : null)
+                        .catch(() => null)
+                        .then(data => {
+                            accumulated.push(...scoreAndMap(data, c));
+                        })
+                        .finally(() => {
+                            remaining--;
+                            // Update results as each collection finishes
+                            setResults(sortResults(accumulated));
+                            if (remaining === 0) {
+                                // all done — nothing more to do
+                            }
+                        });
+                });
+            }
+        });
     };
 
     // ── Fetch a page of hadiths by number range (parallel per-hadith requests) ──
@@ -1077,17 +1118,29 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                                         </motion.div>
                                     );
                                 })
-                            ) : (
+                            ) : subTab === 'search' ? (
                                 <div className="text-center py-32 glass rounded-[3rem] border border-white/5">
                                     <AlertCircle className="w-16 h-16 mx-auto mb-6 opacity-20 text-emerald-400" />
-                                    <p className="text-2xl font-bold tracking-tight mb-2 uppercase text-slate-400">Search Yielded No Results</p>
-                                    <p className="text-slate-500 max-w-sm mx-auto font-medium">Try searching for broader keywords like "Prayer" or "Faith". Ensuring your spelling is correct.</p>
+                                    <p className="text-2xl font-bold tracking-tight mb-2 uppercase text-slate-400">No Results Found</p>
+                                    <p className="text-slate-500 max-w-sm mx-auto font-medium">Try broader keywords like "Prayer", "Faith", or "Patience".</p>
                                     <button
                                         onClick={() => { setSearchQuery(''); setGradeFilter(null); }}
                                         className="mt-8 px-8 py-3 bg-white/5 hover:bg-white/10 rounded-2xl text-xs font-black uppercase tracking-widest transition-all"
                                     >
                                         Clear Search
                                     </button>
+                                </div>
+                            ) : subTab === 'quran' ? (
+                                <div className="text-center py-20 opacity-40">
+                                    <BookOpen className="w-14 h-14 mx-auto mb-4 text-amber-500" />
+                                    <p className="text-lg font-black uppercase tracking-widest text-slate-400">Select a Surah</p>
+                                    <p className="text-sm text-slate-500 font-medium mt-2">Choose any surah from the list on the left to begin reading.</p>
+                                </div>
+                            ) : (
+                                <div className="text-center py-20 opacity-40">
+                                    <Hash className="w-14 h-14 mx-auto mb-4 text-emerald-500" />
+                                    <p className="text-lg font-black uppercase tracking-widest text-slate-400">Select a Collection</p>
+                                    <p className="text-sm text-slate-500 font-medium mt-2">Choose a hadith collection from the sidebar, then browse by book.</p>
                                 </div>
                             )}
 
