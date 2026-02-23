@@ -25,6 +25,13 @@ const KnowledgeLibrary: React.FC = () => {
         { id: 'eng-ibnmajah', name: 'Sunan Ibn Majah' },
     ];
 
+    const gradeMap: Record<string, string> = {
+        'Sahih': 'Authentic',
+        'Hasan': 'Good',
+        'Daif': 'Weak',
+        'Maudu': 'Fabricated'
+    };
+
     const fetchSurahList = async () => {
         setIsLoading(true);
         try {
@@ -50,19 +57,26 @@ const KnowledgeLibrary: React.FC = () => {
                 const englishAyahs = data.data[1].ayahs;
                 const surahName = data.data[0].englishName;
 
-                setResults(arabicAyahs.slice(0, 50).map((a: any, idx: number) => ({
+                setResults(arabicAyahs.map((a: any, idx: number) => ({
                     text: englishAyahs[idx].text,
                     arabic: a.text,
                     reference: `${surahName} ${query}:${a.numberInSurah}`,
                     type: 'Quran'
                 })));
             } else {
+                // Search for content
                 const res = await fetch(`https://api.alquran.cloud/v1/search/${query}/all/en.asad`);
                 const data = await res.json();
-                setResults(data.data.results.slice(0, 20).map((r: any) => ({
+
+                // Fetch Arabic for these search results to keep it consistent
+                const searchResults = data.data.results.slice(0, 50);
+
+                setResults(searchResults.map((r: any) => ({
                     text: r.text,
                     reference: `${r.surah.englishName} ${r.surah.number}:${r.numberInSurah}`,
-                    type: 'Quran'
+                    type: 'Quran',
+                    // Note: In search results, Arabic might not be readily available in a single batch without more calls
+                    // We'll show the text first
                 })));
             }
         } catch (err) {
@@ -76,9 +90,9 @@ const KnowledgeLibrary: React.FC = () => {
         setIsLoading(true);
         setViewMode('search');
         try {
-            // We ALWAYS fetch the full edition occasionally to keep the sections list
-            // But if a section is selected, we fetch that specific one for speed
-            const url = sectionNo
+            // When searching, we always use the full collection to find the best matches
+            // When browsing, we might use sections for speed
+            const url = (sectionNo && !query)
                 ? `https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/${selectedCollection}/sections/${sectionNo}.json`
                 : `https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/${selectedCollection}.json`;
 
@@ -86,18 +100,31 @@ const KnowledgeLibrary: React.FC = () => {
             if (!res.ok) throw new Error('API request failed');
             const data = await res.json();
 
-            // If we fetched the full edition, sync sections
             if (!sectionNo && data.metadata?.sections) {
                 setHadithSections(data.metadata.sections);
             }
 
             let hadithList = data.hadiths || [];
 
-            // Apply Filters Locally
             let filtered = hadithList;
             if (query) {
-                filtered = filtered.filter((h: any) => h.text.toLowerCase().includes(query.toLowerCase()));
+                const searchTerms = query.toLowerCase().split(' ').filter(t => t.length > 2);
+
+                // Ranked search: count occurrences of search terms
+                filtered = filtered.map((h: any) => {
+                    let score = 0;
+                    const hText = h.text.toLowerCase();
+                    searchTerms.forEach(term => {
+                        if (hText.includes(term)) {
+                            score += (hText.split(term).length - 1);
+                        }
+                    });
+                    return { ...h, score };
+                }).filter((h: any) => h.score > 0 || h.text.toLowerCase().includes(query.toLowerCase()));
+
+                filtered.sort((a: any, b: any) => (b.score || 0) - (a.score || 0));
             }
+
             if (gradeFilter) {
                 filtered = filtered.filter((h: any) =>
                     h.grades?.some((g: any) => g.grade.toLowerCase().includes(gradeFilter.toLowerCase()))
@@ -152,45 +179,34 @@ const KnowledgeLibrary: React.FC = () => {
                         <motion.div
                             initial={{ scale: 0.9, y: 20 }}
                             animate={{ scale: 1, y: 0 }}
-                            className="bg-slate-900 border border-emerald-500/30 w-full max-w-2xl rounded-[3rem] p-10 relative shadow-2xl"
+                            className="glass w-full max-w-2xl rounded-[3rem] p-10 relative shadow-2xl bg-slate-900 border border-emerald-500/30"
                         >
                             <button onClick={() => setShowGlossary(false)} className="absolute top-8 right-8 text-slate-500 hover:text-white transition-colors">
                                 <X className="w-8 h-8" />
                             </button>
 
-                            <h3 className="text-3xl font-black mb-8 gold-text uppercase tracking-tighter">Understanding Hadith Grades</h3>
+                            <h3 className="text-3xl font-black mb-8 gold-text uppercase tracking-tighter">Grading Definitions</h3>
 
                             <div className="space-y-8">
                                 <div className="space-y-2">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-3 h-3 bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.5)]"></div>
-                                        <h4 className="text-xl font-bold text-emerald-400">Sahih (Authentic)</h4>
-                                    </div>
-                                    <p className="text-slate-400 leading-relaxed pl-6">The highest grade of authenticity. These narrations have a continuous chain of reliable, precise narrators from start to finish, with no conflicting versions.</p>
+                                    <h4 className="text-xl font-bold text-emerald-400">Authentic (Sahih)</h4>
+                                    <p className="text-slate-400 leading-relaxed font-medium">Verified reports with continuous chains of reliable narrators. This is the highest standard of verification.</p>
                                 </div>
-
                                 <div className="space-y-2">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                                        <h4 className="text-xl font-bold text-blue-400">Hasan (Good)</h4>
-                                    </div>
-                                    <p className="text-slate-400 leading-relaxed pl-6">Highly reliable narrations. The narrators are trustworthy but might have slightly lower precision (memory) than those in Sahih chains. These are fully acceptable for legal rulings.</p>
+                                    <h4 className="text-xl font-bold text-blue-400">Good (Hasan)</h4>
+                                    <p className="text-slate-400 leading-relaxed font-medium">Reliable reports where narrators are trustworthy but might have slightly lower precision than the highest tier.</p>
                                 </div>
-
                                 <div className="space-y-2">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-3 h-3 bg-amber-500 rounded-full"></div>
-                                        <h4 className="text-xl font-bold text-amber-500">Da'if (Weak)</h4>
-                                    </div>
-                                    <p className="text-slate-400 leading-relaxed pl-6">Narrations where there is a known flaw in the chain or narrator precision. While they contain wisdom, they are generally not used for primary Islamic law.</p>
+                                    <h4 className="text-xl font-bold text-amber-500">Weak (Da'if)</h4>
+                                    <p className="text-slate-400 leading-relaxed font-medium">Reports with identified gaps or flaws in the chain. These are useful for wisdom but not for primary law.</p>
                                 </div>
                             </div>
 
                             <button
                                 onClick={() => setShowGlossary(false)}
-                                className="w-full mt-10 py-5 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-2xl transition-all uppercase tracking-widest shadow-lg shadow-emerald-500/20"
+                                className="w-full mt-10 py-5 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-2xl transition-all uppercase tracking-widest"
                             >
-                                Got it, thanks.
+                                Close Explorer Guide
                             </button>
                         </motion.div>
                     </motion.div>
@@ -201,7 +217,7 @@ const KnowledgeLibrary: React.FC = () => {
             <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8 mb-12">
                 <div>
                     <h2 className="text-5xl font-black mb-3 gold-text tracking-tighter">Knowledge Library</h2>
-                    <p className="text-slate-400 text-lg font-medium">Browse by tradition, collection, or spiritual grade.</p>
+                    <p className="text-slate-400 text-lg font-medium">Search thousands of records by keyword or browsing by collection.</p>
                 </div>
 
                 <div className="flex gap-4 p-1.5 bg-slate-900/50 rounded-2xl border border-white/5 backdrop-blur-xl shrink-0">
@@ -224,24 +240,22 @@ const KnowledgeLibrary: React.FC = () => {
 
             {/* Filters Row */}
             <div className="flex flex-col gap-6 mb-12">
-                <div className="flex flex-col md:flex-row gap-6">
-                    <div className="relative flex-1 group">
-                        <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-emerald-400 transition-colors" />
-                        <input
-                            type="text"
-                            placeholder={subTab === 'quran' ? "Search verses..." : "Search in selected corpus..."}
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full bg-black/40 border border-white/10 px-16 py-6 rounded-[2rem] text-xl focus:outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all font-medium"
-                        />
-                    </div>
+                <div className="relative group">
+                    <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-emerald-400 transition-colors" />
+                    <input
+                        type="text"
+                        placeholder={subTab === 'quran' ? "Search for words like 'patience', 'faith', 'prayer'..." : "Search for words like 'intention', 'charity', 'manners'..."}
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full bg-black/40 border border-white/10 px-16 py-6 rounded-[2rem] text-xl focus:outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all font-medium"
+                    />
                 </div>
 
                 {subTab === 'hadith' && (
                     <div className="flex flex-wrap gap-4 items-center justify-between bg-white/5 p-4 rounded-3xl border border-white/5">
                         <div className="flex flex-wrap gap-3 items-center">
                             <span className="text-xs font-black uppercase tracking-[0.2em] text-slate-500 mr-2 flex items-center gap-1.5">
-                                <Filter className="w-3.5 h-3.5" /> Authenticity:
+                                <Filter className="w-3.5 h-3.5" /> Quality:
                             </span>
                             {['Sahih', 'Hasan', 'Daif'].map(grade => (
                                 <button
@@ -249,12 +263,9 @@ const KnowledgeLibrary: React.FC = () => {
                                     onClick={() => { setGradeFilter(gradeFilter === grade ? null : grade); setHadithPage(0); }}
                                     className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${gradeFilter === grade ? 'bg-emerald-500 border-emerald-400 text-white shadow-lg' : 'bg-slate-900 border-white/5 text-slate-400 hover:border-emerald-500/30'}`}
                                 >
-                                    {grade === 'Daif' ? 'Dha\'eef' : grade}
+                                    {gradeMap[grade]}
                                 </button>
                             ))}
-                            {gradeFilter && (
-                                <button onClick={() => setGradeFilter(null)} className="text-[10px] font-bold text-slate-500 hover:text-white ml-2">Clear</button>
-                            )}
                         </div>
 
                         <button
@@ -262,7 +273,7 @@ const KnowledgeLibrary: React.FC = () => {
                             className="flex items-center gap-2 text-xs font-bold text-emerald-400 hover:text-white transition-colors group"
                         >
                             <HelpCircle className="w-4 h-4 group-hover:rotate-12 transition-transform" />
-                            What do these mean?
+                            Guide to Authenticity
                         </button>
                     </div>
                 )}
@@ -271,7 +282,6 @@ const KnowledgeLibrary: React.FC = () => {
             <div className="grid lg:grid-cols-[320px_1fr] gap-12">
                 {/* Sidebar Navigation */}
                 <div className="space-y-8 order-2 lg:order-1">
-                    {/* Collection Selector */}
                     <div className="glass p-6 rounded-[2rem] border border-white/5">
                         <h4 className={`font-black text-xs tracking-[0.2em] uppercase mb-6 flex items-center gap-2 ${subTab === 'quran' ? 'text-amber-500' : 'text-emerald-500'}`}>
                             <Filter className="w-4 h-4" /> {subTab === 'quran' ? 'Chapters' : 'Collections'}
@@ -299,7 +309,6 @@ const KnowledgeLibrary: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Book/Section Index for Hadith */}
                     {subTab === 'hadith' && Object.keys(hadithSections).length > 0 && (
                         <div className="glass p-6 rounded-[2rem] border border-white/5 bg-emerald-500/5">
                             <h4 className="font-black text-xs tracking-[0.2em] uppercase text-emerald-400 mb-6 flex items-center gap-2">
@@ -326,7 +335,7 @@ const KnowledgeLibrary: React.FC = () => {
                     {isLoading ? (
                         <div className="flex flex-col items-center justify-center py-32 opacity-30">
                             <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-6"></div>
-                            <p className="font-bold tracking-[0.3em] text-[10px] uppercase">Retrieving Sacret Texts...</p>
+                            <p className="font-bold tracking-[0.3em] text-[10px] uppercase">Searching Tradition...</p>
                         </div>
                     ) : (
                         <div className="space-y-6">
@@ -347,14 +356,19 @@ const KnowledgeLibrary: React.FC = () => {
                                                 <span className="text-sm text-slate-500 font-medium">{res.reference}</span>
                                             </div>
 
-                                            {res.grades && res.grades.length > 0 && (
+                                            {res.type === 'Hadith' && res.grades && res.grades.length > 0 && (
                                                 <div className="flex flex-wrap gap-2">
-                                                    {res.grades.map((g: any, i: number) => (
-                                                        <div key={i} className={`flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border shadow-sm ${g.grade.toLowerCase().includes('sahih') ? 'bg-emerald-400/5 border-emerald-400/20 text-emerald-400' : g.grade.toLowerCase().includes('hasan') ? 'bg-blue-400/5 border-blue-400/20 text-blue-400' : 'bg-amber-400/5 border-amber-400/20 text-amber-500'}`}>
-                                                            <CheckCircle2 className="w-3 h-3" />
-                                                            {g.grade} <span className="opacity-40 ml-1 font-medium">— {g.name}</span>
-                                                        </div>
-                                                    ))}
+                                                    {res.grades.map((g: any, i: number) => {
+                                                        const cleanGrade = g.grade.replace(/ Sahih| Sahih| Hasan| Daif/g, ''); // Fix duplicates if any
+                                                        const simpleLabel = gradeMap[cleanGrade] || gradeMap[g.grade] || g.grade;
+
+                                                        return (
+                                                            <div key={i} className={`flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border shadow-sm ${g.grade.toLowerCase().includes('sahih') ? 'bg-emerald-400/5 border-emerald-400/20 text-emerald-400' : g.grade.toLowerCase().includes('hasan') ? 'bg-blue-400/5 border-blue-400/20 text-blue-400' : 'bg-amber-400/5 border-amber-400/20 text-amber-500'}`}>
+                                                                <CheckCircle2 className="w-3 h-3" />
+                                                                {simpleLabel} <span className="opacity-40 ml-1 font-medium">— {g.name}</span>
+                                                            </div>
+                                                        );
+                                                    })}
                                                 </div>
                                             )}
                                         </div>
@@ -373,13 +387,13 @@ const KnowledgeLibrary: React.FC = () => {
                             ) : (
                                 <div className="text-center py-32 glass rounded-[3rem] border border-white/5">
                                     <AlertCircle className="w-16 h-16 mx-auto mb-6 opacity-20 text-emerald-400" />
-                                    <p className="text-2xl font-bold tracking-tight mb-2 uppercase text-slate-400">Section Content Empty</p>
-                                    <p className="text-slate-500 max-w-sm mx-auto font-medium">This specific book section might be currently being indexed or contains no narrations matching your current grade filters.</p>
+                                    <p className="text-2xl font-bold tracking-tight mb-2 uppercase text-slate-400">Search Yielded No Results</p>
+                                    <p className="text-slate-500 max-w-sm mx-auto font-medium">Try searching for broader keywords like "Prayer" or "Faith". Ensuring your spelling is correct.</p>
                                     <button
-                                        onClick={() => { setSelectedHadithSection(null); setGradeFilter(null); }}
+                                        onClick={() => { setSearchQuery(''); setGradeFilter(null); }}
                                         className="mt-8 px-8 py-3 bg-white/5 hover:bg-white/10 rounded-2xl text-xs font-black uppercase tracking-widest transition-all"
                                     >
-                                        Reset All Filters
+                                        Clear Search
                                     </button>
                                 </div>
                             )}
