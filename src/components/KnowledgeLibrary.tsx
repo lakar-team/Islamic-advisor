@@ -437,7 +437,7 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
             setSelectedBook(null);
             loadBooks(selectedCollection);
         }
-    }, [subTab, selectedCollection]);
+    }, [subTab]);
 
     useEffect(() => {
         if (searchQuery.length > 2 && !initialQuery) {
@@ -775,7 +775,15 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                                     {collections.map(c => (
                                         <button
                                             key={c.id}
-                                            onClick={() => { setSelectedCollection(c.id); setSearchQuery(''); setJumpToNum(''); setResults([]); setBooks([]); }}
+                                            onClick={() => {
+                                                setSelectedCollection(c.id);
+                                                setSearchQuery('');
+                                                setJumpToNum('');
+                                                setResults([]);
+                                                setBooks([]);
+                                                setViewMode('browse');
+                                                loadBooks(c.id);
+                                            }}
                                             className={`w-full text-left px-4 py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-between group ${selectedCollection === c.id ? 'bg-emerald-500 text-white shadow-lg' : 'text-slate-400 hover:bg-white/5'
                                                 }`}
                                         >
