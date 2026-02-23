@@ -234,6 +234,21 @@ function App() {
                 Whether you are a new convert or a lifelong student, our AI adjusts its complexity to meet your level of understanding.
               </p>
             </div>
+            <button
+              onClick={() => setActiveTab('library')}
+              className="value-card text-left space-y-4 p-8 rounded-3xl bg-slate-900/40 border border-emerald-900/10 hover:border-emerald-500/30 hover:bg-emerald-500/5 transition-all group"
+            >
+              <div className="bg-emerald-500/10 w-14 h-14 rounded-2xl flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
+                <Library className="text-emerald-400 w-7 h-7" />
+              </div>
+              <h3 className="text-2xl font-bold text-slate-100 group-hover:text-emerald-300 transition-colors">Knowledge Library</h3>
+              <p className="text-slate-400 text-base leading-relaxed">
+                Browse Quran verses and authentic Hadith directly — search, explore, and verify any AI explanation against the primary sources yourself.
+              </p>
+              <span className="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-widest text-emerald-500/60 group-hover:text-emerald-400 transition-colors">
+                Open Library →
+              </span>
+            </button>
           </div>
         </section>
       )}
