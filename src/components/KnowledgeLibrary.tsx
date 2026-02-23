@@ -39,7 +39,7 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
     // Audio state
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const [playingAyah, setPlayingAyah] = useState<string | null>(null); // "surah:ayah"
-    const [audioLoading, setAudioLoading] = useState(false);
+    const [, setAudioLoading] = useState(false);
 
     const collections = [
         { id: 'eng-bukhari', name: 'Sahih Bukhari' },
@@ -309,7 +309,6 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
         return ayah?.words || [];
     };
 
-    const quranResults = results.filter((r: any) => r.type === 'Quran');
     const isPlayingSurah = currentSurah && playingAyah?.startsWith(`${currentSurah}:`);
 
     return (
