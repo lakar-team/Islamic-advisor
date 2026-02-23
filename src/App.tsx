@@ -74,30 +74,30 @@ function App() {
       {/* Values Grid */}
       <section className="bg-slate-950 py-24 px-6 border-t border-emerald-900/10">
         <div className="max-w-7xl mx-auto grid md:grid-cols-3 gap-12">
-          <div className="space-y-4">
-            <div className="bg-amber-500/10 w-12 h-12 rounded-2xl flex items-center justify-center">
-              <BookOpen className="text-amber-500 w-6 h-6" />
+          <div className="value-card space-y-4 p-8 rounded-3xl bg-slate-900/40 border border-emerald-900/10">
+            <div className="bg-amber-500/10 w-14 h-14 rounded-2xl flex items-center justify-center">
+              <BookOpen className="text-amber-500 w-7 h-7" />
             </div>
-            <h3 className="text-xl font-bold">Deep Foundation</h3>
-            <p className="text-slate-400 text-sm leading-relaxed">
+            <h3 className="text-2xl font-bold text-slate-100">Deep Foundation</h3>
+            <p className="text-slate-400 text-base leading-relaxed">
               Every response is verified against the Quran and major Hadith collections (Bukhari, Muslim, etc.) to ensure 100% authenticity.
             </p>
           </div>
-          <div className="space-y-4">
-            <div className="bg-emerald-500/10 w-12 h-12 rounded-2xl flex items-center justify-center">
-              <Shield className="text-emerald-500 w-6 h-6" />
+          <div className="value-card space-y-4 p-8 rounded-3xl bg-slate-900/40 border border-emerald-900/10">
+            <div className="bg-emerald-500/10 w-14 h-14 rounded-2xl flex items-center justify-center">
+              <Shield className="text-emerald-500 w-7 h-7" />
             </div>
-            <h3 className="text-xl font-bold">Safe Consumption</h3>
-            <p className="text-slate-400 text-sm leading-relaxed">
+            <h3 className="text-2xl font-bold text-slate-100">Safe Consumption</h3>
+            <p className="text-slate-400 text-base leading-relaxed">
               Intelligent rate-limiting ensures that the platform remains stable and free for human seekers, preventing bot abuse.
             </p>
           </div>
-          <div className="space-y-4">
-            <div className="bg-blue-500/10 w-12 h-12 rounded-2xl flex items-center justify-center">
-              <Compass className="text-blue-500 w-6 h-6" />
+          <div className="value-card space-y-4 p-8 rounded-3xl bg-slate-900/40 border border-emerald-900/10">
+            <div className="bg-blue-500/10 w-14 h-14 rounded-2xl flex items-center justify-center">
+              <Compass className="text-blue-500 w-7 h-7" />
             </div>
-            <h3 className="text-xl font-bold">For All Levels</h3>
-            <p className="text-slate-400 text-sm leading-relaxed">
+            <h3 className="text-2xl font-bold text-slate-100">For All Levels</h3>
+            <p className="text-slate-400 text-base leading-relaxed">
               Whether you are a new convert or a lifelong student, our AI adjusts its complexity to meet your level of understanding.
             </p>
           </div>

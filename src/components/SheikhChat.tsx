@@ -111,17 +111,17 @@ const SheikhChat: React.FC = () => {
                             animate={{ opacity: 1, y: 0 }}
                             className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
                         >
-                            <div className={`max-w-[80%] p-5 rounded-2xl ${m.role === 'user'
-                                ? 'bg-emerald-800 text-white rounded-tr-none shadow-lg'
-                                : 'bg-slate-800/80 backdrop-blur-md text-slate-100 rounded-tl-none border border-slate-700 shadow-xl'
+                            <div className={`max-w-[85%] message-bubble ${m.role === 'user'
+                                ? 'user-bubble shadow-lg'
+                                : 'assistant-bubble shadow-xl backdrop-blur-md'
                                 }`}>
                                 <div className="flex items-center gap-2 mb-2">
                                     {m.role === 'assistant' ? <Sparkles className="w-4 h-4 text-amber-500" /> : <MessageSquare className="w-4 h-4 text-emerald-300" />}
-                                    <span className="text-xs font-bold uppercase tracking-wider opacity-60">
+                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">
                                         {m.role === 'assistant' ? 'The Sheikh' : 'You'}
                                     </span>
                                 </div>
-                                <p className="text-[1.05rem] leading-relaxed">{m.content}</p>
+                                <div className="text-[1.05rem] leading-relaxed select-text">{m.content}</div>
                             </div>
                         </motion.div>
                     ))}
