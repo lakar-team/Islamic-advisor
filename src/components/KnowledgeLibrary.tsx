@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Book, Filter, ChevronRight, Hash, CheckCircle2, AlertCircle, X, Volume2, VolumeX, Play, Pause, SkipForward, SkipBack, BookOpen, ExternalLink, ChevronDown } from 'lucide-react';
+import { Search, Book, Filter, Hash, CheckCircle2, AlertCircle, X, Volume2, VolumeX, Play, Pause, SkipForward, SkipBack, BookOpen, ExternalLink, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface KnowledgeLibraryProps {
@@ -19,7 +19,6 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
     const [surahs, setSurahs] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [selectedCollection, setSelectedCollection] = useState('eng-bukhari');
-    const [hadithPage, setHadithPage] = useState(0);
     const [gradeFilter, setGradeFilter] = useState<string | null>('Sahih');
     const [showGlossary, setShowGlossary] = useState(false);
     const [currentSurah, setCurrentSurah] = useState<number | null>(null);
@@ -41,12 +40,15 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
     const [, setAudioLoading] = useState(false);
 
     const collections = [
-        { id: 'eng-bukhari', name: 'Sahih Bukhari' },
-        { id: 'eng-muslim', name: 'Sahih Muslim' },
-        { id: 'eng-abudawud', name: 'Sunan Abu Dawud' },
-        { id: 'eng-tirmidhi', name: 'Jami at-Tirmidhi' },
-        { id: 'eng-nasai', name: "Sunan an-Nasa'i" },
-        { id: 'eng-ibnmajah', name: 'Sunan Ibn Majah' },
+        { id: 'eng-bukhari', name: 'Sahih Bukhari', count: 7563 },
+        { id: 'eng-muslim', name: 'Sahih Muslim', count: 7453 },
+        { id: 'eng-abudawud', name: 'Sunan Abu Dawud', count: 5274 },
+        { id: 'eng-tirmidhi', name: 'Jami at-Tirmidhi', count: 3956 },
+        { id: 'eng-nasai', name: "Sunan an-Nasa'i", count: 5761 },
+        { id: 'eng-ibnmajah', name: 'Sunan Ibn Majah', count: 4341 },
+        { id: 'eng-nawawi42', name: '40 Hadith Nawawi', count: 42 },
+        { id: 'eng-adab', name: 'Al-Adab Al-Mufrad', count: 1322 },
+        { id: 'eng-riyadussalihin', name: 'Riyadhus Salihin', count: 1900 },
     ];
 
     const gradeMap: Record<string, string> = {
@@ -55,6 +57,13 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
         'Daif': 'Weak',
         'Maudu': 'Fabricated'
     };
+
+    // Book navigation state
+    const [books, setBooks] = useState<any[]>([]);
+    const [selectedBook, setSelectedBook] = useState<any | null>(null);
+    const [jumpToNum, setJumpToNum] = useState('');
+    const [browseOffset, setBrowseOffset] = useState(0); // first hadith number in current view
+    const BROWSE_PAGE = 15; // hadiths shown per page when browsing a book
 
     const fetchSurahList = async () => {
         setIsLoading(true);
@@ -162,6 +171,103 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
         }
     };
 
+    // ── Fetch a page of hadiths by number range (parallel per-hadith requests) ──
+    const fetchHadithRange = async (collectionId: string, from: number, count: number) => {
+        setIsLoading(true);
+        try {
+            const nums = Array.from({ length: count }, (_, i) => from + i);
+            const settled = await Promise.allSettled(
+                nums.map(n =>
+                    fetch(`https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/${collectionId}/${n}.json`)
+                        .then(r => r.ok ? r.json() : null)
+                        .catch(() => null)
+                )
+            );
+            const collName = collections.find(c => c.id === collectionId)?.name || collectionId;
+            const loaded: any[] = [];
+            settled.forEach(s => {
+                if (s.status === 'fulfilled' && s.value?.hadiths?.length) {
+                    s.value.hadiths.forEach((h: any) => {
+                        if (h.text?.trim()) {
+                            let hGrades = h.grades || [];
+                            if (hGrades.length === 0 && (collectionId === 'eng-bukhari' || collectionId === 'eng-muslim'))
+                                hGrades = [{ grade: 'Sahih', name: 'Al-Bukhari & Muslim' }];
+                            loaded.push({
+                                text: h.text,
+                                reference: `${collName} — Hadith ${h.hadithnumber}`,
+                                type: 'Hadith',
+                                grades: hGrades,
+                                hadithNumber: h.hadithnumber,
+                                collectionId,
+                            });
+                        }
+                    });
+                }
+            });
+            setResults(loaded);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // ── Load books for a collection (fetch hadith #1 to get metadata) ──
+    const loadBooks = async (collectionId: string) => {
+        setBooks([]);
+        setSelectedBook(null);
+        try {
+            const r = await fetch(`https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/${collectionId}/1.json`);
+            if (!r.ok) return;
+            const data = await r.json();
+            const sections: Record<string, string> = data.metadata?.section || {};
+            const details: Record<string, any> = data.metadata?.section_detail || {};
+            const bookList = Object.entries(sections).map(([num, name]) => ({
+                num: parseInt(num),
+                name: name as string,
+                first: details[num]?.hadithnumber_first ?? null,
+                last: details[num]?.hadithnumber_last ?? null,
+            })).filter(b => b.first !== null);
+            setBooks(bookList);
+            if (bookList.length > 0) {
+                setSelectedBook(bookList[0]);
+                // Note: total is bookList[bookList.length - 1].last
+                setBrowseOffset(bookList[0].first);
+                fetchHadithRange(collectionId, bookList[0].first, BROWSE_PAGE);
+            } else {
+                // Small collections (Nawawi 40 etc.) — no sections, load from start
+                setBrowseOffset(1);
+                fetchHadithRange(collectionId, 1, BROWSE_PAGE);
+            }
+        } catch { /* ignore */ }
+    };
+
+    // ── Jump directly to a hadith by number ──
+    const jumpToHadith = async (num: string) => {
+        const n = parseInt(num);
+        if (!n || n < 1) return;
+        setIsLoading(true);
+        setResults([]);
+        try {
+            const r = await fetch(`https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/${selectedCollection}/${n}.json`);
+            if (!r.ok) throw new Error('not found');
+            const data = await r.json();
+            const collName = collections.find(c => c.id === selectedCollection)?.name || selectedCollection;
+            setResults((data.hadiths || []).filter((h: any) => h.text?.trim()).map((h: any) => ({
+                text: h.text,
+                reference: `${collName} — Hadith ${h.hadithnumber}`,
+                type: 'Hadith',
+                grades: h.grades?.length ? h.grades
+                    : (selectedCollection === 'eng-bukhari' || selectedCollection === 'eng-muslim')
+                        ? [{ grade: 'Sahih', name: 'Al-Bukhari & Muslim' }] : [],
+                hadithNumber: h.hadithnumber,
+                collectionId: selectedCollection,
+            })));
+        } catch {
+            setResults([]);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const fetchHadith = async (query: string = '', page: number = 0) => {
         setIsLoading(true);
         setViewMode('search');
@@ -194,7 +300,7 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                     collectionId,
                 })));
             } else {
-                // Keyword / number search: load collection and filter
+                // Keyword search: must load full collection (unavoidable for text search)
                 const url = `https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/${selectedCollection}.json`;
                 const res = await fetch(url);
                 if (!res.ok) throw new Error('API request failed');
@@ -202,48 +308,41 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
 
                 let hadithList = (data.hadiths || []).filter((h: any) => h.text && h.text.trim().length > 0);
 
+                const isNumOnly = /^\d+$/.test(query.trim());
                 let filtered = hadithList;
-                if (query) {
-                    const isNumOnly = /^\d+$/.test(query.trim());
-                    if (isNumOnly) {
-                        // Direct number lookup within the loaded collection
-                        filtered = hadithList.filter((h: any) => String(h.hadithnumber) === query.trim());
-                    } else {
-                        const searchTerms = query.toLowerCase().split(' ').filter((t: string) => t.length > 2);
-                        filtered = filtered.map((h: any) => {
-                            let score = 0;
-                            const hText = h.text.toLowerCase();
-                            if (hText.includes(query.toLowerCase())) score += 10;
-                            searchTerms.forEach((term: string) => {
-                                if (hText.includes(term)) score += (hText.split(term).length - 1);
-                            });
-                            return { ...h, score };
-                        }).filter((h: any) => h.score > 0);
-                        filtered.sort((a: any, b: any) => (b.score || 0) - (a.score || 0));
-                    }
+                if (isNumOnly) {
+                    filtered = hadithList.filter((h: any) => String(h.hadithnumber) === query.trim());
+                } else {
+                    const searchTerms = query.toLowerCase().split(' ').filter((t: string) => t.length > 2);
+                    filtered = filtered.map((h: any) => {
+                        let score = 0;
+                        const hText = h.text.toLowerCase();
+                        if (hText.includes(query.toLowerCase())) score += 10;
+                        searchTerms.forEach((term: string) => {
+                            if (hText.includes(term)) score += (hText.split(term).length - 1);
+                        });
+                        return { ...h, score };
+                    }).filter((h: any) => h.score > 0);
+                    filtered.sort((a: any, b: any) => (b.score || 0) - (a.score || 0));
                 }
 
                 if (gradeFilter) {
                     filtered = filtered.filter((h: any) => {
                         const hGrades = h.grades || [];
-                        if (hGrades.length === 0 && (selectedCollection === 'eng-bukhari' || selectedCollection === 'eng-muslim')) {
+                        if (hGrades.length === 0 && (selectedCollection === 'eng-bukhari' || selectedCollection === 'eng-muslim'))
                             return gradeFilter.toLowerCase() === 'sahih';
-                        }
                         return hGrades.some((g: any) => g.grade.toLowerCase().includes(gradeFilter.toLowerCase()));
                     });
                 }
 
-                const pageSize = 15;
-                const chunk = filtered.slice(page * pageSize, (page + 1) * pageSize);
-
-                setResults(chunk.map((h: any) => {
+                const collName = collections.find(c => c.id === selectedCollection)?.name;
+                setResults(filtered.slice(0, 30).map((h: any) => {
                     let hGrades = h.grades || [];
-                    if (hGrades.length === 0 && (selectedCollection === 'eng-bukhari' || selectedCollection === 'eng-muslim')) {
+                    if (hGrades.length === 0 && (selectedCollection === 'eng-bukhari' || selectedCollection === 'eng-muslim'))
                         hGrades = [{ grade: 'Sahih', name: 'Al-Bukhari & Muslim' }];
-                    }
                     return {
                         text: h.text,
-                        reference: `${collections.find(c => c.id === selectedCollection)?.name} - Hadith ${h.hadithnumber}`,
+                        reference: `${collName} — Hadith ${h.hadithnumber}`,
                         type: 'Hadith',
                         grades: hGrades,
                         hadithNumber: h.hadithnumber,
@@ -331,10 +430,14 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
             fetchSurahList();
             fetchQuran(1);
         }
-        if (subTab === 'hadith' && !searchQuery) {
-            fetchHadith('', hadithPage);
+        if (subTab === 'hadith' && !searchQuery && !initialQuery) {
+            // Load books for new collection, then show first page
+            setResults([]);
+            setBooks([]);
+            setSelectedBook(null);
+            loadBooks(selectedCollection);
         }
-    }, [subTab, viewMode, selectedCollection, gradeFilter, hadithPage]);
+    }, [subTab, selectedCollection]);
 
     useEffect(() => {
         if (searchQuery.length > 2 && !initialQuery) {
@@ -597,22 +700,40 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                 </div>
 
                 {subTab === 'hadith' && (
-                    <div className="flex flex-wrap gap-4 items-center justify-between bg-white/5 p-4 rounded-3xl border border-white/5">
-                        <div className="flex flex-wrap gap-3 items-center">
-                            <span className="text-xs font-black uppercase tracking-[0.2em] text-slate-500 mr-2 flex items-center gap-1.5">
-                                <Filter className="w-3.5 h-3.5" /> Quality:
+                    <div className="flex flex-wrap gap-3 items-center bg-white/5 p-4 rounded-3xl border border-white/5">
+                        {/* Jump to number */}
+                        <div className="flex items-center gap-2 flex-1 min-w-[220px]">
+                            <Hash className="w-4 h-4 text-emerald-500 shrink-0" />
+                            <input
+                                type="number"
+                                min={1}
+                                placeholder="Jump to Hadith # ..."
+                                value={jumpToNum}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setJumpToNum(e.target.value)}
+                                onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === 'Enter' && jumpToNum) { jumpToHadith(jumpToNum); setSearchQuery(''); } }}
+                                className="bg-transparent border-none outline-none text-sm font-bold text-white placeholder:text-slate-600 w-full"
+                            />
+                            <button
+                                onClick={() => { if (jumpToNum) { jumpToHadith(jumpToNum); setSearchQuery(''); } }}
+                                className="shrink-0 px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+                            >Go</button>
+                        </div>
+                        <div className="h-6 w-px bg-white/10 hidden sm:block" />
+                        {/* Grade filter */}
+                        <div className="flex flex-wrap gap-2 items-center">
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 flex items-center gap-1.5">
+                                <Filter className="w-3 h-3" /> Grade:
                             </span>
                             {['Sahih', 'Hasan', 'Daif'].map(grade => (
                                 <button
                                     key={grade}
-                                    onClick={() => { setGradeFilter(gradeFilter === grade ? null : grade); setHadithPage(0); }}
-                                    className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${gradeFilter === grade ? 'bg-emerald-500 border-emerald-400 text-white shadow-lg' : 'bg-slate-900 border-white/5 text-slate-400 hover:border-emerald-500/30'}`}
+                                    onClick={() => setGradeFilter(gradeFilter === grade ? null : grade)}
+                                    className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${gradeFilter === grade ? 'bg-emerald-500 border-emerald-400 text-white shadow-lg' : 'bg-slate-900 border-white/5 text-slate-400 hover:border-emerald-500/30'}`}
                                 >
                                     {gradeMap[grade]}
                                 </button>
                             ))}
                         </div>
-
                     </div>
                 )}
 
@@ -646,17 +767,50 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                         <h4 className={`font-black text-xs tracking-[0.2em] uppercase mb-6 flex items-center gap-2 ${subTab === 'quran' ? 'text-amber-500' : 'text-emerald-500'}`}>
                             <Filter className="w-4 h-4" /> {subTab === 'quran' ? 'Chapters' : 'Collections'}
                         </h4>
-                        <div className="space-y-1 max-h-[500px] overflow-y-auto scrollbar-hide pr-2">
-                            {subTab === 'hadith' ? collections.map(c => (
-                                <button
-                                    key={c.id}
-                                    onClick={() => { setSelectedCollection(c.id); setResults([]); setHadithPage(0); }}
-                                    className={`w-full text-left px-5 py-4 rounded-2xl text-sm font-bold transition-all flex items-center justify-between group ${selectedCollection === c.id ? 'bg-emerald-500 text-white shadow-lg' : 'text-slate-400 hover:bg-white/5'}`}
-                                >
-                                    {c.name}
-                                    <ChevronRight className={`w-4 h-4 ${selectedCollection === c.id ? 'opacity-100' : 'opacity-0'}`} />
-                                </button>
-                            )) : surahs.map(s => (
+                        <div className="space-y-1 max-h-[600px] overflow-y-auto scrollbar-hide pr-2">
+                            {subTab === 'hadith' ? (
+                                <>
+                                    {/* Collection list */}
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-2 px-2">Collections</p>
+                                    {collections.map(c => (
+                                        <button
+                                            key={c.id}
+                                            onClick={() => { setSelectedCollection(c.id); setSearchQuery(''); setJumpToNum(''); setResults([]); setBooks([]); }}
+                                            className={`w-full text-left px-4 py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-between group ${selectedCollection === c.id ? 'bg-emerald-500 text-white shadow-lg' : 'text-slate-400 hover:bg-white/5'
+                                                }`}
+                                        >
+                                            <span className="leading-snug">{c.name}</span>
+                                            <span className={`text-[10px] font-black tabular-nums ${selectedCollection === c.id ? 'text-white/70' : 'text-slate-600'}`}>{c.count.toLocaleString()}</span>
+                                        </button>
+                                    ))}
+
+                                    {/* Book list for selected collection */}
+                                    {books.length > 0 && (
+                                        <>
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-600 mt-5 mb-2 px-2">Books</p>
+                                            {books.map(b => (
+                                                <button
+                                                    key={b.num}
+                                                    onClick={() => {
+                                                        setSelectedBook(b);
+                                                        setJumpToNum('');
+                                                        setSearchQuery('');
+                                                        setBrowseOffset(b.first);
+                                                        fetchHadithRange(selectedCollection, b.first, BROWSE_PAGE);
+                                                    }}
+                                                    className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-start gap-2 ${selectedBook?.num === b.num
+                                                        ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-300'
+                                                        : 'text-slate-500 hover:bg-white/5 hover:text-slate-300'
+                                                        }`}
+                                                >
+                                                    <span className="shrink-0 text-[10px] font-black text-slate-600 pt-0.5">#{b.num}</span>
+                                                    <span className="leading-snug line-clamp-2">{b.name}</span>
+                                                </button>
+                                            ))}
+                                        </>
+                                    )}
+                                </>
+                            ) : surahs.map(s => (
                                 <button
                                     key={s.number}
                                     onClick={() => fetchQuran(s.number)}
@@ -834,21 +988,39 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                                 </div>
                             )}
 
-                            {results.length > 0 && !searchQuery && subTab === 'hadith' && (
-                                <div className="flex justify-center gap-4 pt-12">
-                                    <button
-                                        disabled={hadithPage === 0}
-                                        onClick={() => { setHadithPage(p => p - 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                                        className="flex items-center gap-2 px-8 py-3 bg-slate-900 border border-white/10 rounded-2xl font-black text-xs uppercase tracking-widest disabled:opacity-20 transition-all hover:bg-slate-800"
-                                    >
-                                        <SkipBack className="w-3.5 h-3.5" /> Previous
-                                    </button>
-                                    <button
-                                        onClick={() => { setHadithPage(p => p + 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                                        className="flex items-center gap-2 px-8 py-3 bg-emerald-600 shadow-lg shadow-emerald-500/20 rounded-2xl font-black text-xs uppercase tracking-widest transition-all hover:scale-105 active:scale-95 text-white"
-                                    >
-                                        Next Page <SkipForward className="w-3.5 h-3.5" />
-                                    </button>
+                            {/* Hadith page navigation — only shown when browsing a book */}
+                            {results.length > 0 && !searchQuery && !jumpToNum && subTab === 'hadith' && selectedBook && (
+                                <div className="flex flex-col items-center gap-4 pt-12">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                                        Showing #{browseOffset} – #{Math.min(browseOffset + BROWSE_PAGE - 1, selectedBook?.last || browseOffset + BROWSE_PAGE)}
+                                        {selectedBook && <> &nbsp;·&nbsp; {selectedBook.name}</>}
+                                    </p>
+                                    <div className="flex gap-4">
+                                        <button
+                                            disabled={browseOffset <= (selectedBook?.first ?? 1)}
+                                            onClick={() => {
+                                                const newOffset = Math.max((selectedBook?.first ?? 1), browseOffset - BROWSE_PAGE);
+                                                setBrowseOffset(newOffset);
+                                                fetchHadithRange(selectedCollection, newOffset, BROWSE_PAGE);
+                                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                                            }}
+                                            className="flex items-center gap-2 px-8 py-3 bg-slate-900 border border-white/10 rounded-2xl font-black text-xs uppercase tracking-widest disabled:opacity-20 transition-all hover:bg-slate-800"
+                                        >
+                                            <SkipBack className="w-3.5 h-3.5" /> Previous
+                                        </button>
+                                        <button
+                                            disabled={selectedBook?.last ? browseOffset + BROWSE_PAGE > selectedBook.last : false}
+                                            onClick={() => {
+                                                const newOffset = browseOffset + BROWSE_PAGE;
+                                                setBrowseOffset(newOffset);
+                                                fetchHadithRange(selectedCollection, newOffset, BROWSE_PAGE);
+                                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                                            }}
+                                            className="flex items-center gap-2 px-8 py-3 bg-emerald-600 shadow-lg shadow-emerald-500/20 rounded-2xl font-black text-xs uppercase tracking-widest transition-all hover:scale-105 active:scale-95 text-white disabled:opacity-30"
+                                        >
+                                            Next <SkipForward className="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
                                 </div>
                             )}
                         </div>
