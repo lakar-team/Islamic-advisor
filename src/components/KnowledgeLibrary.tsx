@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Book, Filter, ChevronRight, Hash, LayoutGrid, CheckCircle2, AlertCircle, HelpCircle, X } from 'lucide-react';
+import { Search, Book, Filter, ChevronRight, Hash, CheckCircle2, AlertCircle, HelpCircle, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface KnowledgeLibraryProps {
@@ -16,8 +16,6 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
     const [isLoading, setIsLoading] = useState(false);
     const [selectedCollection, setSelectedCollection] = useState('eng-bukhari');
     const [hadithPage, setHadithPage] = useState(0);
-    const [hadithSections, setHadithSections] = useState<Record<string, string>>({});
-    const [selectedHadithSection, setSelectedHadithSection] = useState<string | null>(null);
     const [gradeFilter, setGradeFilter] = useState<string | null>(null);
     const [showGlossary, setShowGlossary] = useState(false);
 
@@ -69,7 +67,6 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                     type: 'Quran'
                 })));
             } else {
-                // Search for content
                 const res = await fetch(`https://api.alquran.cloud/v1/search/${query}/all/en.asad`);
                 const data = await res.json();
                 const searchResults = data.data.results.slice(0, 50);
@@ -87,21 +84,14 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
         }
     };
 
-    const fetchHadith = async (query: string = '', page: number = 0, sectionNo: string | null = null) => {
+    const fetchHadith = async (query: string = '', page: number = 0) => {
         setIsLoading(true);
         setViewMode('search');
         try {
-            const url = (sectionNo && !query)
-                ? `https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/${selectedCollection}/sections/${sectionNo}.json`
-                : `https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/${selectedCollection}.json`;
-
+            const url = `https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/${selectedCollection}.json`;
             const res = await fetch(url);
             if (!res.ok) throw new Error('API request failed');
             const data = await res.json();
-
-            if (!sectionNo && data.metadata?.sections) {
-                setHadithSections(data.metadata.sections);
-            }
 
             let hadithList = data.hadiths || [];
 
@@ -112,23 +102,18 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                     let score = 0;
                     const hText = h.text.toLowerCase();
                     const hRef = h.hadithnumber ? h.hadithnumber.toString() : '';
-
-                    // Boost if exact match in text or number
                     if (hText.includes(query.toLowerCase()) || hRef === query) score += 10;
-
                     searchTerms.forEach(term => {
                         if (hText.includes(term)) score += (hText.split(term).length - 1);
                     });
                     return { ...h, score };
                 }).filter((h: any) => h.score > 0 || h.text.toLowerCase().includes(query.toLowerCase()));
-
                 filtered.sort((a: any, b: any) => (b.score || 0) - (a.score || 0));
             }
 
             if (gradeFilter) {
                 filtered = filtered.filter((h: any) => {
                     const hGrades = h.grades || [];
-                    // Bukhari and Muslim are Sahih by default
                     if (hGrades.length === 0 && (selectedCollection === 'eng-bukhari' || selectedCollection === 'eng-muslim')) {
                         return gradeFilter.toLowerCase() === 'sahih';
                     }
@@ -141,7 +126,6 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
 
             setResults(chunk.map((h: any) => {
                 let hGrades = h.grades || [];
-                // Auto-inject "Authentic" for Bukhari/Muslim if API data is blank
                 if (hGrades.length === 0 && (selectedCollection === 'eng-bukhari' || selectedCollection === 'eng-muslim')) {
                     hGrades = [{ grade: 'Sahih', name: 'Al-Bukhari & Muslim' }];
                 }
@@ -161,6 +145,23 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
         }
     };
 
+    useEffect(() => {
+        if (viewMode === 'browse' && subTab === 'quran') fetchSurahList();
+        if (subTab === 'hadith' && !searchQuery) {
+            fetchHadith('', hadithPage);
+        }
+    }, [subTab, viewMode, selectedCollection, gradeFilter, hadithPage]);
+
+    useEffect(() => {
+        if (searchQuery.length > 2 && !initialQuery) {
+            const delayDebounceFn = setTimeout(() => {
+                if (subTab === 'quran') fetchQuran(searchQuery);
+                else fetchHadith(searchQuery, 0);
+            }, 600);
+            return () => clearTimeout(delayDebounceFn);
+        }
+    }, [searchQuery]);
+
     // Handle initial cross-navigation
     useEffect(() => {
         if (initialQuery) {
@@ -168,27 +169,10 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
             if (initialTab) {
                 setSubTab(initialTab);
                 if (initialTab === 'quran') fetchQuran(initialQuery);
-                else fetchHadith(initialQuery, 0, null);
+                else fetchHadith(initialQuery, 0);
             }
         }
     }, [initialQuery, initialTab]);
-
-    useEffect(() => {
-        if (viewMode === 'browse' && subTab === 'quran') fetchSurahList();
-        if (subTab === 'hadith' && !searchQuery) {
-            fetchHadith('', hadithPage, selectedHadithSection);
-        }
-    }, [subTab, viewMode, selectedCollection, selectedHadithSection, gradeFilter, hadithPage]);
-
-    useEffect(() => {
-        if (searchQuery.length > 2 && !initialQuery) {
-            const delayDebounceFn = setTimeout(() => {
-                if (subTab === 'quran') fetchQuran(searchQuery);
-                else fetchHadith(searchQuery, 0, null);
-            }, 600);
-            return () => clearTimeout(delayDebounceFn);
-        }
-    }, [searchQuery]);
 
     return (
         <div className="max-w-7xl mx-auto py-12 px-6 animate-fade-in relative">
@@ -254,7 +238,7 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                         Holy Quran
                     </button>
                     <button
-                        onClick={() => { setSubTab('hadith'); setViewMode('search'); setResults([]); setSearchQuery(''); setHadithSections({}); setSelectedHadithSection(null); setHadithPage(0); }}
+                        onClick={() => { setSubTab('hadith'); setViewMode('search'); setResults([]); setSearchQuery(''); setHadithPage(0); }}
                         className={`px-8 py-3 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${subTab === 'hadith' ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
                     >
                         <Hash className="w-4 h-4" />
@@ -315,7 +299,7 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                             {subTab === 'hadith' ? collections.map(c => (
                                 <button
                                     key={c.id}
-                                    onClick={() => { setSelectedCollection(c.id); setResults([]); setSelectedHadithSection(null); setHadithPage(0); }}
+                                    onClick={() => { setSelectedCollection(c.id); setResults([]); setHadithPage(0); }}
                                     className={`w-full text-left px-5 py-4 rounded-2xl text-sm font-bold transition-all flex items-center justify-between group ${selectedCollection === c.id ? 'bg-emerald-500 text-white shadow-lg' : 'text-slate-400 hover:bg-white/5'}`}
                                 >
                                     {c.name}
@@ -333,26 +317,6 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                             ))}
                         </div>
                     </div>
-
-                    {subTab === 'hadith' && Object.keys(hadithSections).length > 0 && (
-                        <div className="glass p-6 rounded-[2rem] border border-white/5 bg-emerald-500/5">
-                            <h4 className="font-black text-xs tracking-[0.2em] uppercase text-emerald-400 mb-6 flex items-center gap-2">
-                                <LayoutGrid className="w-4 h-4" /> Subject Index
-                            </h4>
-                            <div className="space-y-2 max-h-[400px] overflow-y-auto scrollbar-hide pr-2">
-                                {Object.entries(hadithSections).map(([no, title]) => (
-                                    <button
-                                        key={no}
-                                        onClick={() => { setSelectedHadithSection(no); setHadithPage(0); }}
-                                        className={`w-full text-left px-4 py-3 rounded-xl text-xs font-bold transition-all border border-transparent ${selectedHadithSection === no ? 'bg-emerald-500 text-white shadow-md' : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'}`}
-                                    >
-                                        <span className="opacity-40 mr-2 text-[10px]">{no}</span>
-                                        {title || 'General'}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    )}
                 </div>
 
                 {/* Main View Area */}
