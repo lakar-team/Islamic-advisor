@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Scroll, BookOpen, ShieldAlert, Sparkles, MessageSquare } from 'lucide-react';
+import { Send, Scroll, ShieldAlert, Sparkles, MessageSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Message } from '../types';
 import { checkRateLimit, incrementUsage } from '../lib/rate-limit';

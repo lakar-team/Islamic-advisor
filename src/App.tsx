@@ -1,4 +1,3 @@
-import React from 'react';
 import { Compass, BookOpen, Shield, Heart, Globe, Github } from 'lucide-react';
 import SheikhChat from './components/SheikhChat';
 
