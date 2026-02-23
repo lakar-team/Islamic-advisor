@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Book, Filter, Hash, CheckCircle2, AlertCircle, X, Volume2, VolumeX, Play, Pause, SkipForward, SkipBack, BookOpen, ExternalLink, ChevronDown } from 'lucide-react';
+import { Search, Book, Filter, Hash, CheckCircle2, AlertCircle, X, Volume2, VolumeX, Play, Pause, SkipForward, SkipBack, BookOpen, ExternalLink, ChevronDown, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface KnowledgeLibraryProps {
@@ -897,82 +897,111 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                 )}
             </div>
 
-            <div className="grid lg:grid-cols-[320px_1fr] gap-12">
+            <div className={`grid gap-12 ${subTab === 'search' ? '' : 'lg:grid-cols-[320px_1fr]'}`}>
                 {/* Sidebar Navigation */}
                 <div className="space-y-8 order-2 lg:order-1">
-                    <div className="glass p-6 rounded-[2rem] border border-white/5">
-                        <h4 className={`font-black text-xs tracking-[0.2em] uppercase mb-6 flex items-center gap-2 ${subTab === 'quran' ? 'text-amber-500' : 'text-emerald-500'}`}>
-                            <Filter className="w-4 h-4" /> {subTab === 'quran' ? 'Chapters' : 'Collections'}
-                        </h4>
-                        <div className="space-y-1 max-h-[600px] overflow-y-auto scrollbar-hide pr-2">
-                            {subTab === 'hadith' ? (
-                                <>
-                                    {/* Collection list */}
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-2 px-2">Collections</p>
-                                    {collections.map(c => (
-                                        <button
-                                            key={c.id}
-                                            onClick={() => {
-                                                setSelectedCollection(c.id);
-                                                setSearchQuery('');
-                                                setJumpToNum('');
-                                                setResults([]);
-                                                setBooks([]);
-                                                loadBooks(c.id);
-                                            }}
-                                            className={`w-full text-left px-4 py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-between group ${selectedCollection === c.id ? 'bg-emerald-500 text-white shadow-lg' : 'text-slate-400 hover:bg-white/5'
-                                                }`}
-                                        >
-                                            <span className="leading-snug">{c.name}</span>
-                                            <span className={`text-[10px] font-black tabular-nums ${selectedCollection === c.id ? 'text-white/70' : 'text-slate-600'}`}>{c.count.toLocaleString()}</span>
-                                        </button>
-                                    ))}
-
-                                    {/* Book list for selected collection */}
-                                    {books.length > 0 && (
-                                        <>
-                                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-600 mt-5 mb-2 px-2">Books</p>
-                                            {books.map(b => (
-                                                <button
-                                                    key={b.num}
-                                                    onClick={() => {
-                                                        setSelectedBook(b);
-                                                        setJumpToNum('');
-                                                        setSearchQuery('');
-                                                        setBrowseOffset(b.first);
-                                                        fetchHadithRange(selectedCollection, b.first, BROWSE_PAGE);
-                                                    }}
-                                                    className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-start gap-2 ${selectedBook?.num === b.num
-                                                        ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-300'
-                                                        : 'text-slate-500 hover:bg-white/5 hover:text-slate-300'
-                                                        }`}
-                                                >
-                                                    <span className="shrink-0 text-[10px] font-black text-slate-600 pt-0.5">#{b.num}</span>
-                                                    <span className="leading-snug line-clamp-2">{b.name}</span>
-                                                </button>
-                                            ))}
-                                        </>
-                                    )}
-                                </>
-                            ) : surahs.map(s => (
-                                <button
-                                    key={s.number}
-                                    onClick={() => fetchQuran(s.number)}
-                                    className={`w-full text-left px-4 py-3 rounded-xl text-[13px] font-bold transition-all flex items-center gap-3 group ${currentSurah === s.number ? 'bg-amber-500/10 border border-amber-500/20' : 'hover:bg-white/5'}`}
-                                >
-                                    <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-black shrink-0 ${currentSurah === s.number ? 'bg-amber-500 text-black' : 'text-amber-500/50 bg-amber-500/5'}`}>{s.number}</span>
-                                    <div className="flex flex-col min-w-0">
-                                        {/* Arabic name */}
-                                        <span className="text-white font-black text-sm leading-tight">{s.name}</span>
-                                        {/* English transliteration */}
-                                        <span className={`text-[11px] font-bold ${currentSurah === s.number ? 'text-amber-400' : 'text-slate-500'}`}>{s.englishName}</span>
-                                        {/* English meaning */}
-                                        <span className={`text-[10px] font-medium italic ${currentSurah === s.number ? 'text-amber-300/70' : 'text-slate-600'}`}>"{s.englishNameTranslation}"</span>
-                                    </div>
-                                </button>
-                            ))}
+                    {subTab === 'search' ? (
+                        /* Popular Topics — shown full-width above results */
+                        <div className="glass p-6 rounded-[2rem] border border-white/5 mb-2">
+                            <h4 className="font-black text-xs tracking-[0.2em] uppercase mb-5 flex items-center gap-2 text-purple-400">
+                                <Sparkles className="w-4 h-4" /> Popular Topics
+                            </h4>
+                            <div className="flex flex-wrap gap-2">
+                                {[
+                                    'Life', 'Death', 'Work', 'Marriage', 'Divorce', 'Children',
+                                    'Prayer', 'Fasting', 'Charity', 'Pilgrimage', 'Women', 'Men',
+                                    'Business', 'Money', 'Tax', 'Debt', 'Food', 'Halal', 'Haram',
+                                    'Forgiveness', 'Patience', 'Gratitude', 'Justice', 'Knowledge',
+                                    'Parents', 'Sleep', 'Health', 'War', 'Peace', 'Paradise', 'Hell',
+                                ].map(topic => (
+                                    <button
+                                        key={topic}
+                                        onClick={() => {
+                                            setSearchQuery(topic);
+                                            setTimeout(() => fetchSearchBoth(topic, searchSource), 50);
+                                        }}
+                                        className={`px-4 py-2 rounded-xl text-sm font-bold border transition-all hover:scale-105 ${searchQuery === topic
+                                            ? 'bg-purple-600 border-purple-400 text-white shadow-lg shadow-purple-900/20'
+                                            : 'bg-slate-900/60 border-white/8 text-slate-400 hover:border-purple-500/40 hover:text-white'
+                                            }`}
+                                    >
+                                        {topic}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
-                    </div>
+                    ) : (
+                        <div className="glass p-6 rounded-[2rem] border border-white/5">
+                            <h4 className={`font-black text-xs tracking-[0.2em] uppercase mb-6 flex items-center gap-2 ${subTab === 'quran' ? 'text-amber-500' : 'text-emerald-500'}`}>
+                                <Filter className="w-4 h-4" /> {subTab === 'quran' ? 'Chapters' : 'Collections'}
+                            </h4>
+                            <div className="space-y-1 max-h-[600px] overflow-y-auto scrollbar-hide pr-2">
+                                {subTab === 'hadith' ? (
+                                    <>
+                                        {/* Collection list */}
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-2 px-2">Collections</p>
+                                        {collections.map(c => (
+                                            <button
+                                                key={c.id}
+                                                onClick={() => {
+                                                    setSelectedCollection(c.id);
+                                                    setSearchQuery('');
+                                                    setJumpToNum('');
+                                                    setResults([]);
+                                                    setBooks([]);
+                                                    loadBooks(c.id);
+                                                }}
+                                                className={`w-full text-left px-4 py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-between group ${selectedCollection === c.id ? 'bg-emerald-500 text-white shadow-lg' : 'text-slate-400 hover:bg-white/5'
+                                                    }`}
+                                            >
+                                                <span className="leading-snug">{c.name}</span>
+                                                <span className={`text-[10px] font-black tabular-nums ${selectedCollection === c.id ? 'text-white/70' : 'text-slate-600'}`}>{c.count.toLocaleString()}</span>
+                                            </button>
+                                        ))}
+
+                                        {/* Book list for selected collection */}
+                                        {books.length > 0 && (
+                                            <>
+                                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-600 mt-5 mb-2 px-2">Books</p>
+                                                {books.map(b => (
+                                                    <button
+                                                        key={b.num}
+                                                        onClick={() => {
+                                                            setSelectedBook(b);
+                                                            setJumpToNum('');
+                                                            setSearchQuery('');
+                                                            setBrowseOffset(b.first);
+                                                            fetchHadithRange(selectedCollection, b.first, BROWSE_PAGE);
+                                                        }}
+                                                        className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-start gap-2 ${selectedBook?.num === b.num
+                                                            ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-300'
+                                                            : 'text-slate-500 hover:bg-white/5 hover:text-slate-300'
+                                                            }`}
+                                                    >
+                                                        <span className="shrink-0 text-[10px] font-black text-slate-600 pt-0.5">#{b.num}</span>
+                                                        <span className="leading-snug line-clamp-2">{b.name}</span>
+                                                    </button>
+                                                ))}
+                                            </>
+                                        )}
+                                    </>
+                                ) : surahs.map(s => (
+                                    <button
+                                        key={s.number}
+                                        onClick={() => fetchQuran(s.number)}
+                                        className={`w-full text-left px-4 py-3 rounded-xl text-[13px] font-bold transition-all flex items-center gap-3 group ${currentSurah === s.number ? 'bg-amber-500/10 border border-amber-500/20' : 'hover:bg-white/5'}`}
+                                    >
+                                        <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-black shrink-0 ${currentSurah === s.number ? 'bg-amber-500 text-black' : 'text-amber-500/50 bg-amber-500/5'}`}>{s.number}</span>
+                                        <div className="flex flex-col min-w-0">
+                                            <span className="text-white font-black text-sm leading-tight">{s.name}</span>
+                                            <span className={`text-[11px] font-bold ${currentSurah === s.number ? 'text-amber-400' : 'text-slate-500'}`}>{s.englishName}</span>
+                                            <span className={`text-[10px] font-medium italic ${currentSurah === s.number ? 'text-amber-300/70' : 'text-slate-600'}`}>"{s.englishNameTranslation}"</span>
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Main View Area */}
