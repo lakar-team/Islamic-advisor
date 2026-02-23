@@ -26,33 +26,34 @@ function App() {
       </nav>
 
       {/* Hero Section */}
-      <header className="pt-20 pb-12 px-6 text-center max-w-4xl mx-auto">
-        <div className="inline-flex items-center gap-2 bg-emerald-950/40 border border-emerald-500/20 px-4 py-2 rounded-full mb-6">
+      <header className="pt-24 pb-16 px-6 text-center max-w-5xl mx-auto animate-fade-in">
+        <div className="inline-flex items-center gap-2 bg-emerald-950/40 backdrop-blur-md border border-emerald-500/20 px-5 py-2.5 rounded-full mb-8 shadow-inner animate-float">
           <Shield className="w-4 h-4 text-emerald-400" />
-          <span className="text-xs font-bold text-emerald-400 uppercase tracking-widest">Authenticated Islamic AI Guidance</span>
+          <span className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em]">Authenticated Scholarly Logic</span>
         </div>
-        <h1 className="text-5xl md:text-7xl font-extrabold mb-6 leading-tight">
-          Consult the <span className="gold-text">Tradition</span> with <span className="text-emerald-500">Intelligence.</span>
+        <h1 className="text-6xl md:text-8xl font-black mb-8 leading-[1.1] tracking-tighter">
+          Traditional <span className="gold-text">Wisdom</span><br />
+          Intelligence <span className="text-emerald-500">Unveiled.</span>
         </h1>
-        <p className="text-xl text-slate-400 mb-8 max-w-2xl mx-auto">
+        <p className="text-xl md:text-2xl text-slate-400 mb-10 max-w-3xl mx-auto font-medium leading-relaxed">
           Providing authentic Islamic advice grounded in the Quran and Sahih Hadith.
-          Bridging classical knowledge with modern accessibility.
+          Bridging classical knowledge with state-of-the-art AI precision.
         </p>
 
-        <div className="flex flex-wrap justify-center gap-4 mb-16">
-          <div className="flex items-center gap-2 text-slate-400 text-sm">
-            <BookOpen className="w-4 h-4 text-amber-500" />
-            <span>Quran & Sunnah Only</span>
+        <div className="flex flex-wrap justify-center gap-6 mb-20 opacity-80">
+          <div className="flex items-center gap-2.5 text-slate-300 text-sm font-bold tracking-wide">
+            <BookOpen className="w-5 h-5 text-amber-500" />
+            <span>QURAN & SUNNAH</span>
           </div>
-          <div className="w-1 h-1 bg-slate-700 rounded-full mt-2"></div>
-          <div className="flex items-center gap-2 text-slate-400 text-sm">
-            <Heart className="w-4 h-4 text-emerald-500" />
-            <span>Free for Everyone</span>
+          <div className="w-1.5 h-1.5 bg-slate-700 rounded-full mt-2"></div>
+          <div className="flex items-center gap-2.5 text-slate-300 text-sm font-bold tracking-wide">
+            <Heart className="w-5 h-5 text-emerald-500" />
+            <span>FREE FOR UMMAH</span>
           </div>
-          <div className="w-1 h-1 bg-slate-700 rounded-full mt-2"></div>
-          <div className="flex items-center gap-2 text-slate-400 text-sm">
-            <Globe className="w-4 h-4 text-blue-500" />
-            <span>Multi-lingual Support</span>
+          <div className="w-1.5 h-1.5 bg-slate-700 rounded-full mt-2"></div>
+          <div className="flex items-center gap-2.5 text-slate-300 text-sm font-bold tracking-wide">
+            <Globe className="w-5 h-5 text-blue-500" />
+            <span>MULTI-LINGUAL</span>
           </div>
         </div>
       </header>
