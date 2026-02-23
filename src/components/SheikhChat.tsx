@@ -104,7 +104,7 @@ const loadMessages = (): Message[] => {
     return [{
         id: '1',
         role: 'assistant',
-        content: 'Assalamu Alaikum. I am your Online Sheikh AI. How can I assist you in your deen today?',
+        content: 'Assalamu Alaikum. I am Online Sheikh AI. How can I assist you in your deen today?',
         timestamp: Date.now(),
     }];
 };
@@ -247,7 +247,7 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
                         <Scroll className="text-white w-6 h-6" />
                     </div>
                     <div>
-                        <h3 className="font-black text-2xl gold-text tracking-tighter">Al-Sheikh AI</h3>
+                        <h3 className="font-black text-2xl gold-text tracking-tighter">Online Sheikh AI</h3>
                         <span className="text-xs text-emerald-400 font-bold flex items-center gap-1.5 uppercase tracking-widest">
                             <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]"></span>
                             Live Scholarly Advice
@@ -282,7 +282,7 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
                                 <div className="flex items-center gap-2 mb-4">
                                     {m.role === 'assistant' ? <Sparkles className="w-4 h-4 text-amber-500" /> : <MessageSquare className="w-4 h-4 text-emerald-300" />}
                                     <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40">
-                                        {m.role === 'assistant' ? 'The Sheikh' : 'You'}
+                                        {m.role === 'assistant' ? 'Online Sheikh AI' : 'You'}
                                     </span>
                                 </div>
 

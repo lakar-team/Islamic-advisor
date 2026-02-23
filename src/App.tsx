@@ -74,7 +74,7 @@ function App() {
             <div className="bg-primary p-2 rounded-lg shadow-lg">
               <Compass className="text-amber-500 w-6 h-6" />
             </div>
-            <span className="text-2xl font-bold tracking-tight gold-text">Online Sheikh</span>
+            <span className="text-2xl font-bold tracking-tight gold-text">Online Sheikh AI</span>
           </div>
           <span className="text-sm text-slate-500 font-bold">Knowledge Library</span>
         </nav>
@@ -97,7 +97,7 @@ function App() {
           <div className="bg-primary p-2 rounded-lg group-hover:rotate-12 transition-transform shadow-lg">
             <Compass className="text-amber-500 w-6 h-6" />
           </div>
-          <span className="text-2xl font-bold tracking-tight gold-text">Online Sheikh</span>
+          <span className="text-2xl font-bold tracking-tight gold-text">Online Sheikh AI</span>
         </div>
 
         <div className="flex items-center gap-2 md:gap-6 text-xs md:text-sm font-semibold text-slate-400">
