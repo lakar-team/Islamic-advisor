@@ -2,10 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { Search, Book, Filter, ChevronRight, Hash, LayoutGrid, CheckCircle2, AlertCircle, HelpCircle, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const KnowledgeLibrary: React.FC = () => {
-    const [subTab, setSubTab] = useState<'quran' | 'hadith'>('quran');
-    const [viewMode, setViewMode] = useState<'search' | 'browse'>('browse');
-    const [searchQuery, setSearchQuery] = useState('');
+interface KnowledgeLibraryProps {
+    initialTab?: 'quran' | 'hadith';
+    initialQuery?: string;
+}
+
+const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initialQuery }) => {
+    const [subTab, setSubTab] = useState<'quran' | 'hadith'>(initialTab || 'quran');
+    const [viewMode, setViewMode] = useState<'search' | 'browse'>(initialQuery ? 'search' : 'browse');
+    const [searchQuery, setSearchQuery] = useState(initialQuery || '');
     const [results, setResults] = useState<any[]>([]);
     const [surahs, setSurahs] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -67,16 +72,12 @@ const KnowledgeLibrary: React.FC = () => {
                 // Search for content
                 const res = await fetch(`https://api.alquran.cloud/v1/search/${query}/all/en.asad`);
                 const data = await res.json();
-
-                // Fetch Arabic for these search results to keep it consistent
                 const searchResults = data.data.results.slice(0, 50);
 
                 setResults(searchResults.map((r: any) => ({
                     text: r.text,
                     reference: `${r.surah.englishName} ${r.surah.number}:${r.numberInSurah}`,
-                    type: 'Quran',
-                    // Note: In search results, Arabic might not be readily available in a single batch without more calls
-                    // We'll show the text first
+                    type: 'Quran'
                 })));
             }
         } catch (err) {
@@ -90,8 +91,6 @@ const KnowledgeLibrary: React.FC = () => {
         setIsLoading(true);
         setViewMode('search');
         try {
-            // When searching, we always use the full collection to find the best matches
-            // When browsing, we might use sections for speed
             const url = (sectionNo && !query)
                 ? `https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/${selectedCollection}/sections/${sectionNo}.json`
                 : `https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/${selectedCollection}.json`;
@@ -109,15 +108,16 @@ const KnowledgeLibrary: React.FC = () => {
             let filtered = hadithList;
             if (query) {
                 const searchTerms = query.toLowerCase().split(' ').filter(t => t.length > 2);
-
-                // Ranked search: count occurrences of search terms
                 filtered = filtered.map((h: any) => {
                     let score = 0;
                     const hText = h.text.toLowerCase();
+                    const hRef = h.hadithnumber ? h.hadithnumber.toString() : '';
+
+                    // Boost if exact match in text or number
+                    if (hText.includes(query.toLowerCase()) || hRef === query) score += 10;
+
                     searchTerms.forEach(term => {
-                        if (hText.includes(term)) {
-                            score += (hText.split(term).length - 1);
-                        }
+                        if (hText.includes(term)) score += (hText.split(term).length - 1);
                     });
                     return { ...h, score };
                 }).filter((h: any) => h.score > 0 || h.text.toLowerCase().includes(query.toLowerCase()));
@@ -148,6 +148,18 @@ const KnowledgeLibrary: React.FC = () => {
         }
     };
 
+    // Handle initial cross-navigation
+    useEffect(() => {
+        if (initialQuery) {
+            setSearchQuery(initialQuery);
+            if (initialTab) {
+                setSubTab(initialTab);
+                if (initialTab === 'quran') fetchQuran(initialQuery);
+                else fetchHadith(initialQuery, 0, null);
+            }
+        }
+    }, [initialQuery, initialTab]);
+
     useEffect(() => {
         if (viewMode === 'browse' && subTab === 'quran') fetchSurahList();
         if (subTab === 'hadith' && !searchQuery) {
@@ -156,7 +168,7 @@ const KnowledgeLibrary: React.FC = () => {
     }, [subTab, viewMode, selectedCollection, selectedHadithSection, gradeFilter, hadithPage]);
 
     useEffect(() => {
-        if (searchQuery.length > 2) {
+        if (searchQuery.length > 2 && !initialQuery) {
             const delayDebounceFn = setTimeout(() => {
                 if (subTab === 'quran') fetchQuran(searchQuery);
                 else fetchHadith(searchQuery, 0, null);
@@ -359,7 +371,7 @@ const KnowledgeLibrary: React.FC = () => {
                                             {res.type === 'Hadith' && res.grades && res.grades.length > 0 && (
                                                 <div className="flex flex-wrap gap-2">
                                                     {res.grades.map((g: any, i: number) => {
-                                                        const cleanGrade = g.grade.replace(/ Sahih| Sahih| Hasan| Daif/g, ''); // Fix duplicates if any
+                                                        const cleanGrade = g.grade.replace(/ Sahih| Sahih| Hasan| Daif/g, '');
                                                         const simpleLabel = gradeMap[cleanGrade] || gradeMap[g.grade] || g.grade;
 
                                                         return (

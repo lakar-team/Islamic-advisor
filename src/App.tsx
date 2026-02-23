@@ -5,12 +5,20 @@ import KnowledgeLibrary from './components/KnowledgeLibrary';
 
 function App() {
   const [activeTab, setActiveTab] = useState<'chat' | 'library'>('chat');
+  const [libraryContext, setLibraryContext] = useState<{ tab: 'quran' | 'hadith', query: string } | null>(null);
+
+  const handleOpenLibrary = (tab: 'quran' | 'hadith', query: string) => {
+    setLibraryContext({ tab, query });
+    setActiveTab('library');
+    // Scroll to top when navigating
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
       {/* Navigation */}
       <nav className="p-6 flex items-center justify-between max-w-7xl mx-auto w-full border-b border-emerald-900/10">
-        <div className="flex items-center gap-2 group cursor-pointer" onClick={() => setActiveTab('chat')}>
+        <div className="flex items-center gap-2 group cursor-pointer" onClick={() => { setActiveTab('chat'); setLibraryContext(null); }}>
           <div className="bg-primary p-2 rounded-lg group-hover:rotate-12 transition-transform shadow-lg">
             <Compass className="text-amber-500 w-6 h-6" />
           </div>
@@ -19,7 +27,7 @@ function App() {
 
         <div className="flex items-center gap-4 md:gap-8 text-xs md:text-sm font-semibold text-slate-400">
           <button
-            onClick={() => setActiveTab('chat')}
+            onClick={() => { setActiveTab('chat'); setLibraryContext(null); }}
             className={`flex items-center gap-2 transition-all p-2 md:p-0 ${activeTab === 'chat' ? 'text-amber-500 font-bold bg-amber-500/10 rounded-xl md:bg-transparent' : 'hover:text-amber-500'}`}
           >
             <MessageSquare className="w-4 h-4" />
@@ -27,7 +35,7 @@ function App() {
             <span className="sm:hidden">Advice</span>
           </button>
           <button
-            onClick={() => setActiveTab('library')}
+            onClick={() => { setActiveTab('library'); setLibraryContext(null); }}
             className={`flex items-center gap-2 transition-all p-2 md:p-0 ${activeTab === 'library' ? 'text-amber-500 font-bold bg-amber-500/10 rounded-xl md:bg-transparent' : 'hover:text-amber-500'}`}
           >
             <Library className="w-4 h-4" />
@@ -81,7 +89,7 @@ function App() {
       <main className="px-6 flex-1">
         {activeTab === 'chat' ? (
           <>
-            <SheikhChat />
+            <SheikhChat onOpenLibrary={handleOpenLibrary} />
             {/* Ad Placeholder */}
             <div className="max-w-4xl mx-auto my-12 p-8 border-2 border-dashed border-slate-800 rounded-3xl text-center bg-slate-900/20">
               <span className="text-[10px] text-slate-600 font-bold uppercase tracking-[0.3em] block mb-4">Support Our Project</span>
@@ -91,7 +99,11 @@ function App() {
             </div>
           </>
         ) : (
-          <KnowledgeLibrary />
+          <KnowledgeLibrary
+            key={libraryContext?.query || 'default'}
+            initialTab={libraryContext?.tab}
+            initialQuery={libraryContext?.query}
+          />
         )}
       </main>
 
