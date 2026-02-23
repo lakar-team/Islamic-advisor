@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Book, Bookmark, Info, Star, Filter, ChevronRight, Hash } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 const KnowledgeLibrary: React.FC = () => {
     const [subTab, setSubTab] = useState<'quran' | 'hadith'>('quran');
