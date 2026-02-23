@@ -69,13 +69,17 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
             } else {
                 const res = await fetch(`https://api.alquran.cloud/v1/search/${query}/all/en.asad`);
                 const data = await res.json();
-                const searchResults = data.data.results.slice(0, 50);
 
-                setResults(searchResults.map((r: any) => ({
-                    text: r.text,
-                    reference: `${r.surah.englishName} ${r.surah.number}:${r.numberInSurah}`,
-                    type: 'Quran'
-                })));
+                if (data.data && data.data.matches) {
+                    const searchResults = data.data.matches.slice(0, 50);
+                    setResults(searchResults.map((r: any) => ({
+                        text: r.text,
+                        reference: `${r.surah.englishName} ${r.surah.number}:${r.numberInSurah}`,
+                        type: 'Quran'
+                    })));
+                } else {
+                    setResults([]);
+                }
             }
         } catch (err) {
             console.error(err);
