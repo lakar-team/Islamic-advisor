@@ -166,55 +166,91 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
         setIsLoading(true);
         setViewMode('search');
         try {
-            const url = `https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/${selectedCollection}.json`;
-            const res = await fetch(url);
-            if (!res.ok) throw new Error('API request failed');
-            const data = await res.json();
+            // Detect deep-link format "collectionId:hadithNumber" (e.g. "eng-muslim:7139")
+            const deepLinkMatch = query.match(/^(eng-[\w]+):(\d+)$/);
 
-            let hadithList = (data.hadiths || []).filter((h: any) => h.text && h.text.trim().length > 0);
+            if (deepLinkMatch) {
+                // Direct single-hadith fetch by number
+                const collectionId = deepLinkMatch[1];
+                const hadithNum = deepLinkMatch[2];
 
-            let filtered = hadithList;
-            if (query) {
-                const searchTerms = query.toLowerCase().split(' ').filter((t: string) => t.length > 2);
-                filtered = filtered.map((h: any) => {
-                    let score = 0;
-                    const hText = h.text.toLowerCase();
-                    const hRef = h.hadithnumber ? h.hadithnumber.toString() : '';
-                    if (hText.includes(query.toLowerCase()) || hRef === query) score += 10;
-                    searchTerms.forEach((term: string) => {
-                        if (hText.includes(term)) score += (hText.split(term).length - 1);
-                    });
-                    return { ...h, score };
-                }).filter((h: any) => h.score > 0 || h.text.toLowerCase().includes(query.toLowerCase()));
-                filtered.sort((a: any, b: any) => (b.score || 0) - (a.score || 0));
-            }
+                // Auto-switch the collection selector to the right one
+                setSelectedCollection(collectionId);
 
-            if (gradeFilter) {
-                filtered = filtered.filter((h: any) => {
-                    const hGrades = h.grades || [];
-                    if (hGrades.length === 0 && (selectedCollection === 'eng-bukhari' || selectedCollection === 'eng-muslim')) {
-                        return gradeFilter.toLowerCase() === 'sahih';
+                const url = `https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/${collectionId}/${hadithNum}.json`;
+                const res = await fetch(url);
+                if (!res.ok) throw new Error('Hadith not found');
+                const data = await res.json();
+
+                const hadiths = data.hadiths || [];
+                const collectionName = collections.find(c => c.id === collectionId)?.name || collectionId;
+
+                setResults(hadiths.map((h: any) => ({
+                    text: h.text,
+                    reference: `${collectionName} - Hadith ${h.hadithnumber}`,
+                    type: 'Hadith',
+                    grades: h.grades || [],
+                    hadithNumber: h.hadithnumber,
+                    collectionId,
+                })));
+            } else {
+                // Keyword / number search: load collection and filter
+                const url = `https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/${selectedCollection}.json`;
+                const res = await fetch(url);
+                if (!res.ok) throw new Error('API request failed');
+                const data = await res.json();
+
+                let hadithList = (data.hadiths || []).filter((h: any) => h.text && h.text.trim().length > 0);
+
+                let filtered = hadithList;
+                if (query) {
+                    const isNumOnly = /^\d+$/.test(query.trim());
+                    if (isNumOnly) {
+                        // Direct number lookup within the loaded collection
+                        filtered = hadithList.filter((h: any) => String(h.hadithnumber) === query.trim());
+                    } else {
+                        const searchTerms = query.toLowerCase().split(' ').filter((t: string) => t.length > 2);
+                        filtered = filtered.map((h: any) => {
+                            let score = 0;
+                            const hText = h.text.toLowerCase();
+                            if (hText.includes(query.toLowerCase())) score += 10;
+                            searchTerms.forEach((term: string) => {
+                                if (hText.includes(term)) score += (hText.split(term).length - 1);
+                            });
+                            return { ...h, score };
+                        }).filter((h: any) => h.score > 0);
+                        filtered.sort((a: any, b: any) => (b.score || 0) - (a.score || 0));
                     }
-                    return hGrades.some((g: any) => g.grade.toLowerCase().includes(gradeFilter.toLowerCase()));
-                });
-            }
-
-            const pageSize = 15;
-            const chunk = filtered.slice(page * pageSize, (page + 1) * pageSize);
-
-            setResults(chunk.map((h: any) => {
-                let hGrades = h.grades || [];
-                if (hGrades.length === 0 && (selectedCollection === 'eng-bukhari' || selectedCollection === 'eng-muslim')) {
-                    hGrades = [{ grade: 'Sahih', name: 'Al-Bukhari & Muslim' }];
                 }
 
-                return {
-                    text: h.text,
-                    reference: `${collections.find(c => c.id === selectedCollection)?.name} - Hadith ${h.hadithnumber}`,
-                    type: 'Hadith',
-                    grades: hGrades
-                };
-            }));
+                if (gradeFilter) {
+                    filtered = filtered.filter((h: any) => {
+                        const hGrades = h.grades || [];
+                        if (hGrades.length === 0 && (selectedCollection === 'eng-bukhari' || selectedCollection === 'eng-muslim')) {
+                            return gradeFilter.toLowerCase() === 'sahih';
+                        }
+                        return hGrades.some((g: any) => g.grade.toLowerCase().includes(gradeFilter.toLowerCase()));
+                    });
+                }
+
+                const pageSize = 15;
+                const chunk = filtered.slice(page * pageSize, (page + 1) * pageSize);
+
+                setResults(chunk.map((h: any) => {
+                    let hGrades = h.grades || [];
+                    if (hGrades.length === 0 && (selectedCollection === 'eng-bukhari' || selectedCollection === 'eng-muslim')) {
+                        hGrades = [{ grade: 'Sahih', name: 'Al-Bukhari & Muslim' }];
+                    }
+                    return {
+                        text: h.text,
+                        reference: `${collections.find(c => c.id === selectedCollection)?.name} - Hadith ${h.hadithnumber}`,
+                        type: 'Hadith',
+                        grades: hGrades,
+                        hadithNumber: h.hadithnumber,
+                        collectionId: selectedCollection,
+                    };
+                }));
+            }
         } catch (err) {
             console.error(err);
             setResults([]);

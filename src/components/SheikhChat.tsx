@@ -75,9 +75,24 @@ const resolveLibraryQuery = (ref: { type: 'quran' | 'hadith'; source: string }):
         if (surahAyahMatch) return `${surahAyahMatch[1]}:${surahAyahMatch[2]}`;
         return ref.source;
     }
-    // For hadith, extract just the number (e.g. "Bukhari - Hadith 1234" → "1234")
+    // For hadith, return "collectionId:number" (e.g. "muslim:7139") so the library
+    // can auto-select the right collection and fetch directly by number.
+    const collectionMap: Record<string, string> = {
+        'bukhari': 'eng-bukhari',
+        'muslim': 'eng-muslim',
+        'tirmidhi': 'eng-tirmidhi',
+        'abu dawud': 'eng-abudawud',
+        'abudawud': 'eng-abudawud',
+        "nasa'i": 'eng-nasai',
+        'nasai': 'eng-nasai',
+        'ibn majah': 'eng-ibnmajah',
+        'ibnmajah': 'eng-ibnmajah',
+    };
     const hadithNumMatch = ref.source.match(/Hadith\s+(\d+)/i);
-    if (hadithNumMatch) return hadithNumMatch[1];
+    const collectionRaw = ref.source.match(/^(\w[\w\s']*?)(?:\s*[-–]|\s+Hadith)/i);
+    const collectionKey = collectionRaw ? collectionRaw[1].trim().toLowerCase() : '';
+    const collectionId = collectionMap[collectionKey] || 'eng-bukhari';
+    if (hadithNumMatch) return `${collectionId}:${hadithNumMatch[1]}`;
     return ref.source;
 };
 
@@ -145,7 +160,8 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
                 }
             }
 
-            const hadithPattern = /\b(?:Sahih\s+)?(Bukhari|Muslim|Tirmidhi|Abu\s*Dawud|Nasai|Ibn\s*Majah)(?:\s*[-–]\s*(?:Hadith\s*)?(\d+))?\b/gi;
+            // Matches: "Sahih Muslim (Book 042, Hadith 7139)" or "Bukhari - Hadith 1234" or just "Muslim 1234"
+            const hadithPattern = /\b(?:Sahih\s+)?(Bukhari|Muslim|Tirmidhi|Abu\s*Dawud|Nasa['']?i|Ibn\s*Majah)(?:[^\d()]*(?:Book\s*\d+,?\s*)?(?:Hadith\s*)?(\d+))?\b/gi;
             let h;
             while ((h = hadithPattern.exec(cleanedContent)) !== null) {
                 const source = h[2] ? `${h[1]} – Hadith ${h[2]}` : h[1];
