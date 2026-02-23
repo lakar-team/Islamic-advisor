@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Book, Filter, ChevronRight, Hash, CheckCircle2, AlertCircle, HelpCircle, X, Volume2, VolumeX, Play, Pause, SkipForward, SkipBack, BookOpen, ExternalLink, ChevronDown } from 'lucide-react';
+import { Search, Book, Filter, ChevronRight, Hash, CheckCircle2, AlertCircle, X, Volume2, VolumeX, Play, Pause, SkipForward, SkipBack, BookOpen, ExternalLink, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface KnowledgeLibraryProps {
@@ -562,13 +562,7 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                                 </button>
                             ))}
                         </div>
-                        <button
-                            onClick={() => setShowGlossary(true)}
-                            className="flex items-center gap-2 text-xs font-bold text-emerald-400 hover:text-white transition-colors group"
-                        >
-                            <HelpCircle className="w-4 h-4 group-hover:rotate-12 transition-transform" />
-                            Guide to Authenticity
-                        </button>
+
                     </div>
                 )}
 
