@@ -3,7 +3,7 @@ import { Search, Book, Filter, Hash, CheckCircle2, AlertCircle, X, Volume2, Volu
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface KnowledgeLibraryProps {
-    initialTab?: 'quran' | 'hadith';
+    initialTab?: 'quran' | 'hadith' | 'search';
     initialQuery?: string;
 }
 
@@ -12,9 +12,9 @@ const pad = (n: number, len: number) => String(n).padStart(len, '0');
 
 
 const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initialQuery }) => {
-    const [subTab, setSubTab] = useState<'quran' | 'hadith'>(initialTab || 'quran');
-    const [viewMode, setViewMode] = useState<'search' | 'browse'>(initialQuery ? 'search' : 'browse');
+    const [subTab, setSubTab] = useState<'quran' | 'hadith' | 'search'>(initialQuery ? 'search' : (initialTab || 'quran'));
     const [searchQuery, setSearchQuery] = useState(initialQuery || '');
+    const [searchSource, setSearchSource] = useState<'both' | 'quran' | 'hadith'>('both');
     const [results, setResults] = useState<any[]>([]);
     const [surahs, setSurahs] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -106,18 +106,15 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
         }
     };
 
+    // Browse a surah by number (Quran browse tab)
     const fetchQuran = async (query: string | number) => {
         setIsLoading(true);
-        setViewMode('search');
         stopAudio();
-
         // Detect "surah:ayah" format (e.g. "2:255") from chat deep-links
         const deepLinkMatch = typeof query === 'string' ? query.match(/^(\d+):(\d+)$/) : null;
         const surahOnlyQuery = deepLinkMatch ? parseInt(deepLinkMatch[1]) : query;
         const deepAyah = deepLinkMatch ? `${deepLinkMatch[1]}:${deepLinkMatch[2]}` : null;
-        if (deepAyah) {
-            setTargetAyah(deepAyah);
-        }
+        if (deepAyah) setTargetAyah(deepAyah);
         try {
             const isNumber = !isNaN(Number(surahOnlyQuery));
             if (isNumber) {
@@ -129,12 +126,10 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                 const englishAyahs = data.data[1].ayahs;
                 const surahName = data.data[0].englishName;
                 const surahNumber = data.data[0].number;
-
                 setResults(arabicAyahs.map((a: any, idx: number) => {
                     let arabicText = a.text;
-                    if (a.numberInSurah === 1 && surahNumber !== 1) {
+                    if (a.numberInSurah === 1 && surahNumber !== 1)
                         arabicText = arabicText.replace(/^بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ[ \u200f]*/u, '');
-                    }
                     return {
                         text: englishAyahs[idx].text,
                         arabic: arabicText,
@@ -144,28 +139,99 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                         ayahNumber: a.numberInSurah,
                     };
                 }));
-
-                // No prefetch — WBW is loaded on demand per ayah
             } else {
                 setCurrentSurah(null);
-                const res = await fetch(`https://api.alquran.cloud/v1/search/${query}/all/en.asad`);
-                const data = await res.json();
-
-                if (data.data && data.data.matches) {
-                    const searchResults = data.data.matches.slice(0, 50);
-                    setResults(searchResults.map((r: any) => ({
-                        text: r.text,
-                        reference: `${r.surah.englishName} ${r.surah.number}:${r.numberInSurah}`,
-                        type: 'Quran',
-                        surahNumber: r.surah.number,
-                        ayahNumber: r.numberInSurah,
-                    })));
-                } else {
-                    setResults([]);
-                }
+                setResults([]);
             }
         } catch (err) {
             console.error(err);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // ── Unified keyword search across Quran + Hadith (Search tab) ──
+    const fetchSearchBoth = async (query: string, source: 'both' | 'quran' | 'hadith') => {
+        if (!query || query.length < 2) return;
+        setIsLoading(true);
+        setResults([]);
+        try {
+            const tasks: Promise<any[]>[] = [];
+
+            // Quran search
+            if (source === 'both' || source === 'quran') {
+                tasks.push(
+                    fetch(`https://api.alquran.cloud/v1/search/${encodeURIComponent(query)}/all/en.asad`)
+                        .then(r => r.ok ? r.json() : null)
+                        .then(data => {
+                            if (!data?.data?.matches) return [];
+                            return data.data.matches.slice(0, 25).map((r: any) => ({
+                                text: r.text,
+                                reference: `${r.surah.englishName} ${r.surah.number}:${r.numberInSurah}`,
+                                type: 'Quran',
+                                surahNumber: r.surah.number,
+                                ayahNumber: r.numberInSurah,
+                            }));
+                        })
+                        .catch(() => [])
+                );
+            }
+
+            // Hadith keyword search (across all collections if 'both', single if 'hadith')
+            if (source === 'both' || source === 'hadith') {
+                const collsToSearch = source === 'both'
+                    ? collections.slice(0, 3) // Bukhari, Muslim, Abu Dawud for speed
+                    : collections;
+                tasks.push(
+                    Promise.allSettled(
+                        collsToSearch.map(c =>
+                            fetch(`https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/${c.id}.json`)
+                                .then(r => r.ok ? r.json() : null)
+                                .catch(() => null)
+                                .then(data => {
+                                    if (!data?.hadiths) return [];
+                                    const terms = query.toLowerCase().split(' ').filter((t: string) => t.length > 2);
+                                    return data.hadiths
+                                        .filter((h: any) => h.text?.trim())
+                                        .map((h: any) => {
+                                            const lower = h.text.toLowerCase();
+                                            let score = lower.includes(query.toLowerCase()) ? 10 : 0;
+                                            terms.forEach((t: string) => { if (lower.includes(t)) score += (lower.split(t).length - 1); });
+                                            return { ...h, score, _collId: c.id, _collName: c.name };
+                                        })
+                                        .filter((h: any) => h.score > 0)
+                                        .slice(0, 8)
+                                        .map((h: any) => {
+                                            let hGrades = h.grades || [];
+                                            if (!hGrades.length && (c.id === 'eng-bukhari' || c.id === 'eng-muslim'))
+                                                hGrades = [{ grade: 'Sahih', name: 'Al-Bukhari & Muslim' }];
+                                            return {
+                                                text: h.text,
+                                                reference: `${h._collName} — Hadith ${h.hadithnumber}`,
+                                                type: 'Hadith',
+                                                grades: hGrades,
+                                                hadithNumber: h.hadithnumber,
+                                                collectionId: h._collId,
+                                                score: h.score,
+                                            };
+                                        });
+                                })
+                        )
+                    ).then(results => {
+                        const all: any[] = [];
+                        results.forEach(r => { if (r.status === 'fulfilled') all.push(...r.value); });
+                        all.sort((a, b) => (b.score || 0) - (a.score || 0));
+                        return all.slice(0, 25);
+                    })
+                );
+            }
+
+            const resolved = await Promise.all(tasks);
+            const combined = resolved.flat();
+            setResults(combined);
+        } catch (err) {
+            console.error(err);
+            setResults([]);
         } finally {
             setIsLoading(false);
         }
@@ -270,7 +336,6 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
 
     const fetchHadith = async (query: string = '') => {
         setIsLoading(true);
-        setViewMode('search');
         try {
             // Detect deep-link format "collectionId:hadithNumber" (e.g. "eng-muslim:7139")
             const deepLinkMatch = query.match(/^(eng-[\w]+):(\d+)$/);
@@ -426,50 +491,48 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
     };
 
     useEffect(() => {
-        if (viewMode === 'browse' && subTab === 'quran') {
+        if (subTab === 'quran') {
             fetchSurahList();
             fetchQuran(1);
         }
-        if (subTab === 'hadith' && !searchQuery && !initialQuery) {
-            // Load books for new collection, then show first page
+        if (subTab === 'hadith') {
             setResults([]);
             setBooks([]);
             setSelectedBook(null);
             loadBooks(selectedCollection);
         }
+        if (subTab === 'search') {
+            setResults([]);
+        }
     }, [subTab]);
 
     useEffect(() => {
-        if (searchQuery.length > 2 && !initialQuery) {
-            const delayDebounceFn = setTimeout(() => {
-                if (subTab === 'quran') fetchQuran(searchQuery);
-                else fetchHadith(searchQuery);
-            }, 600);
-            return () => clearTimeout(delayDebounceFn);
+        if (subTab !== 'search') return;
+        if (searchQuery.length > 2) {
+            const timer = setTimeout(() => fetchSearchBoth(searchQuery, searchSource), 700);
+            return () => clearTimeout(timer);
         }
-    }, [searchQuery]);
+    }, [searchQuery, searchSource]);
 
     useEffect(() => {
         if (initialQuery) {
             if (initialTab === 'quran') {
                 setSubTab('quran');
-                setSearchQuery(initialQuery);
                 fetchQuran(initialQuery);
             } else if (initialTab === 'hadith') {
-                setSubTab('hadith');
-                // For deep-link format "eng-collection:number", pre-switch the collection
+                // For deep-link format "eng-collection:number"
                 const deepLink = initialQuery.match(/^(eng-[\w]+):(\d+)$/);
                 if (deepLink) {
                     const [, collId] = deepLink;
                     setSelectedCollection(collId);
-                    // Set a readable label for the search box
-                    const colName = collections.find(c => c.id === collId)?.name || collId;
-                    setSearchQuery(`${colName} – Hadith ${deepLink[2]}`);
+                    setSubTab('hadith');
+                    setTimeout(() => fetchHadith(initialQuery), 50);
                 } else {
+                    // keyword — go to Search tab
+                    setSubTab('search');
                     setSearchQuery(initialQuery);
+                    setTimeout(() => fetchSearchBoth(initialQuery, 'hadith'), 50);
                 }
-                // Use setTimeout to let selectedCollection state propagate before fetch
-                setTimeout(() => fetchHadith(initialQuery), 50);
             }
         }
     }, [initialQuery, initialTab]);
@@ -665,39 +728,74 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
             <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8 mb-12">
                 <div>
                     <h2 className="text-5xl font-black mb-3 gold-text tracking-tighter">Knowledge Library</h2>
-                    <p className="text-slate-400 text-lg font-medium">Search thousands of records by keyword or browsing by collection.</p>
+                    <p className="text-slate-400 text-lg font-medium">Browse the Quran & Hadith, or search across both at once.</p>
                 </div>
 
-                <div className="flex gap-4 p-1.5 bg-slate-900/50 rounded-2xl border border-white/5 backdrop-blur-xl shrink-0">
+                <div className="flex gap-2 p-1.5 bg-slate-900/50 rounded-2xl border border-white/5 backdrop-blur-xl shrink-0">
                     <button
-                        onClick={() => { setSubTab('quran'); setViewMode('browse'); setResults([]); setSearchQuery(''); stopAudio(); }}
-                        className={`px-8 py-3 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${subTab === 'quran' ? 'bg-amber-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+                        onClick={() => { setSubTab('quran'); setResults([]); stopAudio(); }}
+                        className={`px-6 py-3 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${subTab === 'quran' ? 'bg-amber-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
                     >
                         <Book className="w-4 h-4" />
                         Holy Quran
                     </button>
                     <button
-                        onClick={() => { setSubTab('hadith'); setViewMode('search'); setResults([]); setSearchQuery(''); stopAudio(); }}
-                        className={`px-8 py-3 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${subTab === 'hadith' ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+                        onClick={() => { setSubTab('hadith'); setResults([]); stopAudio(); }}
+                        className={`px-6 py-3 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${subTab === 'hadith' ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
                     >
                         <Hash className="w-4 h-4" />
                         Hadith Corpus
                     </button>
+                    <button
+                        onClick={() => { setSubTab('search'); setResults([]); stopAudio(); }}
+                        className={`px-6 py-3 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${subTab === 'search' ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/30' : 'text-slate-400 hover:text-white'}`}
+                    >
+                        <Search className="w-4 h-4" />
+                        Search
+                    </button>
                 </div>
             </div>
 
-            {/* Filters Row */}
-            <div className="flex flex-col gap-6 mb-12">
-                <div className="relative group">
-                    <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-emerald-400 transition-colors" />
-                    <input
-                        type="text"
-                        placeholder={subTab === 'quran' ? "Search for words like 'patience', 'faith', 'prayer'..." : "Search for words like 'intention', 'charity', 'manners'..."}
-                        value={searchQuery}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
-                        className="w-full bg-black/40 border border-white/10 px-16 py-6 rounded-[2rem] text-xl focus:outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all font-medium"
-                    />
+            {/* Search Tab — unified search UI */}
+            {subTab === 'search' && (
+                <div className="mb-10 space-y-5">
+                    <div className="relative group">
+                        <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-purple-400 transition-colors" />
+                        <input
+                            type="text"
+                            autoFocus
+                            placeholder="Search across all Quran & Hadith — e.g. 'patience', 'charity', 'prayer'..."
+                            value={searchQuery}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
+                            className="w-full bg-black/40 border border-white/10 focus:border-purple-500/40 px-16 py-6 rounded-[2rem] text-xl focus:outline-none focus:ring-4 focus:ring-purple-500/10 transition-all font-medium"
+                        />
+                        {searchQuery && (
+                            <button onClick={() => { setSearchQuery(''); setResults([]); }} className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors">
+                                <X className="w-5 h-5" />
+                            </button>
+                        )}
+                    </div>
+                    {/* Source filter */}
+                    <div className="flex flex-wrap gap-2 items-center">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 mr-1">Search in:</span>
+                        {(['both', 'quran', 'hadith'] as const).map(src => (
+                            <button
+                                key={src}
+                                onClick={() => setSearchSource(src)}
+                                className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${searchSource === src
+                                    ? 'bg-purple-600 border-purple-400 text-white shadow-lg'
+                                    : 'bg-slate-900 border-white/5 text-slate-400 hover:border-purple-500/30'
+                                    }`}
+                            >
+                                {src === 'both' ? 'Quran + Hadith' : src === 'quran' ? 'Quran only' : 'Hadith only'}
+                            </button>
+                        ))}
+                    </div>
                 </div>
+            )}
+
+            {/* Hadith browse controls — only on hadith tab */}
+            <div className="flex flex-col gap-6 mb-12">
 
                 {subTab === 'hadith' && (
                     <div className="flex flex-wrap gap-3 items-center bg-white/5 p-4 rounded-3xl border border-white/5">
@@ -781,7 +879,6 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                                                 setJumpToNum('');
                                                 setResults([]);
                                                 setBooks([]);
-                                                setViewMode('browse');
                                                 loadBooks(c.id);
                                             }}
                                             className={`w-full text-left px-4 py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-between group ${selectedCollection === c.id ? 'bg-emerald-500 text-white shadow-lg' : 'text-slate-400 hover:bg-white/5'
