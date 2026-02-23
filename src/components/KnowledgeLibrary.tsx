@@ -179,9 +179,7 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
 
             // Hadith keyword search (across all collections if 'both', single if 'hadith')
             if (source === 'both' || source === 'hadith') {
-                const collsToSearch = source === 'both'
-                    ? collections.slice(0, 3) // Bukhari, Muslim, Abu Dawud for speed
-                    : collections;
+                const collsToSearch = collections; // always search all 9 collections
                 tasks.push(
                     Promise.allSettled(
                         collsToSearch.map(c =>
