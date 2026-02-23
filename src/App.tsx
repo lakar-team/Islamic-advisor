@@ -17,25 +17,26 @@ function App() {
           <span className="text-2xl font-bold tracking-tight gold-text">Online Sheikh</span>
         </div>
 
-        <div className="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-400">
+        <div className="flex items-center gap-4 md:gap-8 text-xs md:text-sm font-semibold text-slate-400">
           <button
             onClick={() => setActiveTab('chat')}
-            className={`flex items-center gap-2 transition-colors ${activeTab === 'chat' ? 'text-amber-500 font-bold' : 'hover:text-amber-500'}`}
+            className={`flex items-center gap-2 transition-all p-2 md:p-0 ${activeTab === 'chat' ? 'text-amber-500 font-bold bg-amber-500/10 rounded-xl md:bg-transparent' : 'hover:text-amber-500'}`}
           >
             <MessageSquare className="w-4 h-4" />
-            Advice & Guidance
+            <span className="hidden sm:inline">Advice & Guidance</span>
+            <span className="sm:hidden">Advice</span>
           </button>
           <button
             onClick={() => setActiveTab('library')}
-            className={`flex items-center gap-2 transition-colors ${activeTab === 'library' ? 'text-amber-500 font-bold' : 'hover:text-amber-500'}`}
+            className={`flex items-center gap-2 transition-all p-2 md:p-0 ${activeTab === 'library' ? 'text-amber-500 font-bold bg-amber-500/10 rounded-xl md:bg-transparent' : 'hover:text-amber-500'}`}
           >
             <Library className="w-4 h-4" />
-            Knowledge Library
+            <span className="hidden sm:inline">Knowledge Library</span>
+            <span className="sm:hidden">Library</span>
           </button>
-          <a href="#" className="hover:text-amber-500 transition-colors">Resources</a>
         </div>
 
-        <button className="bg-slate-800 hover:bg-slate-700 text-white px-5 py-2.5 rounded-xl border border-slate-700 transition-all text-sm font-bold flex items-center gap-2 shadow-xl">
+        <button className="hidden sm:flex bg-slate-800 hover:bg-slate-700 text-white px-5 py-2.5 rounded-xl border border-slate-700 transition-all text-sm font-bold items-center gap-2 shadow-xl">
           <Github className="w-4 h-4" />
           Open Source
         </button>
