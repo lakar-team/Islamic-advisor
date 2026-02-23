@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import type { Message } from '../types';
 import { checkRateLimit, incrementUsage } from '../lib/rate-limit';
 
+const CHAT_STORAGE_KEY = 'sheikh_chat_history';
+
 interface SheikhChatProps {
     onOpenLibrary: (tab: 'quran' | 'hadith', query: string) => void;
 }
@@ -12,18 +14,14 @@ interface SheikhChatProps {
 const renderMarkdown = (text: string) => {
     const lines = text.split('\n');
     return lines.map((line, lineIdx) => {
-        // Render a line with inline bold/italic
         const renderInline = (str: string): React.ReactNode[] => {
             const parts: React.ReactNode[] = [];
-            // Split on **bold** and *italic*
             const regex = /(\*\*[^*]+\*\*|\*[^*]+\*)/g;
             let lastIndex = 0;
             let match;
             let i = 0;
             while ((match = regex.exec(str)) !== null) {
-                if (match.index > lastIndex) {
-                    parts.push(str.slice(lastIndex, match.index));
-                }
+                if (match.index > lastIndex) parts.push(str.slice(lastIndex, match.index));
                 const matched = match[0];
                 if (matched.startsWith('**')) {
                     parts.push(<strong key={i++} className="font-black text-white">{matched.slice(2, -2)}</strong>);
@@ -36,7 +34,6 @@ const renderMarkdown = (text: string) => {
             return parts;
         };
 
-        // Numbered list: "1. text"
         const numberedMatch = line.match(/^(\d+)\.\s+(.*)/);
         if (numberedMatch) {
             return (
@@ -49,7 +46,6 @@ const renderMarkdown = (text: string) => {
             );
         }
 
-        // Bullet: "* text" or "- text"
         const bulletMatch = line.match(/^[*-]\s+(.*)/);
         if (bulletMatch) {
             return (
@@ -60,12 +56,8 @@ const renderMarkdown = (text: string) => {
             );
         }
 
-        // Blank line = spacing
-        if (line.trim() === '') {
-            return <div key={lineIdx} className="h-3" />;
-        }
+        if (line.trim() === '') return <div key={lineIdx} className="h-3" />;
 
-        // Regular paragraph line
         return (
             <p key={lineIdx} className="mb-2 text-slate-200 leading-relaxed">
                 {renderInline(line)}
@@ -74,16 +66,44 @@ const renderMarkdown = (text: string) => {
     });
 };
 
+// Convert a reference string like "Al-Imran 3:185" into a searchable query
+const resolveLibraryQuery = (ref: { type: 'quran' | 'hadith'; source: string }): string => {
+    if (ref.type === 'quran') {
+        // Extract surah number from patterns like "Al-Baqarah 2:255" or "2:30"
+        const surahNumMatch = ref.source.match(/\b(\d+):\d+/);
+        if (surahNumMatch) return surahNumMatch[1]; // Return surah number to load the full surah
+        return ref.source;
+    }
+    // For hadith, extract just the topic word (e.g. "Bukhari - Hadith 1234" → "1234" or just the source)
+    const hadithNumMatch = ref.source.match(/Hadith\s+(\d+)/i);
+    if (hadithNumMatch) return hadithNumMatch[1];
+    return ref.source;
+};
+
+const loadMessages = (): Message[] => {
+    try {
+        const stored = localStorage.getItem(CHAT_STORAGE_KEY);
+        if (stored) return JSON.parse(stored);
+    } catch { /* ignore */ }
+    return [{
+        id: '1',
+        role: 'assistant',
+        content: 'Assalamu Alaikum. I am your Online Sheikh AI. How can I assist you in your deen today?',
+        timestamp: Date.now(),
+    }];
+};
+
+const saveMessages = (messages: Message[]) => {
+    try {
+        // Keep last 50 messages to avoid bloating localStorage
+        const toSave = messages.slice(-50);
+        localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(toSave));
+    } catch { /* ignore */ }
+};
+
 const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
     const [input, setInput] = useState('');
-    const [messages, setMessages] = useState<Message[]>([
-        {
-            id: '1',
-            role: 'assistant',
-            content: 'Assalamu Alaikum. I am your Online Sheikh AI. How can I assist you in your deen today?',
-            timestamp: Date.now(),
-        }
-    ]);
+    const [messages, setMessages] = useState<Message[]>(loadMessages);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -92,10 +112,10 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
         if (scrollRef.current) {
             scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
         }
+        saveMessages(messages);
     }, [messages]);
 
     const parseCitations = (content: string) => {
-        // Try the structured JSON citation block first
         const regex = /\[\[CITATIONS:\s*(\[[\s\S]*?\])\s*\]\]/;
         const match = content.match(regex);
         let cleanedContent = content;
@@ -106,17 +126,15 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
                 references = JSON.parse(match[1]);
                 cleanedContent = content.replace(regex, '').trim();
             } catch (e) {
-                console.error("Failed to parse citations JSON:", e);
-                // Still strip the broken block to keep text clean
                 cleanedContent = content.replace(regex, '').trim();
             }
         }
 
-        // Fallback: if no structured references found, try to extract inline Quran citations
+        // Fallback: scan text for inline references
         if (references.length === 0) {
-            // Match patterns like "(Surah Al-Baqarah, 2:255)" or "Surah Al-Imran, 3:102"
-            const quranPattern = /\(?(?:Surah\s+)?([\w\s-]+),?\s*(\d+):(\d+)\)?/g;
             const seen = new Set<string>();
+
+            const quranPattern = /\(?(?:Surah\s+)?([\w\s-]+),?\s*(\d+):(\d+)\)?/g;
             let q;
             while ((q = quranPattern.exec(cleanedContent)) !== null) {
                 const source = `${q[1].trim()} ${q[2]}:${q[3]}`;
@@ -126,11 +144,10 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
                 }
             }
 
-            // Match Hadith patterns like "Bukhari - 1234" or "Sahih Muslim"
-            const hadithPattern = /\b(?:Sahih\s+)?(Bukhari|Muslim|Tirmidhi|Abu\s*Dawud|Nasai|Ibn\s*Majah)(?:\s*-\s*(\d+))?\b/gi;
+            const hadithPattern = /\b(?:Sahih\s+)?(Bukhari|Muslim|Tirmidhi|Abu\s*Dawud|Nasai|Ibn\s*Majah)(?:\s*[-–]\s*(?:Hadith\s*)?(\d+))?\b/gi;
             let h;
             while ((h = hadithPattern.exec(cleanedContent)) !== null) {
-                const source = h[2] ? `${h[1]} - Hadith ${h[2]}` : h[1];
+                const source = h[2] ? `${h[1]} – Hadith ${h[2]}` : h[1];
                 if (!seen.has(source)) {
                     seen.add(source);
                     references.push({ type: 'hadith', text: '', source });
@@ -175,7 +192,6 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
 
             const data = await response.json();
             const aiRawContent = data.choices[0].message.content;
-
             const { cleanedContent, references } = parseCitations(aiRawContent);
 
             const assistantMsg: Message = {
@@ -187,18 +203,28 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
             };
 
             setMessages((prev: Message[]) => [...prev, assistantMsg]);
-            setIsLoading(false);
             incrementUsage();
         } catch (err) {
             setError("The connection to the Sheikh was interrupted. Please try again.");
+        } finally {
             setIsLoading(false);
         }
+    };
+
+    const clearHistory = () => {
+        const initial: Message = {
+            id: 'reset',
+            role: 'assistant',
+            content: 'Assalamu Alaikum. Starting a new session. How can I assist you today?',
+            timestamp: Date.now(),
+        };
+        setMessages([initial]);
     };
 
     return (
         <div className="chat-container glass rounded-[3rem] overflow-hidden flex flex-col h-[750px] max-w-4xl mx-auto my-8 shadow-2xl border border-emerald-900/30">
             {/* Header */}
-            <div className="p-8 border-b border-emerald-900/20 bg-emerald-950/20 flex items-center justify-between">
+            <div className="p-6 border-b border-emerald-900/20 bg-emerald-950/20 flex items-center justify-between">
                 <div className="flex items-center gap-4">
                     <div className="bg-amber-600 p-3 rounded-2xl shadow-lg shadow-amber-900/40 rotate-3">
                         <Scroll className="text-white w-6 h-6" />
@@ -211,6 +237,12 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
                         </span>
                     </div>
                 </div>
+                <button
+                    onClick={clearHistory}
+                    className="text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-slate-400 transition-colors px-4 py-2 rounded-xl hover:bg-white/5 border border-transparent hover:border-white/5"
+                >
+                    New Session
+                </button>
             </div>
 
             {/* Messages */}
@@ -237,7 +269,6 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
                                     </span>
                                 </div>
 
-                                {/* Rendered content */}
                                 <div className="text-[1.05rem] leading-relaxed select-text font-medium">
                                     {m.role === 'assistant' ? renderMarkdown(m.content) : m.content}
                                 </div>
@@ -253,7 +284,7 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
                                             {m.references.map((ref, idx) => (
                                                 <button
                                                     key={idx}
-                                                    onClick={() => onOpenLibrary(ref.type, ref.source)}
+                                                    onClick={() => onOpenLibrary(ref.type, resolveLibraryQuery(ref))}
                                                     className="flex items-center justify-between gap-4 p-3 rounded-2xl bg-white/5 hover:bg-emerald-500/10 border border-white/5 hover:border-emerald-500/30 transition-all group text-left"
                                                 >
                                                     <div className="flex items-center gap-3 min-w-0">
@@ -287,7 +318,7 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
                 )}
 
                 {error && (
-                    <div className="p-6 bg-red-900/20 border border-red-500/30 rounded-3xl text-red-200 text-sm flex items-center gap-4 animate-shake">
+                    <div className="p-6 bg-red-900/20 border border-red-500/30 rounded-3xl text-red-200 text-sm flex items-center gap-4">
                         <ShieldAlert className="w-6 h-6 flex-shrink-0 text-red-500" />
                         <p className="font-bold">{error}</p>
                     </div>
@@ -295,7 +326,7 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
             </div>
 
             {/* Input */}
-            <div className="p-8 bg-slate-900/80 border-t border-emerald-900/20 backdrop-blur-md">
+            <div className="p-6 bg-slate-900/80 border-t border-emerald-900/20 backdrop-blur-md">
                 <div className="relative flex items-center group">
                     <input
                         type="text"
@@ -303,17 +334,17 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
                         onChange={(e) => setInput(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && handleSend()}
                         placeholder="Seeking guidance? Type your question here..."
-                        className="w-full bg-slate-800/80 border border-slate-700 text-white px-8 py-5 rounded-[2rem] focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-medium text-lg placeholder:text-slate-600 shadow-inner group-hover:border-slate-600 focus:group-hover:border-emerald-500"
+                        className="w-full bg-slate-800/80 border border-slate-700 text-white px-8 py-5 rounded-[2rem] focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-medium text-lg placeholder:text-slate-600 shadow-inner"
                     />
                     <button
                         onClick={handleSend}
                         disabled={isLoading}
-                        className="absolute right-3 p-4 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-2xl transition-all shadow-xl shadow-emerald-900/20 active:scale-95 group-hover:scale-105"
+                        className="absolute right-3 p-4 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-2xl transition-all shadow-xl shadow-emerald-900/20 active:scale-95"
                     >
                         <Send className="w-6 h-6" />
                     </button>
                 </div>
-                <p className="mt-4 text-[10px] text-center text-slate-500 uppercase tracking-[0.2em] font-black opacity-60">
+                <p className="mt-3 text-[10px] text-center text-slate-500 uppercase tracking-[0.2em] font-black opacity-60">
                     Prophetic Guidance • Powered by Authentic Sources
                 </p>
             </div>
