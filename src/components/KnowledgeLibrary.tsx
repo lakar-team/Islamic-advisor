@@ -1,11 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Book, Filter, ChevronRight, Hash, CheckCircle2, AlertCircle, HelpCircle, X } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Search, Book, Filter, ChevronRight, Hash, CheckCircle2, AlertCircle, HelpCircle, X, Volume2, VolumeX, Play, Pause, SkipForward, SkipBack } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface KnowledgeLibraryProps {
     initialTab?: 'quran' | 'hadith';
     initialQuery?: string;
 }
+
+// Format surah/ayah numbers with leading zeros for audio CDN
+const pad = (n: number, len: number) => String(n).padStart(len, '0');
+
+// Word-by-word Quran API (fawazahmed0 CDN)
+const getWordByWordUrl = (surahNum: number) =>
+    `https://cdn.jsdelivr.net/gh/fawazahmed0/quran-json@1/data/editions/quran-wordbyword/${surahNum}.json`;
 
 const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initialQuery }) => {
     const [subTab, setSubTab] = useState<'quran' | 'hadith'>(initialTab || 'quran');
@@ -18,13 +25,22 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
     const [hadithPage, setHadithPage] = useState(0);
     const [gradeFilter, setGradeFilter] = useState<string | null>('Sahih');
     const [showGlossary, setShowGlossary] = useState(false);
+    const [currentSurah, setCurrentSurah] = useState<number | null>(null);
+    const [wordByWord, setWordByWord] = useState<Record<number, any[]>>({}); // ayah number → words[]
+    const [wbwLoading, setWbwLoading] = useState(false);
+    const [showWbw, setShowWbw] = useState(false);
+
+    // Audio state
+    const audioRef = useRef<HTMLAudioElement | null>(null);
+    const [playingAyah, setPlayingAyah] = useState<string | null>(null); // "surah:ayah"
+    const [audioLoading, setAudioLoading] = useState(false);
 
     const collections = [
         { id: 'eng-bukhari', name: 'Sahih Bukhari' },
         { id: 'eng-muslim', name: 'Sahih Muslim' },
         { id: 'eng-abudawud', name: 'Sunan Abu Dawud' },
         { id: 'eng-tirmidhi', name: 'Jami at-Tirmidhi' },
-        { id: 'eng-nasai', name: 'Sunan an-Nasa\'i' },
+        { id: 'eng-nasai', name: "Sunan an-Nasa'i" },
         { id: 'eng-ibnmajah', name: 'Sunan Ibn Majah' },
     ];
 
@@ -48,25 +64,55 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
         }
     };
 
+    const fetchWordByWord = async (surahNum: number) => {
+        if (wordByWord[surahNum]) return; // cached
+        setWbwLoading(true);
+        try {
+            const res = await fetch(getWordByWordUrl(surahNum));
+            if (!res.ok) return;
+            const data = await res.json();
+            // data is array of ayahs, each ayah has array of words with {text, translation}
+            const byAyah: Record<number, any[]> = {};
+            (data || []).forEach((ayah: any) => {
+                byAyah[ayah.verse] = ayah.words || [];
+            });
+            setWordByWord(prev => ({ ...prev, [surahNum]: data }));
+        } catch (err) {
+            console.error('WBW error:', err);
+        } finally {
+            setWbwLoading(false);
+        }
+    };
+
     const fetchQuran = async (query: string | number) => {
         setIsLoading(true);
         setViewMode('search');
+        stopAudio();
         try {
             const isNumber = !isNaN(Number(query));
             if (isNumber) {
-                const res = await fetch(`https://api.alquran.cloud/v1/surah/${query}/editions/quran-uthmani,en.asad`);
+                const num = Number(query);
+                setCurrentSurah(num);
+                const res = await fetch(`https://api.alquran.cloud/v1/surah/${num}/editions/quran-uthmani,en.asad`);
                 const data = await res.json();
                 const arabicAyahs = data.data[0].ayahs;
                 const englishAyahs = data.data[1].ayahs;
                 const surahName = data.data[0].englishName;
+                const surahNumber = data.data[0].number;
 
                 setResults(arabicAyahs.map((a: any, idx: number) => ({
                     text: englishAyahs[idx].text,
                     arabic: a.text,
                     reference: `${surahName} ${query}:${a.numberInSurah}`,
-                    type: 'Quran'
+                    type: 'Quran',
+                    surahNumber,
+                    ayahNumber: a.numberInSurah,
                 })));
+
+                // Prefetch word-by-word in background
+                fetchWordByWord(num);
             } else {
+                setCurrentSurah(null);
                 const res = await fetch(`https://api.alquran.cloud/v1/search/${query}/all/en.asad`);
                 const data = await res.json();
 
@@ -75,7 +121,9 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                     setResults(searchResults.map((r: any) => ({
                         text: r.text,
                         reference: `${r.surah.englishName} ${r.surah.number}:${r.numberInSurah}`,
-                        type: 'Quran'
+                        type: 'Quran',
+                        surahNumber: r.surah.number,
+                        ayahNumber: r.numberInSurah,
                     })));
                 } else {
                     setResults([]);
@@ -101,13 +149,13 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
 
             let filtered = hadithList;
             if (query) {
-                const searchTerms = query.toLowerCase().split(' ').filter(t => t.length > 2);
+                const searchTerms = query.toLowerCase().split(' ').filter((t: string) => t.length > 2);
                 filtered = filtered.map((h: any) => {
                     let score = 0;
                     const hText = h.text.toLowerCase();
                     const hRef = h.hadithnumber ? h.hadithnumber.toString() : '';
                     if (hText.includes(query.toLowerCase()) || hRef === query) score += 10;
-                    searchTerms.forEach(term => {
+                    searchTerms.forEach((term: string) => {
                         if (hText.includes(term)) score += (hText.split(term).length - 1);
                     });
                     return { ...h, score };
@@ -149,10 +197,58 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
         }
     };
 
+    // Audio: Mishary Rashid al-Afasy recitation via everyayah.com
+    const playAudio = (surahNum: number, ayahNum: number) => {
+        const key = `${surahNum}:${ayahNum}`;
+        if (playingAyah === key) {
+            stopAudio();
+            return;
+        }
+        stopAudio();
+        const url = `https://everyayah.com/data/Alafasy_128kbps/${pad(surahNum, 3)}${pad(ayahNum, 3)}.mp3`;
+        const audio = new Audio(url);
+        audioRef.current = audio;
+        setAudioLoading(true);
+        setPlayingAyah(key);
+        audio.oncanplay = () => setAudioLoading(false);
+        audio.onended = () => {
+            setPlayingAyah(null);
+            audioRef.current = null;
+        };
+        audio.onerror = () => {
+            setPlayingAyah(null);
+            setAudioLoading(false);
+            audioRef.current = null;
+        };
+        audio.play().catch(() => setPlayingAyah(null));
+    };
+
+    const stopAudio = () => {
+        if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current = null;
+        }
+        setPlayingAyah(null);
+        setAudioLoading(false);
+    };
+
+    // Play all ayahs in sequence (play surah)
+    const playNextAyah = (surahNum: number, fromAyah: number, total: number) => {
+        if (fromAyah > total) { setPlayingAyah(null); return; }
+        const key = `${surahNum}:${fromAyah}`;
+        const url = `https://everyayah.com/data/Alafasy_128kbps/${pad(surahNum, 3)}${pad(fromAyah, 3)}.mp3`;
+        const audio = new Audio(url);
+        audioRef.current = audio;
+        setPlayingAyah(key);
+        audio.onended = () => playNextAyah(surahNum, fromAyah + 1, total);
+        audio.onerror = () => setPlayingAyah(null);
+        audio.play().catch(() => setPlayingAyah(null));
+    };
+
     useEffect(() => {
         if (viewMode === 'browse' && subTab === 'quran') {
             fetchSurahList();
-            fetchQuran(1); // Load Al-Fatiha by default
+            fetchQuran(1);
         }
         if (subTab === 'hadith' && !searchQuery) {
             fetchHadith('', hadithPage);
@@ -169,7 +265,6 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
         }
     }, [searchQuery]);
 
-    // Handle initial cross-navigation
     useEffect(() => {
         if (initialQuery) {
             setSearchQuery(initialQuery);
@@ -180,6 +275,17 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
             }
         }
     }, [initialQuery, initialTab]);
+
+    // Get WBW for a specific ayah
+    const getAyahWords = (surahNum: number, ayahNum: number): any[] => {
+        const surahData = wordByWord[surahNum];
+        if (!surahData) return [];
+        const ayah = surahData.find((a: any) => a.verse === ayahNum);
+        return ayah?.words || [];
+    };
+
+    const quranResults = results.filter(r => r.type === 'Quran');
+    const isPlayingSurah = currentSurah && playingAyah?.startsWith(`${currentSurah}:`);
 
     return (
         <div className="max-w-7xl mx-auto py-12 px-6 animate-fade-in relative">
@@ -198,7 +304,7 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             exit={{ scale: 0.9, opacity: 0, y: 20 }}
                             className="glass w-full max-w-2xl rounded-[3rem] p-8 md:p-12 relative shadow-2xl bg-slate-900 border border-emerald-500/30 cursor-default"
-                            onClick={(e) => e.stopPropagation()}
+                            onClick={(e: React.MouseEvent) => e.stopPropagation()}
                         >
                             <button
                                 onClick={() => setShowGlossary(false)}
@@ -244,14 +350,14 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
 
                 <div className="flex gap-4 p-1.5 bg-slate-900/50 rounded-2xl border border-white/5 backdrop-blur-xl shrink-0">
                     <button
-                        onClick={() => { setSubTab('quran'); setViewMode('browse'); setResults([]); setSearchQuery(''); }}
+                        onClick={() => { setSubTab('quran'); setViewMode('browse'); setResults([]); setSearchQuery(''); stopAudio(); }}
                         className={`px-8 py-3 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${subTab === 'quran' ? 'bg-amber-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
                     >
                         <Book className="w-4 h-4" />
                         Holy Quran
                     </button>
                     <button
-                        onClick={() => { setSubTab('hadith'); setViewMode('search'); setResults([]); setSearchQuery(''); setHadithPage(0); }}
+                        onClick={() => { setSubTab('hadith'); setViewMode('search'); setResults([]); setSearchQuery(''); setHadithPage(0); stopAudio(); }}
                         className={`px-8 py-3 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${subTab === 'hadith' ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
                     >
                         <Hash className="w-4 h-4" />
@@ -268,7 +374,7 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                         type="text"
                         placeholder={subTab === 'quran' ? "Search for words like 'patience', 'faith', 'prayer'..." : "Search for words like 'intention', 'charity', 'manners'..."}
                         value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
                         className="w-full bg-black/40 border border-white/10 px-16 py-6 rounded-[2rem] text-xl focus:outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all font-medium"
                     />
                 </div>
@@ -289,7 +395,6 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                                 </button>
                             ))}
                         </div>
-
                         <button
                             onClick={() => setShowGlossary(true)}
                             className="flex items-center gap-2 text-xs font-bold text-emerald-400 hover:text-white transition-colors group"
@@ -297,6 +402,40 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                             <HelpCircle className="w-4 h-4 group-hover:rotate-12 transition-transform" />
                             Guide to Authenticity
                         </button>
+                    </div>
+                )}
+
+                {/* Quran toolbar: word-by-word toggle + play surah button */}
+                {subTab === 'quran' && results.length > 0 && currentSurah && (
+                    <div className="flex flex-wrap gap-3 items-center justify-between bg-amber-500/5 p-4 rounded-3xl border border-amber-500/10">
+                        <div className="flex items-center gap-3">
+                            <span className="text-xs font-black uppercase tracking-[0.2em] text-amber-500/60">Surah Tools:</span>
+                            <button
+                                onClick={() => {
+                                    setShowWbw(!showWbw);
+                                    if (!showWbw && currentSurah) fetchWordByWord(currentSurah);
+                                }}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${showWbw ? 'bg-amber-500 border-amber-400 text-white' : 'bg-slate-900 border-white/10 text-slate-400 hover:border-amber-500/30'}`}
+                            >
+                                Word-by-Word Translation
+                            </button>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Recitation (Alafasy):</span>
+                            <button
+                                onClick={() => {
+                                    if (isPlayingSurah) {
+                                        stopAudio();
+                                    } else {
+                                        playNextAyah(currentSurah, 1, results.length);
+                                    }
+                                }}
+                                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${isPlayingSurah ? 'bg-red-600/20 border border-red-500/30 text-red-400 hover:bg-red-600/30' : 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20 hover:bg-emerald-500'}`}
+                            >
+                                {isPlayingSurah ? <><VolumeX className="w-3.5 h-3.5" /> Stop</> : <><Volume2 className="w-3.5 h-3.5" /> Play Surah</>}
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>
@@ -308,7 +447,7 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                         <h4 className={`font-black text-xs tracking-[0.2em] uppercase mb-6 flex items-center gap-2 ${subTab === 'quran' ? 'text-amber-500' : 'text-emerald-500'}`}>
                             <Filter className="w-4 h-4" /> {subTab === 'quran' ? 'Chapters' : 'Collections'}
                         </h4>
-                        <div className="space-y-2 max-h-[400px] overflow-y-auto scrollbar-hide pr-2">
+                        <div className="space-y-1 max-h-[500px] overflow-y-auto scrollbar-hide pr-2">
                             {subTab === 'hadith' ? collections.map(c => (
                                 <button
                                     key={c.id}
@@ -322,12 +461,16 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                                 <button
                                     key={s.number}
                                     onClick={() => fetchQuran(s.number)}
-                                    className="w-full text-left px-4 py-3 rounded-xl text-[13px] font-bold text-slate-400 hover:bg-white/5 hover:text-white transition-all flex items-center gap-3"
+                                    className={`w-full text-left px-4 py-3 rounded-xl text-[13px] font-bold transition-all flex items-center gap-3 group ${currentSurah === s.number ? 'bg-amber-500/10 border border-amber-500/20' : 'hover:bg-white/5'}`}
                                 >
-                                    <span className="text-amber-500/50 w-6 font-black">{s.number}</span>
-                                    <div className="flex flex-col">
-                                        <span className="text-white font-black text-sm">{s.name}</span>
-                                        <span className="text-slate-500 text-[11px] font-bold">{s.englishName}</span>
+                                    <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-black shrink-0 ${currentSurah === s.number ? 'bg-amber-500 text-black' : 'text-amber-500/50 bg-amber-500/5'}`}>{s.number}</span>
+                                    <div className="flex flex-col min-w-0">
+                                        {/* Arabic name */}
+                                        <span className="text-white font-black text-sm leading-tight">{s.name}</span>
+                                        {/* English transliteration */}
+                                        <span className={`text-[11px] font-bold ${currentSurah === s.number ? 'text-amber-400' : 'text-slate-500'}`}>{s.englishName}</span>
+                                        {/* English meaning */}
+                                        <span className={`text-[10px] font-medium italic ${currentSurah === s.number ? 'text-amber-300/70' : 'text-slate-600'}`}>"{s.englishNameTranslation}"</span>
                                     </div>
                                 </button>
                             ))}
@@ -345,50 +488,94 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                     ) : (
                         <div className="space-y-6">
                             {results.length > 0 ? (
-                                results.map((res, idx) => (
-                                    <motion.div
-                                        key={idx}
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: idx * 0.03 }}
-                                        className="glass p-10 rounded-[2.5rem] border border-white/5 border-l-4 border-l-transparent hover:border-l-emerald-500 transition-all group"
-                                    >
-                                        <div className="flex flex-wrap items-center justify-between gap-4 mb-8 pb-4 border-b border-white/5">
-                                            <div className="flex items-center gap-3 font-bold">
-                                                <span className={`text-[10px] font-black uppercase tracking-[0.2em] px-4 py-1.5 rounded-full ${res.type === 'Quran' ? 'bg-amber-500/10 text-amber-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
-                                                    {res.type}
-                                                </span>
-                                                <span className="text-sm text-slate-500 font-medium">{res.reference}</span>
+                                results.map((res, idx) => {
+                                    const ayahKey = `${res.surahNumber}:${res.ayahNumber}`;
+                                    const isThisPlaying = playingAyah === ayahKey;
+                                    const ayahWords = (showWbw && res.surahNumber && res.ayahNumber)
+                                        ? getAyahWords(res.surahNumber, res.ayahNumber) : [];
+
+                                    return (
+                                        <motion.div
+                                            key={idx}
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: idx * 0.02 }}
+                                            className={`glass p-8 rounded-[2.5rem] border transition-all group ${isThisPlaying ? 'border-amber-500/40 bg-amber-500/5 shadow-lg shadow-amber-900/20' : 'border-white/5 border-l-4 border-l-transparent hover:border-l-emerald-500'}`}
+                                        >
+                                            {/* Card header */}
+                                            <div className="flex flex-wrap items-center justify-between gap-4 mb-6 pb-4 border-b border-white/5">
+                                                <div className="flex items-center gap-3 font-bold">
+                                                    <span className={`text-[10px] font-black uppercase tracking-[0.2em] px-4 py-1.5 rounded-full ${res.type === 'Quran' ? 'bg-amber-500/10 text-amber-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
+                                                        {res.type}
+                                                    </span>
+                                                    <span className="text-sm text-slate-500 font-medium">{res.reference}</span>
+                                                </div>
+
+                                                <div className="flex items-center gap-2">
+                                                    {/* Hadith grades */}
+                                                    {res.type === 'Hadith' && res.grades && res.grades.length > 0 && (
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {res.grades.map((g: any, i: number) => {
+                                                                const cleanGrade = g.grade.replace(/ Sahih| Sahih| Hasan| Daif/g, '');
+                                                                const simpleLabel = gradeMap[cleanGrade] || gradeMap[g.grade] || g.grade;
+                                                                return (
+                                                                    <div key={i} className={`flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border shadow-sm ${g.grade.toLowerCase().includes('sahih') ? 'bg-emerald-400/5 border-emerald-400/20 text-emerald-400' : g.grade.toLowerCase().includes('hasan') ? 'bg-blue-400/5 border-blue-400/20 text-blue-400' : 'bg-amber-400/5 border-amber-400/20 text-amber-500'}`}>
+                                                                        <CheckCircle2 className="w-3 h-3" />
+                                                                        {simpleLabel} <span className="opacity-40 ml-1 font-medium">— {g.name}</span>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    )}
+
+                                                    {/* Per-ayah play button */}
+                                                    {res.type === 'Quran' && res.surahNumber && res.ayahNumber && (
+                                                        <button
+                                                            onClick={() => playAudio(res.surahNumber, res.ayahNumber)}
+                                                            title="Play recitation"
+                                                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${isThisPlaying ? 'bg-amber-500/20 border-amber-500/30 text-amber-400 hover:bg-amber-500/10' : 'border-white/10 text-slate-500 hover:border-amber-500/30 hover:text-amber-400 hover:bg-amber-500/5'}`}
+                                                        >
+                                                            {isThisPlaying
+                                                                ? <><Pause className="w-3 h-3" /> Stop</>
+                                                                : <><Play className="w-3 h-3" /> Play</>
+                                                            }
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </div>
 
-                                            {res.type === 'Hadith' && res.grades && res.grades.length > 0 && (
-                                                <div className="flex flex-wrap gap-2">
-                                                    {res.grades.map((g: any, i: number) => {
-                                                        const cleanGrade = g.grade.replace(/ Sahih| Sahih| Hasan| Daif/g, '');
-                                                        const simpleLabel = gradeMap[cleanGrade] || gradeMap[g.grade] || g.grade;
+                                            {/* Arabic text */}
+                                            {res.arabic && (
+                                                <p className="text-4xl font-arabic text-right mb-8 leading-[2] text-amber-100/90 selection:bg-amber-500/30">
+                                                    {res.arabic}
+                                                </p>
+                                            )}
 
-                                                        return (
-                                                            <div key={i} className={`flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border shadow-sm ${g.grade.toLowerCase().includes('sahih') ? 'bg-emerald-400/5 border-emerald-400/20 text-emerald-400' : g.grade.toLowerCase().includes('hasan') ? 'bg-blue-400/5 border-blue-400/20 text-blue-400' : 'bg-amber-400/5 border-amber-400/20 text-amber-500'}`}>
-                                                                <CheckCircle2 className="w-3 h-3" />
-                                                                {simpleLabel} <span className="opacity-40 ml-1 font-medium">— {g.name}</span>
+                                            {/* Word-by-word display */}
+                                            {showWbw && ayahWords.length > 0 && (
+                                                <div className="mb-6 p-4 rounded-2xl bg-amber-500/5 border border-amber-500/10">
+                                                    <p className="text-[9px] font-black uppercase tracking-widest text-amber-500/50 mb-3">Word-by-Word</p>
+                                                    <div className="flex flex-wrap gap-3 justify-end" dir="rtl">
+                                                        {ayahWords.map((w: any, wi: number) => (
+                                                            <div key={wi} className="flex flex-col items-center gap-1" dir="ltr">
+                                                                <span className="text-xl font-arabic text-amber-200/80">{w.text}</span>
+                                                                <span className="text-[9px] text-slate-500 font-medium text-center max-w-[80px] leading-tight">{w.translation}</span>
                                                             </div>
-                                                        );
-                                                    })}
+                                                        ))}
+                                                    </div>
                                                 </div>
                                             )}
-                                        </div>
+                                            {showWbw && !wbwLoading && ayahWords.length === 0 && res.type === 'Quran' && (
+                                                <div className="mb-4 text-[10px] text-slate-600 font-bold italic">Word-by-word data loading...</div>
+                                            )}
 
-                                        {res.arabic && (
-                                            <p className="text-4xl font-arabic text-right mb-10 leading-[1.8] text-amber-100/90 selection:bg-amber-500/30">
-                                                {res.arabic}
+                                            {/* Translation */}
+                                            <p className={`text-xl text-slate-200 selection:bg-emerald-500/30 font-medium leading-relaxed ${res.type === 'Quran' ? 'font-serif' : 'font-sans'}`}>
+                                                {res.text}
                                             </p>
-                                        )}
-
-                                        <p className={`text-2xl text-slate-200 selection:bg-emerald-500/30 font-medium leading-relaxed ${res.type === 'Quran' ? 'font-serif' : 'font-sans'}`}>
-                                            {res.text}
-                                        </p>
-                                    </motion.div>
-                                ))
+                                        </motion.div>
+                                    );
+                                })
                             ) : (
                                 <div className="text-center py-32 glass rounded-[3rem] border border-white/5">
                                     <AlertCircle className="w-16 h-16 mx-auto mb-6 opacity-20 text-emerald-400" />
@@ -403,20 +590,20 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                                 </div>
                             )}
 
-                            {results.length > 0 && !searchQuery && (
+                            {results.length > 0 && !searchQuery && subTab === 'hadith' && (
                                 <div className="flex justify-center gap-4 pt-12">
                                     <button
                                         disabled={hadithPage === 0}
                                         onClick={() => { setHadithPage(p => p - 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                                        className="px-8 py-3 bg-slate-900 border border-white/10 rounded-2xl font-black text-xs uppercase tracking-widest disabled:opacity-20 transition-all hover:bg-slate-800"
+                                        className="flex items-center gap-2 px-8 py-3 bg-slate-900 border border-white/10 rounded-2xl font-black text-xs uppercase tracking-widest disabled:opacity-20 transition-all hover:bg-slate-800"
                                     >
-                                        Previous
+                                        <SkipBack className="w-3.5 h-3.5" /> Previous
                                     </button>
                                     <button
                                         onClick={() => { setHadithPage(p => p + 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                                        className="px-8 py-3 bg-emerald-600 shadow-lg shadow-emerald-500/20 rounded-2xl font-black text-xs uppercase tracking-widest transition-all hover:scale-105 active:scale-95 text-white"
+                                        className="flex items-center gap-2 px-8 py-3 bg-emerald-600 shadow-lg shadow-emerald-500/20 rounded-2xl font-black text-xs uppercase tracking-widest transition-all hover:scale-105 active:scale-95 text-white"
                                     >
-                                        Next Page
+                                        Next Page <SkipForward className="w-3.5 h-3.5" />
                                     </button>
                                 </div>
                             )}
