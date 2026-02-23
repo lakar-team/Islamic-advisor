@@ -216,20 +216,30 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
 
         if (source === 'both' || source === 'quran') {
             phase1.push(
-                fetch(`https://api.alquran.cloud/v1/search/${encodeURIComponent(query)}/all/en.asad`)
-                    .then(r => r.ok ? r.json() : null)
-                    .then(data => {
-                        if (!data?.data?.matches) return [];
-                        return data.data.matches.slice(0, 15).map((r: any) => ({
-                            text: r.text,
-                            reference: `${r.surah.englishName} ${r.surah.number}:${r.numberInSurah}`,
-                            type: 'Quran',
-                            surahNumber: r.surah.number,
-                            ayahNumber: r.numberInSurah,
-                            score: 20, // Quran always ranks first
-                        }));
-                    })
-                    .catch(() => [])
+                Promise.all([
+                    fetch(`https://api.alquran.cloud/v1/search/${encodeURIComponent(query)}/all/en.asad`)
+                        .then(r => r.ok ? r.json() : null).catch(() => null),
+                    fetch(`https://api.alquran.cloud/v1/search/${encodeURIComponent(query)}/all/quran-uthmani`)
+                        .then(r => r.ok ? r.json() : null).catch(() => null),
+                ]).then(([enData, arData]) => {
+                    if (!enData?.data?.matches) return [];
+                    // Build a map of surahNum:ayahNum -> arabic text from the Arabic edition
+                    const arMap: Record<string, string> = {};
+                    if (arData?.data?.matches) {
+                        arData.data.matches.forEach((m: any) => {
+                            arMap[`${m.surah.number}:${m.numberInSurah}`] = m.text;
+                        });
+                    }
+                    return enData.data.matches.slice(0, 15).map((r: any) => ({
+                        text: r.text,
+                        arabic: arMap[`${r.surah.number}:${r.numberInSurah}`] || '',
+                        reference: `${r.surah.englishName} ${r.surah.number}:${r.numberInSurah}`,
+                        type: 'Quran',
+                        surahNumber: r.surah.number,
+                        ayahNumber: r.numberInSurah,
+                        score: 20,
+                    }));
+                })
             );
         }
 
