@@ -1,27 +1,47 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    
-    <!-- Primary Meta Tags -->
-    <title>Online AI Sheikh | Authentic Islamic Guidance</title>
-    <meta name="title" content="Online AI Sheikh | Authentic Islamic Guidance" />
-    <meta name="description" content="Consult the Quran and authentic Sunnah with an intelligent Islamic advisor. Rooted in tradition, powered by intelligence." />
 
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@700;800&family=Amiri:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
-    
-    <style>
-      /* Ensure fonts load correctly */
-      body { font-family: 'Inter', sans-serif; }
-    </style>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Primary Meta Tags -->
+  <title>Online AI Sheikh | Authentic Islamic Guidance</title>
+  <meta name="title" content="Online AI Sheikh | Authentic Islamic Guidance" />
+  <meta name="description"
+    content="Consult the Quran and authentic Sunnah with an intelligent Islamic advisor. Rooted in tradition, powered by intelligence." />
+
+  <!-- Tailwind CSS (CDN) — this powers ALL the utility classes -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            'sans': ['Inter', 'system-ui', 'sans-serif'],
+            'display': ['Outfit', 'sans-serif'],
+            'arabic': ['Amiri', 'serif'],
+          },
+          colors: {
+            'bg-dark': '#020617',
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@700;800;900&family=Amiri:ital,wght@0,400;0,700;1,400&display=swap"
+    rel="stylesheet">
+</head>
+
+<body class="bg-slate-950 text-slate-100 font-sans antialiased">
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
 </html>
