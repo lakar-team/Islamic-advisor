@@ -7,16 +7,20 @@ export const onRequestPost = async (context: any) => {
     try {
         const { messages } = await request.json();
 
-        // 2. Call AI Provider (e.g., OpenAI or Gemini)
-        // This is a generic implementation for a chat completion
-        const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        // Use OpenRouter endpoint or fallback to OpenAI
+        const apiUrl = env.AI_API_URL || "https://openrouter.ai/api/v1/chat/completions";
+        const model = env.AI_MODEL || "google/gemini-2.0-flash-001"; // Highly recommended for speed/cost
+
+        const response = await fetch(apiUrl, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                "Authorization": `Bearer ${env.AI_API_KEY}`
+                "Authorization": `Bearer ${env.AI_API_KEY}`,
+                "HTTP-Referer": "https://islamic-advisor.pages.dev", // Optional for OpenRouter
+                "X-Title": "Online Sheikh AI", // Optional for OpenRouter
             },
             body: JSON.stringify({
-                model: "gpt-4-turbo-preview", // or any other model
+                model: model,
                 messages: [
                     { role: "system", content: env.SHEIKH_PROMPT },
                     ...messages
