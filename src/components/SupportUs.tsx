@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Heart, Zap, BookOpen, Shield, Globe, Sparkles, ExternalLink } from 'lucide-react';
+import { Heart, Server, Cpu, Globe, Sparkles, ExternalLink } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const SupportUs: React.FC = () => {
@@ -11,11 +11,10 @@ const SupportUs: React.FC = () => {
     const amount = customAmount ? parseFloat(customAmount) : (selectedAmount ?? 5);
     const paypalUrl = `https://www.paypal.com/paypalme/adamraman/${amount}USD`;
 
-    const impacts = [
-        { icon: Zap, label: '~50 AI Questions', amount: '$1', color: 'text-amber-400', bg: 'bg-amber-400/10' },
-        { icon: BookOpen, label: '1 Month of Hosting', amount: '$5', color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
-        { icon: Shield, label: '3 Months of API', amount: '$10', color: 'text-blue-400', bg: 'bg-blue-400/10' },
-        { icon: Globe, label: 'A Year of Free Access', amount: '$20', color: 'text-purple-400', bg: 'bg-purple-400/10' },
+    const costs = [
+        { icon: Cpu, label: 'AI API', desc: 'Every question asked uses real compute — paid per token.', color: 'text-amber-400', bg: 'bg-amber-400/10' },
+        { icon: Server, label: 'Hosting', desc: 'Cloudflare keeps the platform fast, global, and always on.', color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
+        { icon: Globe, label: 'Domain & Infrastructure', desc: 'Keeping onlinesheikh.com live and secure, year-round.', color: 'text-blue-400', bg: 'bg-blue-400/10' },
     ];
 
     return (
@@ -47,25 +46,28 @@ const SupportUs: React.FC = () => {
                     transition={{ delay: 0.2 }}
                     className="text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed font-medium"
                 >
-                    This platform is built and maintained by a single Muslim developer as a <em className="text-emerald-300">sadaqah jariyah</em> — a continuous charity. Every question answered is a gift to the Ummah.
-                    Your support keeps the servers running and the knowledge flowing.
+                    This platform is built and maintained as a <em className="text-emerald-300">sadaqah jariyah</em> — a continuous charity for the Ummah.
+                    Running it requires real costs: <span className="text-white font-semibold">AI API access, cloud hosting, and infrastructure</span>.
+                    With your generous support, we can continue to grow a platform for <span className="text-emerald-300 font-semibold">AI-powered personalised Islamic guidance</span> — delivered with 100% privacy and 100% accuracy.
                 </motion.p>
             </div>
 
-            {/* What Your Money Does */}
+            {/* What Keeps Us Running */}
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
-                className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-16"
+                className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-16"
             >
-                {impacts.map((item, i) => (
-                    <div key={i} className="glass p-6 rounded-3xl border border-white/5 text-center hover:border-emerald-500/20 transition-all">
-                        <div className={`${item.bg} w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-4`}>
+                {costs.map((item, i) => (
+                    <div key={i} className="glass p-6 rounded-3xl border border-white/5 flex items-start gap-4 hover:border-emerald-500/20 transition-all">
+                        <div className={`${item.bg} w-12 h-12 rounded-2xl flex-shrink-0 flex items-center justify-center`}>
                             <item.icon className={`w-6 h-6 ${item.color}`} />
                         </div>
-                        <p className={`text-2xl font-black ${item.color} mb-1`}>{item.amount}</p>
-                        <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">{item.label}</p>
+                        <div>
+                            <p className={`text-base font-black ${item.color} mb-1`}>{item.label}</p>
+                            <p className="text-sm text-slate-500 leading-relaxed">{item.desc}</p>
+                        </div>
                     </div>
                 ))}
             </motion.div>
@@ -139,13 +141,16 @@ const SupportUs: React.FC = () => {
                 className="mt-20 max-w-2xl mx-auto text-center"
             >
                 <div className="glass p-10 rounded-[2.5rem] border border-white/5">
-                    <p className="text-slate-400 text-lg leading-relaxed font-medium mb-6">
-                        <span className="text-white font-bold">"The best of people are those who are most beneficial to others."</span>
+                    <p className="text-2xl text-emerald-300/90 font-black leading-snug mb-5 font-arabic" dir="rtl" lang="ar">
+                        مَّثَلُ ٱلَّذِينَ يُنفِقُونَ أَمْوَٰلَهُمْ فِى سَبِيلِ ٱللَّهِ كَمَثَلِ حَبَّةٍ أَنۢبَتَتْ سَبْعَ سَنَابِلَ فِى كُلِّ سُنۢبُلَةٍ مِّا۟ئَةُ حَبَّةٍ ۗ وَٱللَّهُ يُضَٰعِفُ لِمَن يَشَآءُ
                     </p>
-                    <p className="text-amber-500/80 text-sm font-bold uppercase tracking-widest">— Hadith (al-Mu'jam al-Awsat, Tabarani) — Hasan</p>
+                    <p className="text-slate-300 text-base italic leading-relaxed font-medium mb-4">
+                        "The example of those who spend their wealth in the way of Allah is like a grain of corn that sprouts seven ears, each bearing a hundred grains. And Allah multiplies the reward even more for whoever He wills."
+                    </p>
+                    <p className="text-amber-500/80 text-sm font-bold uppercase tracking-widest">— Surah Al-Baqarah 2:261 — The Holy Quran</p>
 
                     <div className="mt-10 pt-8 border-t border-white/5 text-slate-500 text-sm leading-relaxed font-medium">
-                        <p>This project is built as open-source and free for anyone who wants Islamic guidance. API costs, server hosting, and ongoing development take real time and money. Your donation directly funds these costs and helps keep it accessible for all Muslims worldwide, regardless of their means.</p>
+                        <p>Your donation directly funds AI API costs, server hosting, and ongoing infrastructure — keeping this platform free and accessible for every Muslim worldwide, regardless of their means.</p>
                         <p className="mt-4 text-emerald-400/70 font-bold">— Lakar Team, Founders & Developers</p>
                     </div>
                 </div>

@@ -1,4 +1,4 @@
-import { Compass, BookOpen, Shield, Heart, Globe, Github, MessageSquare, Library, X } from 'lucide-react';
+import { Compass, BookOpen, Shield, Heart, Globe, MessageSquare, Library, X } from 'lucide-react';
 import { useState } from 'react';
 import SheikhChat from './components/SheikhChat';
 import KnowledgeLibrary from './components/KnowledgeLibrary';
@@ -126,15 +126,7 @@ function App() {
           </button>
         </div>
 
-        <a
-          href="https://github.com/lakar-team/Islamic-advisor"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="hidden sm:flex bg-slate-800 hover:bg-slate-700 text-white px-5 py-2.5 rounded-xl border border-slate-700 transition-all text-sm font-bold items-center gap-2 shadow-xl"
-        >
-          <Github className="w-4 h-4" />
-          Open Source
-        </a>
+
       </nav>
 
       {/* Hero Section - Only show on Chat Tab */}
@@ -275,7 +267,7 @@ function App() {
       {modal === 'privacy' && (
         <Modal title="Privacy Policy" onClose={() => setModal(null)}>
           <p>Online Sheikh AI does not store your conversations on any server. All chat history is saved locally in your browser only and never transmitted to third parties.</p>
-          <p>We use a third-party AI API (OpenAI) to generate responses. Your questions are sent to their servers for processing; please review <a href="https://openai.com/privacy" target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline">OpenAI's Privacy Policy</a> for details on how they handle data.</p>
+          <p>We use a third-party AI API (OpenRouter) to route requests to language models. Your questions are sent to their servers for processing; please review <a href="https://openrouter.ai/privacy" target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline">OpenRouter's Privacy Policy</a> for details on how they handle data.</p>
           <p>We do not use cookies, trackers, or analytics beyond basic Cloudflare hosting metrics.</p>
         </Modal>
       )}
