@@ -16,7 +16,7 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
     const [isLoading, setIsLoading] = useState(false);
     const [selectedCollection, setSelectedCollection] = useState('eng-bukhari');
     const [hadithPage, setHadithPage] = useState(0);
-    const [gradeFilter, setGradeFilter] = useState<string | null>(null);
+    const [gradeFilter, setGradeFilter] = useState<string | null>('Sahih');
     const [showGlossary, setShowGlossary] = useState(false);
 
     const collections = [
@@ -150,7 +150,10 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
     };
 
     useEffect(() => {
-        if (viewMode === 'browse' && subTab === 'quran') fetchSurahList();
+        if (viewMode === 'browse' && subTab === 'quran') {
+            fetchSurahList();
+            fetchQuran(1); // Load Al-Fatiha by default
+        }
         if (subTab === 'hadith' && !searchQuery) {
             fetchHadith('', hadithPage);
         }
@@ -316,7 +319,10 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                                     className="w-full text-left px-4 py-3 rounded-xl text-[13px] font-bold text-slate-400 hover:bg-white/5 hover:text-white transition-all flex items-center gap-3"
                                 >
                                     <span className="text-amber-500/50 w-6 font-black">{s.number}</span>
-                                    {s.englishName}
+                                    <div className="flex flex-col">
+                                        <span className="text-white font-black text-sm">{s.name}</span>
+                                        <span className="text-slate-500 text-[11px] font-bold">{s.englishName}</span>
+                                    </div>
                                 </button>
                             ))}
                         </div>
