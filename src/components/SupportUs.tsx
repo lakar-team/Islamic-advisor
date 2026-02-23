@@ -13,8 +13,8 @@ const SupportUs: React.FC = () => {
 
     const costs = [
         { icon: Cpu, label: 'AI API', desc: 'Every question asked uses real compute — paid per token.', color: 'text-amber-400', bg: 'bg-amber-400/10' },
-        { icon: Server, label: 'Hosting', desc: 'Cloudflare keeps the platform fast, global, and always on.', color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
-        { icon: Globe, label: 'Domain & Infrastructure', desc: 'Keeping onlinesheikh.com live and secure, year-round.', color: 'text-blue-400', bg: 'bg-blue-400/10' },
+        { icon: Server, label: 'Hosting & Domain', desc: 'Cloud infrastructure and domain registration to keep the platform live, fast, and globally accessible.', color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
+        { icon: Globe, label: 'Future Development', desc: 'New features, expanded Islamic content, multilingual support, and continuous improvement of the platform.', color: 'text-purple-400', bg: 'bg-purple-400/10' },
     ];
 
     return (
