@@ -8,6 +8,72 @@ interface SheikhChatProps {
     onOpenLibrary: (tab: 'quran' | 'hadith', query: string) => void;
 }
 
+// Render markdown-like formatting into JSX
+const renderMarkdown = (text: string) => {
+    const lines = text.split('\n');
+    return lines.map((line, lineIdx) => {
+        // Render a line with inline bold/italic
+        const renderInline = (str: string): React.ReactNode[] => {
+            const parts: React.ReactNode[] = [];
+            // Split on **bold** and *italic*
+            const regex = /(\*\*[^*]+\*\*|\*[^*]+\*)/g;
+            let lastIndex = 0;
+            let match;
+            let i = 0;
+            while ((match = regex.exec(str)) !== null) {
+                if (match.index > lastIndex) {
+                    parts.push(str.slice(lastIndex, match.index));
+                }
+                const matched = match[0];
+                if (matched.startsWith('**')) {
+                    parts.push(<strong key={i++} className="font-black text-white">{matched.slice(2, -2)}</strong>);
+                } else {
+                    parts.push(<em key={i++} className="italic text-amber-200/80">{matched.slice(1, -1)}</em>);
+                }
+                lastIndex = regex.lastIndex;
+            }
+            if (lastIndex < str.length) parts.push(str.slice(lastIndex));
+            return parts;
+        };
+
+        // Numbered list: "1. text"
+        const numberedMatch = line.match(/^(\d+)\.\s+(.*)/);
+        if (numberedMatch) {
+            return (
+                <div key={lineIdx} className="flex gap-3 mb-3 mt-1">
+                    <span className="shrink-0 w-7 h-7 bg-emerald-500/10 text-emerald-400 rounded-full text-xs font-black flex items-center justify-center mt-0.5 border border-emerald-500/20">
+                        {numberedMatch[1]}
+                    </span>
+                    <span className="text-slate-200">{renderInline(numberedMatch[2])}</span>
+                </div>
+            );
+        }
+
+        // Bullet: "* text" or "- text"
+        const bulletMatch = line.match(/^[*-]\s+(.*)/);
+        if (bulletMatch) {
+            return (
+                <div key={lineIdx} className="flex gap-3 mb-2">
+                    <span className="shrink-0 mt-2 w-1.5 h-1.5 bg-emerald-400/60 rounded-full"></span>
+                    <span className="text-slate-200">{renderInline(bulletMatch[1])}</span>
+                </div>
+            );
+        }
+
+        // Blank line = spacing
+        if (line.trim() === '') {
+            return <div key={lineIdx} className="h-3" />;
+        }
+
+        // Regular paragraph line
+        return (
+            <p key={lineIdx} className="mb-2 text-slate-200 leading-relaxed">
+                {renderInline(line)}
+            </p>
+        );
+    });
+};
+
 const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
     const [input, setInput] = useState('');
     const [messages, setMessages] = useState<Message[]>([
@@ -29,7 +95,8 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
     }, [messages]);
 
     const parseCitations = (content: string) => {
-        const regex = /\[\[CITATIONS:\s*(\[.*?\])\s*\]\]/s;
+        // Try the structured JSON citation block first
+        const regex = /\[\[CITATIONS:\s*(\[[\s\S]*?\])\s*\]\]/;
         const match = content.match(regex);
         let cleanedContent = content;
         let references: any[] = [];
@@ -39,9 +106,38 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
                 references = JSON.parse(match[1]);
                 cleanedContent = content.replace(regex, '').trim();
             } catch (e) {
-                console.error("Failed to parse citations:", e);
+                console.error("Failed to parse citations JSON:", e);
+                // Still strip the broken block to keep text clean
+                cleanedContent = content.replace(regex, '').trim();
             }
         }
+
+        // Fallback: if no structured references found, try to extract inline Quran citations
+        if (references.length === 0) {
+            // Match patterns like "(Surah Al-Baqarah, 2:255)" or "Surah Al-Imran, 3:102"
+            const quranPattern = /\(?(?:Surah\s+)?([\w\s-]+),?\s*(\d+):(\d+)\)?/g;
+            const seen = new Set<string>();
+            let q;
+            while ((q = quranPattern.exec(cleanedContent)) !== null) {
+                const source = `${q[1].trim()} ${q[2]}:${q[3]}`;
+                if (!seen.has(source)) {
+                    seen.add(source);
+                    references.push({ type: 'quran', text: '', source });
+                }
+            }
+
+            // Match Hadith patterns like "Bukhari - 1234" or "Sahih Muslim"
+            const hadithPattern = /\b(?:Sahih\s+)?(Bukhari|Muslim|Tirmidhi|Abu\s*Dawud|Nasai|Ibn\s*Majah)(?:\s*-\s*(\d+))?\b/gi;
+            let h;
+            while ((h = hadithPattern.exec(cleanedContent)) !== null) {
+                const source = h[2] ? `${h[1]} - Hadith ${h[2]}` : h[1];
+                if (!seen.has(source)) {
+                    seen.add(source);
+                    references.push({ type: 'hadith', text: '', source });
+                }
+            }
+        }
+
         return { cleanedContent, references };
     };
 
@@ -134,36 +230,45 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
                                 ? 'user-bubble shadow-xl'
                                 : 'assistant-bubble shadow-2xl backdrop-blur-xl border border-white/5'
                                 }`}>
-                                <div className="flex items-center gap-2 mb-3">
+                                <div className="flex items-center gap-2 mb-4">
                                     {m.role === 'assistant' ? <Sparkles className="w-4 h-4 text-amber-500" /> : <MessageSquare className="w-4 h-4 text-emerald-300" />}
                                     <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40">
                                         {m.role === 'assistant' ? 'The Sheikh' : 'You'}
                                     </span>
                                 </div>
-                                <div className="text-[1.1rem] leading-relaxed select-text font-medium text-slate-100">{m.content}</div>
+
+                                {/* Rendered content */}
+                                <div className="text-[1.05rem] leading-relaxed select-text font-medium">
+                                    {m.role === 'assistant' ? renderMarkdown(m.content) : m.content}
+                                </div>
 
                                 {/* References UI */}
                                 {m.references && m.references.length > 0 && (
-                                    <div className="mt-8 pt-6 border-t border-white/10 grid grid-cols-1 gap-3">
-                                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-2">Sources Found:</p>
-                                        {m.references.map((ref, idx) => (
-                                            <button
-                                                key={idx}
-                                                onClick={() => onOpenLibrary(ref.type, ref.source)}
-                                                className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-white/5 hover:bg-emerald-500/10 border border-white/5 hover:border-emerald-500/30 transition-all group"
-                                            >
-                                                <div className="flex items-center gap-3">
-                                                    <div className={`p-2 rounded-lg ${ref.type === 'quran' ? 'bg-amber-500/10 text-amber-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
-                                                        {ref.type === 'quran' ? <BookOpen className="w-4 h-4" /> : <Hash className="w-4 h-4" />}
+                                    <div className="mt-6 pt-5 border-t border-white/10">
+                                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-3 flex items-center gap-2">
+                                            <ExternalLink className="w-3 h-3" />
+                                            Open in Knowledge Library
+                                        </p>
+                                        <div className="grid grid-cols-1 gap-2">
+                                            {m.references.map((ref, idx) => (
+                                                <button
+                                                    key={idx}
+                                                    onClick={() => onOpenLibrary(ref.type, ref.source)}
+                                                    className="flex items-center justify-between gap-4 p-3 rounded-2xl bg-white/5 hover:bg-emerald-500/10 border border-white/5 hover:border-emerald-500/30 transition-all group text-left"
+                                                >
+                                                    <div className="flex items-center gap-3 min-w-0">
+                                                        <div className={`shrink-0 p-2 rounded-lg ${ref.type === 'quran' ? 'bg-amber-500/10 text-amber-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
+                                                            {ref.type === 'quran' ? <BookOpen className="w-3.5 h-3.5" /> : <Hash className="w-3.5 h-3.5" />}
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <p className="text-xs font-black text-slate-200 uppercase tracking-tight leading-none truncate">{ref.source}</p>
+                                                            {ref.text && <p className="text-[10px] text-slate-500 font-bold truncate mt-0.5">{ref.text}</p>}
+                                                        </div>
                                                     </div>
-                                                    <div className="text-left">
-                                                        <p className="text-xs font-black text-slate-200 uppercase tracking-tighter leading-none mb-1">{ref.source}</p>
-                                                        <p className="text-[10px] text-slate-500 font-bold truncate max-w-[200px]">{ref.text}</p>
-                                                    </div>
-                                                </div>
-                                                <ExternalLink className="w-4 h-4 text-slate-600 group-hover:text-emerald-400 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" />
-                                            </button>
-                                        ))}
+                                                    <ExternalLink className="w-3.5 h-3.5 shrink-0 text-slate-600 group-hover:text-emerald-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
                                 )}
                             </div>
