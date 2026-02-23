@@ -268,7 +268,7 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
         }
     };
 
-    const fetchHadith = async (query: string = '', page: number = 0) => {
+    const fetchHadith = async (query: string = '') => {
         setIsLoading(true);
         setViewMode('search');
         try {
@@ -443,7 +443,7 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
         if (searchQuery.length > 2 && !initialQuery) {
             const delayDebounceFn = setTimeout(() => {
                 if (subTab === 'quran') fetchQuran(searchQuery);
-                else fetchHadith(searchQuery, 0);
+                else fetchHadith(searchQuery);
             }, 600);
             return () => clearTimeout(delayDebounceFn);
         }
@@ -469,7 +469,7 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                     setSearchQuery(initialQuery);
                 }
                 // Use setTimeout to let selectedCollection state propagate before fetch
-                setTimeout(() => fetchHadith(initialQuery, 0), 50);
+                setTimeout(() => fetchHadith(initialQuery), 50);
             }
         }
     }, [initialQuery, initialTab]);
@@ -677,7 +677,7 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                         Holy Quran
                     </button>
                     <button
-                        onClick={() => { setSubTab('hadith'); setViewMode('search'); setResults([]); setSearchQuery(''); setHadithPage(0); stopAudio(); }}
+                        onClick={() => { setSubTab('hadith'); setViewMode('search'); setResults([]); setSearchQuery(''); stopAudio(); }}
                         className={`px-8 py-3 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${subTab === 'hadith' ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
                     >
                         <Hash className="w-4 h-4" />
