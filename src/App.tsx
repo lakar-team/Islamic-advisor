@@ -226,15 +226,6 @@ function App() {
               </p>
             </div>
             <div className="value-card space-y-4 p-8 rounded-3xl bg-slate-900/40 border border-emerald-900/10">
-              <div className="bg-emerald-500/10 w-14 h-14 rounded-2xl flex items-center justify-center">
-                <Shield className="text-emerald-500 w-7 h-7" />
-              </div>
-              <h3 className="text-2xl font-bold text-slate-100">Safe Consumption</h3>
-              <p className="text-slate-400 text-base leading-relaxed">
-                Intelligent rate-limiting ensures that the platform remains stable and free for human seekers, preventing bot abuse.
-              </p>
-            </div>
-            <div className="value-card space-y-4 p-8 rounded-3xl bg-slate-900/40 border border-emerald-900/10">
               <div className="bg-blue-500/10 w-14 h-14 rounded-2xl flex items-center justify-center">
                 <Compass className="text-blue-500 w-7 h-7" />
               </div>
@@ -282,13 +273,13 @@ function App() {
       )}
       {modal === 'contact' && (
         <Modal title="Contact" onClose={() => setModal(null)}>
-          <p>This project is built and maintained by <strong className="text-white">Adam</strong>, a Muslim developer who built this as a service to the Ummah.</p>
+          <p>This project is built and maintained by the <strong className="text-white">Lakar Team</strong> as a service to the Ummah.</p>
           <p>For questions, bug reports, or collaboration inquiries, please reach out via email:</p>
           <a
-            href="mailto:adam.m.raman@gmail.com"
+            href="mailto:lakar.team@gmail.com"
             className="block text-center py-4 px-8 bg-emerald-600/20 border border-emerald-500/30 rounded-2xl text-emerald-400 font-black hover:bg-emerald-600/30 transition-all"
           >
-            adam.m.raman@gmail.com
+            lakar.team@gmail.com
           </a>
           <p>You can also support the project financially to help cover API costs — click <button onClick={() => { setModal(null); setActiveTab('support'); }} className="text-emerald-400 hover:underline font-bold">Support Us</button>.</p>
         </Modal>

@@ -146,7 +146,7 @@ const SupportUs: React.FC = () => {
 
                     <div className="mt-10 pt-8 border-t border-white/5 text-slate-500 text-sm leading-relaxed font-medium">
                         <p>This project is built as open-source and free for anyone who wants Islamic guidance. API costs, server hosting, and ongoing development take real time and money. Your donation directly funds these costs and helps keep it accessible for all Muslims worldwide, regardless of their means.</p>
-                        <p className="mt-4 text-emerald-400/70 font-bold">— Adam, Founder & Developer</p>
+                        <p className="mt-4 text-emerald-400/70 font-bold">— Lakar Team, Founders & Developers</p>
                     </div>
                 </div>
             </motion.div>
