@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Book, Bookmark, Info, Star, Filter, ChevronRight, Hash, LayoutGrid, List, Languages } from 'lucide-react';
+import { Search, Book, Info, Star, Filter, ChevronRight, Hash, LayoutGrid, List, Languages } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const KnowledgeLibrary: React.FC = () => {
