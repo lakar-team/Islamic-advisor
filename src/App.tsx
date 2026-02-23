@@ -1,12 +1,16 @@
-import { Compass, BookOpen, Shield, Heart, Globe, Github } from 'lucide-react';
+import { Compass, BookOpen, Shield, Heart, Globe, Github, MessageSquare, Library } from 'lucide-react';
+import { useState } from 'react';
 import SheikhChat from './components/SheikhChat';
+import KnowledgeLibrary from './components/KnowledgeLibrary';
 
 function App() {
+  const [activeTab, setActiveTab] = useState<'chat' | 'library'>('chat');
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Navigation */}
       <nav className="p-6 flex items-center justify-between max-w-7xl mx-auto w-full border-b border-emerald-900/10">
-        <div className="flex items-center gap-2 group cursor-pointer">
+        <div className="flex items-center gap-2 group cursor-pointer" onClick={() => setActiveTab('chat')}>
           <div className="bg-primary p-2 rounded-lg group-hover:rotate-12 transition-transform shadow-lg">
             <Compass className="text-amber-500 w-6 h-6" />
           </div>
@@ -14,9 +18,21 @@ function App() {
         </div>
 
         <div className="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-400">
-          <a href="#" className="hover:text-amber-500 transition-colors">Knowledge Base</a>
-          <a href="#" className="hover:text-amber-500 transition-colors">Scholarly Sources</a>
-          <a href="#" className="hover:text-amber-500 transition-colors">Community</a>
+          <button
+            onClick={() => setActiveTab('chat')}
+            className={`flex items-center gap-2 transition-colors ${activeTab === 'chat' ? 'text-amber-500 font-bold' : 'hover:text-amber-500'}`}
+          >
+            <MessageSquare className="w-4 h-4" />
+            Advice & Guidance
+          </button>
+          <button
+            onClick={() => setActiveTab('library')}
+            className={`flex items-center gap-2 transition-colors ${activeTab === 'library' ? 'text-amber-500 font-bold' : 'hover:text-amber-500'}`}
+          >
+            <Library className="w-4 h-4" />
+            Knowledge Library
+          </button>
+          <a href="#" className="hover:text-amber-500 transition-colors">Resources</a>
         </div>
 
         <button className="bg-slate-800 hover:bg-slate-700 text-white px-5 py-2.5 rounded-xl border border-slate-700 transition-all text-sm font-bold flex items-center gap-2 shadow-xl">
@@ -25,50 +41,57 @@ function App() {
         </button>
       </nav>
 
-      {/* Hero Section */}
-      <header className="pt-24 pb-16 px-6 text-center max-w-5xl mx-auto animate-fade-in">
-        <div className="inline-flex items-center gap-2 bg-emerald-950/40 backdrop-blur-md border border-emerald-500/20 px-5 py-2.5 rounded-full mb-8 shadow-inner animate-float">
-          <Shield className="w-4 h-4 text-emerald-400" />
-          <span className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em]">Authenticated Scholarly Logic</span>
-        </div>
-        <h1 className="text-6xl md:text-8xl font-black mb-8 leading-[1.1] tracking-tighter">
-          Traditional <span className="gold-text">Wisdom</span><br />
-          Intelligence <span className="text-emerald-500">Unveiled.</span>
-        </h1>
-        <p className="text-xl md:text-2xl text-slate-400 mb-10 max-w-3xl mx-auto font-medium leading-relaxed">
-          Providing authentic Islamic advice grounded in the Quran and Sahih Hadith.
-          Bridging classical knowledge with state-of-the-art AI precision.
-        </p>
+      {/* Hero Section - Only show on Chat Tab */}
+      {activeTab === 'chat' && (
+        <header className="pt-24 pb-16 px-6 text-center max-w-5xl mx-auto animate-fade-in">
+          <div className="inline-flex items-center gap-2 bg-emerald-950/40 backdrop-blur-md border border-emerald-500/20 px-5 py-2.5 rounded-full mb-8 shadow-inner animate-float">
+            <Shield className="w-4 h-4 text-emerald-400" />
+            <span className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em]">Authenticated Scholarly Logic</span>
+          </div>
+          <h1 className="text-6xl md:text-8xl font-black mb-8 leading-[1.1] tracking-tighter">
+            Traditional <span className="gold-text">Wisdom</span><br />
+            Intelligence <span className="text-emerald-500">Unveiled.</span>
+          </h1>
+          <p className="text-xl md:text-2xl text-slate-400 mb-10 max-w-3xl mx-auto font-medium leading-relaxed">
+            Providing authentic Islamic advice grounded in the Quran and Sahih Hadith.
+            Bridging classical knowledge with state-of-the-art AI precision.
+          </p>
 
-        <div className="flex flex-wrap justify-center gap-6 mb-20 opacity-80">
-          <div className="flex items-center gap-2.5 text-slate-300 text-sm font-bold tracking-wide">
-            <BookOpen className="w-5 h-5 text-amber-500" />
-            <span>QURAN & SUNNAH</span>
+          <div className="flex flex-wrap justify-center gap-6 mb-20 opacity-80">
+            <div className="flex items-center gap-2.5 text-slate-300 text-sm font-bold tracking-wide">
+              <BookOpen className="w-5 h-5 text-amber-500" />
+              <span>QURAN & SUNNAH</span>
+            </div>
+            <div className="w-1.5 h-1.5 bg-slate-700 rounded-full mt-2"></div>
+            <div className="flex items-center gap-2.5 text-slate-300 text-sm font-bold tracking-wide">
+              <Heart className="w-5 h-5 text-emerald-500" />
+              <span>FREE FOR UMMAH</span>
+            </div>
+            <div className="w-1.5 h-1.5 bg-slate-700 rounded-full mt-2"></div>
+            <div className="flex items-center gap-2.5 text-slate-300 text-sm font-bold tracking-wide">
+              <Globe className="w-5 h-5 text-blue-500" />
+              <span>MULTI-LINGUAL</span>
+            </div>
           </div>
-          <div className="w-1.5 h-1.5 bg-slate-700 rounded-full mt-2"></div>
-          <div className="flex items-center gap-2.5 text-slate-300 text-sm font-bold tracking-wide">
-            <Heart className="w-5 h-5 text-emerald-500" />
-            <span>FREE FOR UMMAH</span>
-          </div>
-          <div className="w-1.5 h-1.5 bg-slate-700 rounded-full mt-2"></div>
-          <div className="flex items-center gap-2.5 text-slate-300 text-sm font-bold tracking-wide">
-            <Globe className="w-5 h-5 text-blue-500" />
-            <span>MULTI-LINGUAL</span>
-          </div>
-        </div>
-      </header>
+        </header>
+      )}
 
-      {/* Main Chat Area */}
+      {/* Main Content Area */}
       <main className="px-6 flex-1">
-        <SheikhChat />
-
-        {/* Ad Placeholder as requested */}
-        <div className="max-w-4xl mx-auto my-12 p-8 border-2 border-dashed border-slate-800 rounded-3xl text-center bg-slate-900/20">
-          <span className="text-[10px] text-slate-600 font-bold uppercase tracking-[0.3em] block mb-4">Support Our Project</span>
-          <div className="text-slate-500 italic text-sm">
-            "Ad Slot Placeholder: Supporting the infra costs while keeping the AI Sheikh free for all"
-          </div>
-        </div>
+        {activeTab === 'chat' ? (
+          <>
+            <SheikhChat />
+            {/* Ad Placeholder */}
+            <div className="max-w-4xl mx-auto my-12 p-8 border-2 border-dashed border-slate-800 rounded-3xl text-center bg-slate-900/20">
+              <span className="text-[10px] text-slate-600 font-bold uppercase tracking-[0.3em] block mb-4">Support Our Project</span>
+              <div className="text-slate-500 italic text-sm">
+                "Ad Slot Placeholder: Supporting the infra costs while keeping the AI Sheikh free for all"
+              </div>
+            </div>
+          </>
+        ) : (
+          <KnowledgeLibrary />
+        )}
       </main>
 
       {/* Values Grid */}
