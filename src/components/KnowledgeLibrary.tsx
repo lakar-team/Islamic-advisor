@@ -97,7 +97,7 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
             if (!res.ok) throw new Error('API request failed');
             const data = await res.json();
 
-            let hadithList = data.hadiths || [];
+            let hadithList = (data.hadiths || []).filter((h: any) => h.text && h.text.trim().length > 0);
 
             let filtered = hadithList;
             if (query) {
