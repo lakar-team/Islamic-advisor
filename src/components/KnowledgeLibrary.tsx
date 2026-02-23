@@ -216,30 +216,37 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
 
         if (source === 'both' || source === 'quran') {
             phase1.push(
-                Promise.all([
-                    fetch(`https://api.alquran.cloud/v1/search/${encodeURIComponent(query)}/all/en.asad`)
-                        .then(r => r.ok ? r.json() : null).catch(() => null),
-                    fetch(`https://api.alquran.cloud/v1/search/${encodeURIComponent(query)}/all/quran-uthmani`)
-                        .then(r => r.ok ? r.json() : null).catch(() => null),
-                ]).then(([enData, arData]) => {
-                    if (!enData?.data?.matches) return [];
-                    // Build a map of surahNum:ayahNum -> arabic text from the Arabic edition
-                    const arMap: Record<string, string> = {};
-                    if (arData?.data?.matches) {
-                        arData.data.matches.forEach((m: any) => {
-                            arMap[`${m.surah.number}:${m.numberInSurah}`] = m.text;
+                // Step 1: search in English only
+                fetch(`https://api.alquran.cloud/v1/search/${encodeURIComponent(query)}/all/en.asad`)
+                    .then(r => r.ok ? r.json() : null)
+                    .catch(() => null)
+                    .then(async (enData) => {
+                        if (!enData?.data?.matches) return [];
+                        const matches = enData.data.matches.slice(0, 15);
+                        // Step 2: fetch Arabic text for each matched ayah in parallel
+                        const arabicTexts = await Promise.allSettled(
+                            matches.map((m: any) =>
+                                fetch(`https://api.alquran.cloud/v1/ayah/${m.surah.number}:${m.numberInSurah}/quran-uthmani`)
+                                    .then(r => r.ok ? r.json() : null)
+                                    .catch(() => null)
+                            )
+                        );
+                        return matches.map((r: any, i: number) => {
+                            const arResult = arabicTexts[i];
+                            const arabicText = arResult.status === 'fulfilled' && arResult.value?.data?.text
+                                ? arResult.value.data.text
+                                : '';
+                            return {
+                                text: r.text,
+                                arabic: arabicText,
+                                reference: `${r.surah.englishName} ${r.surah.number}:${r.numberInSurah}`,
+                                type: 'Quran',
+                                surahNumber: r.surah.number,
+                                ayahNumber: r.numberInSurah,
+                                score: 20,
+                            };
                         });
-                    }
-                    return enData.data.matches.slice(0, 15).map((r: any) => ({
-                        text: r.text,
-                        arabic: arMap[`${r.surah.number}:${r.numberInSurah}`] || '',
-                        reference: `${r.surah.englishName} ${r.surah.number}:${r.numberInSurah}`,
-                        type: 'Quran',
-                        surahNumber: r.surah.number,
-                        ayahNumber: r.numberInSurah,
-                        score: 20,
-                    }));
-                })
+                    })
             );
         }
 
