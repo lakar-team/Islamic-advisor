@@ -126,20 +126,33 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
             }
 
             if (gradeFilter) {
-                filtered = filtered.filter((h: any) =>
-                    h.grades?.some((g: any) => g.grade.toLowerCase().includes(gradeFilter.toLowerCase()))
-                );
+                filtered = filtered.filter((h: any) => {
+                    const hGrades = h.grades || [];
+                    // Bukhari and Muslim are Sahih by default
+                    if (hGrades.length === 0 && (selectedCollection === 'eng-bukhari' || selectedCollection === 'eng-muslim')) {
+                        return gradeFilter.toLowerCase() === 'sahih';
+                    }
+                    return hGrades.some((g: any) => g.grade.toLowerCase().includes(gradeFilter.toLowerCase()));
+                });
             }
 
             const pageSize = 15;
             const chunk = filtered.slice(page * pageSize, (page + 1) * pageSize);
 
-            setResults(chunk.map((h: any) => ({
-                text: h.text,
-                reference: `${collections.find(c => c.id === selectedCollection)?.name} - Hadith ${h.hadithnumber}`,
-                type: 'Hadith',
-                grades: h.grades || []
-            })));
+            setResults(chunk.map((h: any) => {
+                let hGrades = h.grades || [];
+                // Auto-inject "Authentic" for Bukhari/Muslim if API data is blank
+                if (hGrades.length === 0 && (selectedCollection === 'eng-bukhari' || selectedCollection === 'eng-muslim')) {
+                    hGrades = [{ grade: 'Sahih', name: 'Al-Bukhari & Muslim' }];
+                }
+
+                return {
+                    text: h.text,
+                    reference: `${collections.find(c => c.id === selectedCollection)?.name} - Hadith ${h.hadithnumber}`,
+                    type: 'Hadith',
+                    grades: hGrades
+                };
+            }));
         } catch (err) {
             console.error(err);
             setResults([]);
