@@ -190,39 +190,45 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm"
+                        className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6 bg-black/90 backdrop-blur-md cursor-pointer"
+                        onClick={() => setShowGlossary(false)}
                     >
                         <motion.div
-                            initial={{ scale: 0.9, y: 20 }}
-                            animate={{ scale: 1, y: 0 }}
-                            className="glass w-full max-w-2xl rounded-[3rem] p-10 relative shadow-2xl bg-slate-900 border border-emerald-500/30"
+                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                            className="glass w-full max-w-2xl rounded-[3rem] p-8 md:p-12 relative shadow-2xl bg-slate-900 border border-emerald-500/30 cursor-default"
+                            onClick={(e) => e.stopPropagation()}
                         >
-                            <button onClick={() => setShowGlossary(false)} className="absolute top-8 right-8 text-slate-500 hover:text-white transition-colors">
+                            <button
+                                onClick={() => setShowGlossary(false)}
+                                className="absolute top-6 right-6 md:top-8 md:right-8 text-slate-500 hover:text-white transition-colors"
+                            >
                                 <X className="w-8 h-8" />
                             </button>
 
-                            <h3 className="text-3xl font-black mb-8 gold-text uppercase tracking-tighter">Grading Definitions</h3>
+                            <h3 className="text-3xl md:text-4xl font-black mb-10 gold-text uppercase tracking-tighter">Grading Definitions</h3>
 
-                            <div className="space-y-8">
-                                <div className="space-y-2">
-                                    <h4 className="text-xl font-bold text-emerald-400">Authentic (Sahih)</h4>
-                                    <p className="text-slate-400 leading-relaxed font-medium">Verified reports with continuous chains of reliable narrators. This is the highest standard of verification.</p>
+                            <div className="space-y-10">
+                                <div className="space-y-3">
+                                    <h4 className="text-xl md:text-2xl font-bold text-emerald-400">Authentic (Sahih)</h4>
+                                    <p className="text-slate-400 text-lg leading-relaxed font-medium">Verified reports with continuous chains of reliable narrators. This is the highest standard of verification.</p>
                                 </div>
-                                <div className="space-y-2">
-                                    <h4 className="text-xl font-bold text-blue-400">Good (Hasan)</h4>
-                                    <p className="text-slate-400 leading-relaxed font-medium">Reliable reports where narrators are trustworthy but might have slightly lower precision than the highest tier.</p>
+                                <div className="space-y-3">
+                                    <h4 className="text-xl md:text-2xl font-bold text-blue-400">Good (Hasan)</h4>
+                                    <p className="text-slate-400 text-lg leading-relaxed font-medium">Reliable reports where narrators are trustworthy but might have slightly lower precision than the highest tier.</p>
                                 </div>
-                                <div className="space-y-2">
-                                    <h4 className="text-xl font-bold text-amber-500">Weak (Da'if)</h4>
-                                    <p className="text-slate-400 leading-relaxed font-medium">Reports with identified gaps or flaws in the chain. These are useful for wisdom but not for primary law.</p>
+                                <div className="space-y-3">
+                                    <h4 className="text-xl md:text-2xl font-bold text-amber-500">Weak (Da'if)</h4>
+                                    <p className="text-slate-400 text-lg leading-relaxed font-medium">Reports with identified gaps or flaws in the chain. These are useful for wisdom but not for primary law.</p>
                                 </div>
                             </div>
 
                             <button
                                 onClick={() => setShowGlossary(false)}
-                                className="w-full mt-10 py-5 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-2xl transition-all uppercase tracking-widest"
+                                className="w-full mt-12 py-5 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-2xl transition-all uppercase tracking-widest text-sm shadow-xl shadow-emerald-900/20"
                             >
-                                Close Explorer Guide
+                                Got it, Back to Library
                             </button>
                         </motion.div>
                     </motion.div>
