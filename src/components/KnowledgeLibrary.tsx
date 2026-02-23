@@ -67,32 +67,31 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
         }
     };
 
-    // Fetch WBW for a single ayah (lazy, cached)
+    // Fetch WBW for a single ayah (lazy, cached) via quran.com API v4
     const fetchWbwAyah = async (surahNum: number, ayahNum: number) => {
         const key = `${surahNum}:${ayahNum}`;
         if (wbwCache[key]) {
             setWbwActive(prev => prev === key ? null : key); // toggle if already loaded
             return;
         }
-        // Mark as loading placeholder
+        // Mark as loading (empty array = loading in-progress)
         setWbwCache(prev => ({ ...prev, [key]: [] }));
         setWbwActive(key);
         try {
-            const url = `https://cdn.jsdelivr.net/gh/fawazahmed0/quran-json@1/data/editions/quran-wordbyword/${surahNum}.json`;
+            const url = `https://api.quran.com/api/v4/verses/by_key/${surahNum}:${ayahNum}?language=en&words=true&word_fields=text_uthmani,translation_text`;
             const r = await fetch(url);
-            if (!r.ok) throw new Error('wbw 404');
-            const data = await r.json(); // array of ayahs for this surah
-            const newEntries: Record<string, any[]> = {};
-            (data || []).forEach((ayah: any) => {
-                const k = `${surahNum}:${ayah.verse}`;
-                newEntries[k] = (ayah.words || []).map((w: any) => ({
-                    text: w.text,
-                    translation: w.translation,
+            if (!r.ok) throw new Error('wbw fetch failed');
+            const data = await r.json();
+            const words = (data?.verse?.words || [])
+                .filter((w: any) => w.char_type_name === 'word') // exclude end-of-ayah markers
+                .map((w: any) => ({
+                    text: w.text_uthmani || w.text,
+                    translation: w.translation?.text || '',
+                    transliteration: w.transliteration?.text || '',
                 }));
-            });
-            setWbwCache(prev => ({ ...prev, ...newEntries }));
+            setWbwCache(prev => ({ ...prev, [key]: words }));
         } catch {
-            setWbwCache(prev => ({ ...prev, [key]: [{ text: '—', translation: 'unavailable' }] }));
+            setWbwCache(prev => ({ ...prev, [key]: [{ text: '—', translation: 'unavailable', transliteration: '' }] }));
         }
     };
 
