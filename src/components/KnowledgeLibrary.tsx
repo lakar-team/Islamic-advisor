@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Book, Info, Filter, ChevronRight, Hash, LayoutGrid, CheckCircle2, AlertCircle, HelpCircle, X } from 'lucide-react';
+import { Search, Book, Filter, ChevronRight, Hash, LayoutGrid, CheckCircle2, AlertCircle, HelpCircle, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const KnowledgeLibrary: React.FC = () => {
