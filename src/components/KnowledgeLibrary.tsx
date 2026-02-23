@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Book, Filter, ChevronRight, Hash, CheckCircle2, AlertCircle, HelpCircle, X, Volume2, VolumeX, Play, Pause, SkipForward, SkipBack } from 'lucide-react';
+import { Search, Book, Filter, ChevronRight, Hash, CheckCircle2, AlertCircle, HelpCircle, X, Volume2, VolumeX, Play, Pause, SkipForward, SkipBack, BookOpen, ExternalLink, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface KnowledgeLibraryProps {
@@ -29,6 +29,12 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
     const [wordByWord, setWordByWord] = useState<Record<number, any[]>>({}); // ayah number → words[]
     const [wbwLoading, setWbwLoading] = useState(false);
     const [showWbw, setShowWbw] = useState(false);
+
+    // Tafsir modal state
+    const [tafsirAyah, setTafsirAyah] = useState<any | null>(null); // the verse object
+    const [tafsirText, setTafsirText] = useState<string>('');
+    const [tafsirLoading, setTafsirLoading] = useState(false);
+    const [tafsirExpanded, setTafsirExpanded] = useState(false);
 
     // Audio state
     const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -245,6 +251,25 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
         audio.play().catch(() => setPlayingAyah(null));
     };
 
+    // Tafsir: Ibn Kathir (English) from jsdelivr CDN
+    const fetchTafsir = async (res: any) => {
+        setTafsirAyah(res);
+        setTafsirText('');
+        setTafsirLoading(true);
+        setTafsirExpanded(false);
+        try {
+            const url = `https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/en-tafisr-ibn-kathir/${res.surahNumber}/${res.ayahNumber}.json`;
+            const r = await fetch(url);
+            if (!r.ok) throw new Error('not found');
+            const data = await r.json();
+            setTafsirText(data.text || data.content || '');
+        } catch {
+            setTafsirText('');
+        } finally {
+            setTafsirLoading(false);
+        }
+    };
+
     useEffect(() => {
         if (viewMode === 'browse' && subTab === 'quran') {
             fetchSurahList();
@@ -284,7 +309,7 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
         return ayah?.words || [];
     };
 
-    const quranResults = results.filter(r => r.type === 'Quran');
+    const quranResults = results.filter((r: any) => r.type === 'Quran');
     const isPlayingSurah = currentSurah && playingAyah?.startsWith(`${currentSurah}:`);
 
     return (
@@ -336,6 +361,116 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                             >
                                 Got it, Back to Library
                             </button>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Tafsir Modal */}
+            <AnimatePresence>
+                {tafsirAyah && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center bg-black/95 backdrop-blur-lg cursor-pointer"
+                        onClick={() => { setTafsirAyah(null); setTafsirText(''); }}
+                    >
+                        <motion.div
+                            initial={{ y: 60, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            exit={{ y: 60, opacity: 0 }}
+                            transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+                            className="w-full max-w-3xl max-h-[92vh] sm:max-h-[88vh] bg-[#0a0f0d] border border-amber-500/20 rounded-t-[3rem] sm:rounded-[3rem] overflow-hidden flex flex-col shadow-2xl shadow-amber-900/10 cursor-default"
+                            onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                        >
+                            {/* Modal header */}
+                            <div className="flex items-start justify-between gap-4 p-8 pb-4 border-b border-white/5 shrink-0">
+                                <div>
+                                    <div className="flex items-center gap-3 mb-1">
+                                        <span className="text-[10px] font-black uppercase tracking-[0.2em] px-3 py-1 rounded-full bg-amber-500/10 text-amber-500">Tafsir</span>
+                                        <span className="text-sm text-slate-400 font-medium">{tafsirAyah?.reference}</span>
+                                    </div>
+                                    <p className="text-xs text-slate-600 font-bold">Explanation by Imam Ibn Kathir</p>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    {tafsirAyah?.surahNumber && tafsirAyah?.ayahNumber && (
+                                        <a
+                                            href={`https://quran.com/${tafsirAyah.surahNumber}/${tafsirAyah.ayahNumber}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-xl border border-amber-500/20 text-amber-500/70 hover:text-amber-400 hover:border-amber-500/40 transition-all"
+                                        >
+                                            <ExternalLink className="w-3 h-3" />
+                                            quran.com
+                                        </a>
+                                    )}
+                                    <button
+                                        onClick={() => { setTafsirAyah(null); setTafsirText(''); }}
+                                        className="text-slate-500 hover:text-white transition-colors p-1"
+                                    >
+                                        <X className="w-6 h-6" />
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Scrollable content */}
+                            <div className="overflow-y-auto flex-1 p-8 space-y-8">
+                                {/* Arabic */}
+                                {tafsirAyah?.arabic && (
+                                    <p className="text-3xl font-arabic text-right leading-[2.2] text-amber-100/90">
+                                        {tafsirAyah.arabic}
+                                    </p>
+                                )}
+
+                                {/* English translation */}
+                                <div className="p-6 rounded-2xl bg-emerald-500/5 border border-emerald-500/10">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-emerald-500/50 mb-3">Translation (Muhammad Asad)</p>
+                                    <p className="text-lg text-slate-200 font-serif leading-relaxed">
+                                        {tafsirAyah?.text}
+                                    </p>
+                                </div>
+
+                                {/* Tafsir body */}
+                                <div className="space-y-4">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-amber-500/50">Commentary</p>
+                                    {tafsirLoading ? (
+                                        <div className="flex items-center gap-3 py-8 justify-center">
+                                            <div className="w-6 h-6 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+                                            <span className="text-sm font-bold text-slate-500">Loading commentary...</span>
+                                        </div>
+                                    ) : tafsirText ? (
+                                        <div className="space-y-4">
+                                            <div className={`text-base text-slate-300 leading-relaxed whitespace-pre-line font-medium transition-all ${tafsirExpanded ? '' : 'line-clamp-[20]'}`}>
+                                                {tafsirText}
+                                            </div>
+                                            {!tafsirExpanded && tafsirText.length > 600 && (
+                                                <button
+                                                    onClick={() => setTafsirExpanded(true)}
+                                                    className="flex items-center gap-2 text-amber-400 hover:text-amber-300 text-sm font-bold transition-colors"
+                                                >
+                                                    <ChevronDown className="w-4 h-4" />
+                                                    Read full tafsir
+                                                </button>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div className="py-6 text-center">
+                                            <BookOpen className="w-10 h-10 mx-auto mb-3 text-slate-700" />
+                                            <p className="text-slate-500 font-medium">Tafsir not available for this verse.</p>
+                                            <a
+                                                href={`https://quran.com/${tafsirAyah?.surahNumber}/${tafsirAyah?.ayahNumber}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="mt-3 inline-flex items-center gap-2 text-amber-400 hover:text-amber-300 text-sm font-bold transition-colors"
+                                            >
+                                                <ExternalLink className="w-4 h-4" />
+                                                View on quran.com
+                                            </a>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
                         </motion.div>
                     </motion.div>
                 )}
@@ -528,18 +663,27 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                                                         </div>
                                                     )}
 
-                                                    {/* Per-ayah play button */}
+                                                    {/* Per-ayah play + tafsir buttons */}
                                                     {res.type === 'Quran' && res.surahNumber && res.ayahNumber && (
-                                                        <button
-                                                            onClick={() => playAudio(res.surahNumber, res.ayahNumber)}
-                                                            title="Play recitation"
-                                                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${isThisPlaying ? 'bg-amber-500/20 border-amber-500/30 text-amber-400 hover:bg-amber-500/10' : 'border-white/10 text-slate-500 hover:border-amber-500/30 hover:text-amber-400 hover:bg-amber-500/5'}`}
-                                                        >
-                                                            {isThisPlaying
-                                                                ? <><Pause className="w-3 h-3" /> Stop</>
-                                                                : <><Play className="w-3 h-3" /> Play</>
-                                                            }
-                                                        </button>
+                                                        <div className="flex items-center gap-2">
+                                                            <button
+                                                                onClick={() => playAudio(res.surahNumber, res.ayahNumber)}
+                                                                title="Play recitation"
+                                                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${isThisPlaying ? 'bg-amber-500/20 border-amber-500/30 text-amber-400 hover:bg-amber-500/10' : 'border-white/10 text-slate-500 hover:border-amber-500/30 hover:text-amber-400 hover:bg-amber-500/5'}`}
+                                                            >
+                                                                {isThisPlaying
+                                                                    ? <><Pause className="w-3 h-3" /> Stop</>
+                                                                    : <><Play className="w-3 h-3" /> Play</>
+                                                                }
+                                                            </button>
+                                                            <button
+                                                                onClick={() => fetchTafsir(res)}
+                                                                title="Read tafsir explanation"
+                                                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border border-white/10 text-slate-500 hover:border-amber-500/30 hover:text-amber-400 hover:bg-amber-500/5 transition-all"
+                                                            >
+                                                                <BookOpen className="w-3 h-3" /> Tafsir
+                                                            </button>
+                                                        </div>
                                                     )}
                                                 </div>
                                             </div>
