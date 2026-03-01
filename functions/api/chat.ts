@@ -1,3 +1,6 @@
+/// <reference path="../cloudflare-env.d.ts" />
+import { SHEIKH_SYSTEM_PROMPT } from '../../src/lib/ai-prompt';
+
 // ─── Config ─────────────────────────────────────────────────────────────────
 const DAILY_LIMIT = 20;           // Max AI requests per IP per day
 const WINDOW_MS = 86_400_000;  // 24 hours in ms
@@ -98,7 +101,7 @@ export const onRequestPost = async (context: any) => {
             body: JSON.stringify({
                 model,
                 messages: [
-                    { role: 'system', content: env.SHEIKH_PROMPT },
+                    { role: 'system', content: env.SHEIKH_PROMPT || SHEIKH_SYSTEM_PROMPT },
                     ...messages,
                 ],
                 temperature: 0.7,
