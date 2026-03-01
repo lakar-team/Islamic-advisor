@@ -44,6 +44,10 @@ function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('chat');
   const [libraryContext, setLibraryContext] = useState<{ tab: 'quran' | 'hadith', query: string } | null>(null);
   const [modal, setModal] = useState<'privacy' | 'terms' | 'contact' | null>(null);
+  const [donationStatus, setDonationStatus] = useState<'success' | 'cancel' | null>(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('donation') as 'success' | 'cancel' | null;
+  });
 
   // Opens the Knowledge Library in its own browser tab, preserving the current chat
   const handleOpenLibrary = (tab: 'quran' | 'hadith', query: string) => {
@@ -126,6 +130,57 @@ function App() {
           </button>
         </div>
 
+
+        {/* Donation Notifications */}
+        <AnimatePresence>
+          {donationStatus && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="fixed top-24 left-1/2 -translate-x-1/2 z-[60] w-[90%] max-w-md"
+            >
+              <div className={`p-6 rounded-[2rem] border backdrop-blur-xl shadow-2xl flex flex-col items-center text-center gap-4 ${donationStatus === 'success'
+                ? 'bg-emerald-950/90 border-emerald-500/30'
+                : 'bg-slate-900/90 border-slate-700'
+                }`}>
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${donationStatus === 'success' ? 'bg-emerald-500/20' : 'bg-slate-800'
+                  }`}>
+                  {donationStatus === 'success' ? (
+                    <Heart className="w-6 h-6 text-emerald-400 fill-emerald-400/20" />
+                  ) : (
+                    <X className="w-6 h-6 text-slate-400" />
+                  )}
+                </div>
+                <div>
+                  <h4 className="font-black text-white text-lg tracking-tight">
+                    {donationStatus === 'success' ? 'JazakAllahu Khayran!' : 'Donation Cancelled'}
+                  </h4>
+                  <p className="text-slate-400 text-sm font-medium mt-1">
+                    {donationStatus === 'success'
+                      ? 'Your generous support helps keep the Sheikh accessible to the Ummah. May Allah reward you.'
+                      : 'No worries! You can still support the project anytime you wish.'}
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setDonationStatus(null);
+                    // Clean up URL
+                    const url = new URL(window.location.href);
+                    url.searchParams.delete('donation');
+                    window.history.replaceState({}, '', url.toString());
+                  }}
+                  className={`w-full py-3 rounded-xl font-bold text-sm uppercase tracking-widest transition-all ${donationStatus === 'success'
+                    ? 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                    : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
+                    }`}
+                >
+                  Continue
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
       </nav>
 

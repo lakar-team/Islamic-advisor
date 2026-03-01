@@ -5,11 +5,47 @@ import { motion } from 'framer-motion';
 const SupportUs: React.FC = () => {
     const [customAmount, setCustomAmount] = useState('');
     const [selectedAmount, setSelectedAmount] = useState<number | null>(5);
+    const [isLoadingStripe, setIsLoadingStripe] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const suggestedAmounts = [3, 5, 10, 20];
 
     const amount = customAmount ? parseFloat(customAmount) : (selectedAmount ?? 5);
     const paypalUrl = `https://www.paypal.com/paypalme/adamraman/${amount}USD`;
+
+    const handleStripeDonate = async () => {
+        if (isNaN(amount) || amount <= 0) {
+            setError('Please enter a valid donation amount.');
+            return;
+        }
+
+        setIsLoadingStripe(true);
+        setError(null);
+
+        try {
+            const response = await fetch('/api/create-checkout-session', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amount }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to create checkout session');
+            }
+
+            if (data.url) {
+                window.location.assign(data.url);
+            } else {
+                throw new Error('No checkout URL received from server');
+            }
+        } catch (err: any) {
+            setError(err.message || 'The Stripe service is currently unavailable. Please try PayPal.');
+        } finally {
+            setIsLoadingStripe(false);
+        }
+    };
 
     const costs = [
         { icon: Cpu, label: 'AI API', desc: 'Every question asked uses real compute — paid per token.', color: 'text-amber-400', bg: 'bg-amber-400/10' },
@@ -115,20 +151,48 @@ const SupportUs: React.FC = () => {
                     <span className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-600 font-bold text-sm">USD</span>
                 </div>
 
-                {/* Donate Button */}
-                <a
-                    href={paypalUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full flex items-center justify-center gap-3 py-6 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-black text-xl rounded-2xl transition-all shadow-2xl shadow-emerald-900/30 hover:scale-[1.02] active:scale-[0.98] uppercase tracking-widest"
-                >
-                    <Heart className="w-6 h-6" />
-                    Donate ${isNaN(amount) || amount <= 0 ? '5' : amount} via PayPal
-                    <ExternalLink className="w-4 h-4 opacity-70" />
-                </a>
+                {/* Error Message */}
+                {error && (
+                    <div className="mb-6 p-4 bg-red-900/20 border border-red-500/30 rounded-2xl text-red-200 text-sm font-bold animate-shake">
+                        {error}
+                    </div>
+                )}
+
+                {/* Donation Buttons */}
+                <div className="flex flex-col gap-4">
+                    {/* Stripe Button */}
+                    <button
+                        onClick={handleStripeDonate}
+                        disabled={isLoadingStripe}
+                        className="w-full flex items-center justify-center gap-3 py-6 bg-white hover:bg-slate-100 text-slate-950 font-black text-xl rounded-2xl transition-all shadow-2xl shadow-emerald-900/30 hover:scale-[1.02] active:scale-[0.98] uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed group"
+                    >
+                        {isLoadingStripe ? (
+                            <div className="w-6 h-6 border-4 border-slate-900/20 border-t-slate-900 rounded-full animate-spin" />
+                        ) : (
+                            <>
+                                <Globe className="w-6 h-6" />
+                                <span className="flex items-center gap-2">
+                                    Donate ${isNaN(amount) || amount <= 0 ? '5' : amount} via Credit Card / Pay
+                                </span>
+                            </>
+                        )}
+                    </button>
+
+                    {/* PayPal Button */}
+                    <a
+                        href={paypalUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full flex items-center justify-center gap-3 py-5 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-black text-lg rounded-2xl transition-all shadow-2xl shadow-emerald-900/20 hover:scale-[1.02] active:scale-[0.98] uppercase tracking-widest"
+                    >
+                        <Heart className="w-5 h-5" />
+                        Donate ${isNaN(amount) || amount <= 0 ? '5' : amount} via PayPal
+                        <ExternalLink className="w-4 h-4 opacity-70" />
+                    </a>
+                </div>
 
                 <p className="text-center text-xs text-slate-600 font-bold mt-6 leading-relaxed">
-                    You'll be redirected to PayPal to complete your donation securely.<br />
+                    You'll be redirected to Stripe or PayPal to complete your donation securely.<br />
                     Any amount is a barakah. JazakAllahu Khayran 🌿
                 </p>
             </motion.div>

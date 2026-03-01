@@ -92,6 +92,7 @@ npm run dev
 | `SHEIKH_PROMPT` | Optional | Override the codebase system prompt (default in `src/lib/ai-prompt.ts`) |
 | `AI_API_URL` | Optional | Override the AI endpoint (default: `https://openrouter.ai/api/v1/chat/completions`) |
 | `AI_MODEL` | Optional | Override the AI model (default: `google/gemini-2.0-flash-001`) |
+| `STRIPE_SECRET_KEY` | ✅ Yes | Your Stripe Secret Key (for donations) |
 
 > 💡 **Notice**: The system prompt is now managed through Git in `src/lib/ai-prompt.ts`. You only need to set the `SHEIKH_PROMPT` variable if you want to override the codebase default.
 
