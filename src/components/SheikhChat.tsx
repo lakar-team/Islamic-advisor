@@ -386,14 +386,14 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
                             }
                         }}
                         placeholder="Seeking guidance? Type your question here..."
-                        className="w-full bg-slate-800/80 border border-slate-700 text-white px-8 py-5 rounded-[2rem] focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-medium text-lg placeholder:text-slate-600 shadow-inner resize-none overflow-y-auto scrollbar-hide min-h-[68px]"
+                        className="w-full bg-slate-800/80 border border-slate-700 text-white pl-8 pr-20 py-5 rounded-[2rem] focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-medium text-lg placeholder:text-slate-600 shadow-inner resize-none overflow-y-auto scrollbar-hide min-h-[68px]"
                     />
                     <button
                         onClick={handleSend}
                         disabled={isLoading}
-                        className="absolute right-3 bottom-3 p-4 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-2xl transition-all shadow-xl shadow-emerald-900/20 active:scale-95"
+                        className="absolute right-3 bottom-3 p-3.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-[1.25rem] transition-all shadow-xl shadow-emerald-900/20 active:scale-95"
                     >
-                        <Send className="w-6 h-6" />
+                        <Send className="w-5 h-5" />
                     </button>
                 </div>
                 <p className="mt-3 text-[10px] text-center text-slate-500 uppercase tracking-[0.2em] font-black opacity-60">
