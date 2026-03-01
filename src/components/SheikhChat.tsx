@@ -122,7 +122,16 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
     const [messages, setMessages] = useState<Message[]>(loadMessages);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [expandedMessages, setExpandedMessages] = useState<Record<string, boolean>>({});
     const scrollRef = useRef<HTMLDivElement>(null);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+    useEffect(() => {
+        if (textareaRef.current) {
+            textareaRef.current.style.height = 'auto';
+            textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
+        }
+    }, [input]);
 
     useEffect(() => {
         if (scrollRef.current) {
@@ -236,7 +245,14 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
             timestamp: Date.now(),
         };
         setMessages([initial]);
+        setExpandedMessages({});
     };
+
+    const toggleExpand = (id: string) => {
+        setExpandedMessages(prev => ({ ...prev, [id]: !prev[id] }));
+    };
+
+    const isLongMessage = (content: string) => content.length > 400 || content.split('\n').length > 6;
 
     return (
         <div className="chat-container glass rounded-[3rem] overflow-hidden flex flex-col h-[750px] max-w-4xl mx-auto my-8 shadow-2xl border border-emerald-900/30">
@@ -286,9 +302,22 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
                                     </span>
                                 </div>
 
-                                <div className="text-[1.05rem] leading-relaxed select-text font-medium">
+                                <div className={`text-[1.05rem] leading-relaxed select-text font-medium relative ${!expandedMessages[m.id] && isLongMessage(m.content) ? 'max-h-[200px] overflow-hidden' : ''}`}>
                                     {m.role === 'assistant' ? renderMarkdown(m.content) : m.content}
+
+                                    {!expandedMessages[m.id] && isLongMessage(m.content) && (
+                                        <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-slate-900/40 to-transparent pointer-events-none" />
+                                    )}
                                 </div>
+
+                                {isLongMessage(m.content) && (
+                                    <button
+                                        onClick={() => toggleExpand(m.id)}
+                                        className="mt-2 text-xs font-black uppercase tracking-widest text-emerald-400 hover:text-emerald-300 transition-colors"
+                                    >
+                                        {expandedMessages[m.id] ? 'See Less' : 'See More...'}
+                                    </button>
+                                )}
 
                                 {/* References UI */}
                                 {m.references && m.references.length > 0 && (
@@ -344,19 +373,25 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
 
             {/* Input */}
             <div className="p-6 bg-slate-900/80 border-t border-emerald-900/20 backdrop-blur-md">
-                <div className="relative flex items-center group">
-                    <input
-                        type="text"
+                <div className="relative flex items-end group">
+                    <textarea
+                        ref={textareaRef}
+                        rows={1}
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                handleSend();
+                            }
+                        }}
                         placeholder="Seeking guidance? Type your question here..."
-                        className="w-full bg-slate-800/80 border border-slate-700 text-white px-8 py-5 rounded-[2rem] focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-medium text-lg placeholder:text-slate-600 shadow-inner"
+                        className="w-full bg-slate-800/80 border border-slate-700 text-white px-8 py-5 rounded-[2rem] focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-medium text-lg placeholder:text-slate-600 shadow-inner resize-none overflow-y-auto scrollbar-hide min-h-[68px]"
                     />
                     <button
                         onClick={handleSend}
                         disabled={isLoading}
-                        className="absolute right-3 p-4 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-2xl transition-all shadow-xl shadow-emerald-900/20 active:scale-95"
+                        className="absolute right-3 bottom-3 p-4 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-2xl transition-all shadow-xl shadow-emerald-900/20 active:scale-95"
                     >
                         <Send className="w-6 h-6" />
                     </button>
