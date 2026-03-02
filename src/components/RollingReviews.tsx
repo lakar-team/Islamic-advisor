@@ -161,12 +161,12 @@ const RollingReviews: React.FC = () => {
                 .animate-scroll {
                     display: flex;
                     width: max-content;
-                    animation: scroll 25s linear infinite;
+                    animation: scroll 15s linear infinite;
                 }
                 .pause-animation {
                     display: flex;
                     width: max-content;
-                    animation: scroll 25s linear infinite;
+                    animation: scroll 15s linear infinite;
                     animation-play-state: paused;
                 }
             `}</style>
