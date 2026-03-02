@@ -399,65 +399,6 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
         }
     };
 
-    const fetchHadith = async (query: string = '') => {
-        setIsLoading(true);
-        try {
-            // Keyword search: must load full collection (unavoidable for text search)
-            const url = `https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/${selectedCollection}.json`;
-            const res = await fetch(url);
-            if (!res.ok) throw new Error('API request failed');
-            const data = await res.json();
-
-            let hadithList = (data.hadiths || []).filter((h: any) => h.text && h.text.trim().length > 0);
-
-            const isNumOnly = /^\d+$/.test(query.trim());
-            let filtered = hadithList;
-            if (isNumOnly) {
-                filtered = hadithList.filter((h: any) => String(h.hadithnumber) === query.trim());
-            } else {
-                const searchTerms = query.toLowerCase().split(' ').filter((t: string) => t.length > 2);
-                filtered = filtered.map((h: any) => {
-                    let score = 0;
-                    const hText = h.text.toLowerCase();
-                    if (hText.includes(query.toLowerCase())) score += 10;
-                    searchTerms.forEach((term: string) => {
-                        if (hText.includes(term)) score += (hText.split(term).length - 1);
-                    });
-                    return { ...h, score };
-                }).filter((h: any) => h.score > 0);
-                filtered.sort((a: any, b: any) => (b.score || 0) - (a.score || 0));
-            }
-
-            if (gradeFilter) {
-                filtered = filtered.filter((h: any) => {
-                    const hGrades = h.grades || [];
-                    if (hGrades.length === 0 && (selectedCollection === 'eng-bukhari' || selectedCollection === 'eng-muslim'))
-                        return gradeFilter.toLowerCase() === 'sahih';
-                    return hGrades.some((g: any) => g.grade.toLowerCase().includes(gradeFilter.toLowerCase()));
-                });
-            }
-
-            const collName = collections.find(c => c.id === selectedCollection)?.name;
-            setResults(filtered.slice(0, 30).map((h: any) => {
-                let hGrades = h.grades || [];
-                if (hGrades.length === 0 && (selectedCollection === 'eng-bukhari' || selectedCollection === 'eng-muslim'))
-                    hGrades = [{ grade: 'Sahih', name: 'Al-Bukhari & Muslim' }];
-                return {
-                    text: h.text,
-                    reference: `${collName} — Hadith ${h.hadithnumber}`,
-                    type: 'Hadith',
-                    grades: hGrades,
-                    hadithNumber: h.hadithnumber,
-                    collectionId: selectedCollection,
-                };
-            }));
-        } catch (err) {
-            console.error(err);
-            setResults([]);
-        } finally {
-            setIsLoading(false);
-        }
-    };
 
     // Audio: Mishary Rashid al-Afasy recitation via everyayah.com
     const playAudio = (surahNum: number, ayahNum: number) => {
