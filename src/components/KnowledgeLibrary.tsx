@@ -36,8 +36,10 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
 
     // Audio state
     const audioRef = useRef<HTMLAudioElement | null>(null);
-    const [playingAyah, setPlayingAyah] = useState<string | null>(null); // "surah:ayah"
+    const playingAyah = useRef<string | null>(null); // State used was "useState", switching to ref for sync checks if needed, but let's keep the ref add where safe
+    const [playingAyahState, setPlayingAyah] = useState<string | null>(null);
     const [, setAudioLoading] = useState(false);
+    const initialProcessed = useRef(false);
 
     const collections = [
         { id: 'eng-bukhari', name: 'Sahih Bukhari', count: 7563 },
@@ -473,7 +475,7 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
             fetchQuran(1);
         }
         if (subTab === 'hadith') {
-            setResults([]);
+            if (!jumpToNum) setResults([]);
             setBooks([]);
             setSelectedBook(null);
             // If we have a jumpToNum (deep-link), skip loading the first page of results
@@ -494,7 +496,8 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
     }, [searchQuery, searchSource]);
 
     useEffect(() => {
-        if (initialQuery) {
+        if (initialQuery && !initialProcessed.current) {
+            initialProcessed.current = true;
             if (initialTab === 'quran') {
                 setSubTab('quran');
                 fetchQuran(initialQuery);
@@ -506,8 +509,8 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                     setSelectedCollection(collId);
                     setJumpToNum(hadithNum);
                     setSubTab('hadith');
-                    // Increased delay to 200ms to ensure all state transitions (tab switch) settle
-                    setTimeout(() => jumpToHadith(hadithNum, collId), 200);
+                    // Increased delay to 300ms to ensure all state transitions (tab switch) settle
+                    setTimeout(() => jumpToHadith(hadithNum, collId), 300);
                 } else {
                     // keyword — go to Search tab
                     setSubTab('search');
