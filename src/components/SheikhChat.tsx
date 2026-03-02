@@ -397,7 +397,7 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
                     </button>
                 </div>
                 <p className="mt-3 text-[10px] text-center text-slate-500 uppercase tracking-[0.2em] font-black opacity-60">
-                    Prophetic Guidance • Powered by Authentic Sources
+                    Authentic Islamic Advice • Powered by Scholarly Sources
                 </p>
             </div>
         </div>
