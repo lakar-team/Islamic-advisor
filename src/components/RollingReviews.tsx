@@ -1,7 +1,7 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { MessageCircle, Send, User } from 'lucide-react';
-import { statsService, Review } from '../lib/stats-service';
-import { animate, motion, useMotionValue } from 'framer-motion';
+import React, { useEffect, useState } from 'react';
+import { Send, User } from 'lucide-react';
+import { statsService, type Review } from '../lib/stats-service';
+import { motion } from 'framer-motion';
 
 const RollingReviews: React.FC = () => {
     const [reviews, setReviews] = useState<Review[]>([]);
@@ -25,7 +25,7 @@ const RollingReviews: React.FC = () => {
         setIsSubmitting(true);
         const newReview = await statsService.addReview(name, text);
         if (newReview) {
-            setReviews(prev => [newReview, ...prev].slice(0, 50));
+            setReviews((prev: Review[]) => [newReview, ...prev].slice(0, 50));
             setName('');
             setText('');
             setShowForm(false);

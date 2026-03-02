@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Users, MessageSquare, Globe } from 'lucide-react';
-import { statsService, SiteStats } from '../lib/stats-service';
+import { statsService, type SiteStats } from '../lib/stats-service';
 import { motion } from 'framer-motion';
 
 const StatsDisplay: React.FC = () => {
@@ -20,7 +20,7 @@ const StatsDisplay: React.FC = () => {
     if (!stats) return null;
 
     const topCountries = Object.entries(stats.country_counts || {})
-        .sort(([, a], [, b]) => b - a)
+        .sort(([, a], [, b]) => (b as number) - (a as number))
         .slice(0, 3);
 
     return (
