@@ -371,25 +371,26 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
     };
 
     // ── Jump directly to a hadith by number ──
-    const jumpToHadith = async (num: string) => {
+    const jumpToHadith = async (num: string, overrideCollection?: string) => {
         const n = parseInt(num);
         if (!n || n < 1) return;
+        const targetColl = overrideCollection || selectedCollection;
         setIsLoading(true);
         setResults([]);
         try {
-            const r = await fetch(`https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/${selectedCollection}/${n}.json`);
+            const r = await fetch(`https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/${targetColl}/${n}.json`);
             if (!r.ok) throw new Error('not found');
             const data = await r.json();
-            const collName = collections.find(c => c.id === selectedCollection)?.name || selectedCollection;
+            const collName = collections.find(c => c.id === targetColl)?.name || targetColl;
             setResults((data.hadiths || []).filter((h: any) => h.text?.trim()).map((h: any) => ({
                 text: h.text,
                 reference: `${collName} — Hadith ${h.hadithnumber}`,
                 type: 'Hadith',
                 grades: h.grades?.length ? h.grades
-                    : (selectedCollection === 'eng-bukhari' || selectedCollection === 'eng-muslim')
+                    : (targetColl === 'eng-bukhari' || targetColl === 'eng-muslim')
                         ? [{ grade: 'Sahih', name: 'Al-Bukhari & Muslim' }] : [],
                 hadithNumber: h.hadithnumber,
-                collectionId: selectedCollection,
+                collectionId: targetColl,
             })));
         } catch {
             setResults([]);
@@ -401,84 +402,55 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
     const fetchHadith = async (query: string = '') => {
         setIsLoading(true);
         try {
-            // Detect deep-link format "collectionId:hadithNumber" (e.g. "eng-muslim:7139")
-            const deepLinkMatch = query.match(/^(eng-[\w]+):(\d+)$/);
+            // Keyword search: must load full collection (unavoidable for text search)
+            const url = `https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/${selectedCollection}.json`;
+            const res = await fetch(url);
+            if (!res.ok) throw new Error('API request failed');
+            const data = await res.json();
 
-            if (deepLinkMatch) {
-                // Direct single-hadith fetch by number
-                const collectionId = deepLinkMatch[1];
-                const hadithNum = deepLinkMatch[2];
+            let hadithList = (data.hadiths || []).filter((h: any) => h.text && h.text.trim().length > 0);
 
-                // Auto-switch the collection selector to the right one
-                setSelectedCollection(collectionId);
-
-                const url = `https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/${collectionId}/${hadithNum}.json`;
-                const res = await fetch(url);
-                if (!res.ok) throw new Error('Hadith not found');
-                const data = await res.json();
-
-                const hadiths = data.hadiths || [];
-                const collectionName = collections.find(c => c.id === collectionId)?.name || collectionId;
-
-                setResults(hadiths.map((h: any) => ({
-                    text: h.text,
-                    reference: `${collectionName} - Hadith ${h.hadithnumber}`,
-                    type: 'Hadith',
-                    grades: h.grades || [],
-                    hadithNumber: h.hadithnumber,
-                    collectionId,
-                })));
+            const isNumOnly = /^\d+$/.test(query.trim());
+            let filtered = hadithList;
+            if (isNumOnly) {
+                filtered = hadithList.filter((h: any) => String(h.hadithnumber) === query.trim());
             } else {
-                // Keyword search: must load full collection (unavoidable for text search)
-                const url = `https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/${selectedCollection}.json`;
-                const res = await fetch(url);
-                if (!res.ok) throw new Error('API request failed');
-                const data = await res.json();
-
-                let hadithList = (data.hadiths || []).filter((h: any) => h.text && h.text.trim().length > 0);
-
-                const isNumOnly = /^\d+$/.test(query.trim());
-                let filtered = hadithList;
-                if (isNumOnly) {
-                    filtered = hadithList.filter((h: any) => String(h.hadithnumber) === query.trim());
-                } else {
-                    const searchTerms = query.toLowerCase().split(' ').filter((t: string) => t.length > 2);
-                    filtered = filtered.map((h: any) => {
-                        let score = 0;
-                        const hText = h.text.toLowerCase();
-                        if (hText.includes(query.toLowerCase())) score += 10;
-                        searchTerms.forEach((term: string) => {
-                            if (hText.includes(term)) score += (hText.split(term).length - 1);
-                        });
-                        return { ...h, score };
-                    }).filter((h: any) => h.score > 0);
-                    filtered.sort((a: any, b: any) => (b.score || 0) - (a.score || 0));
-                }
-
-                if (gradeFilter) {
-                    filtered = filtered.filter((h: any) => {
-                        const hGrades = h.grades || [];
-                        if (hGrades.length === 0 && (selectedCollection === 'eng-bukhari' || selectedCollection === 'eng-muslim'))
-                            return gradeFilter.toLowerCase() === 'sahih';
-                        return hGrades.some((g: any) => g.grade.toLowerCase().includes(gradeFilter.toLowerCase()));
+                const searchTerms = query.toLowerCase().split(' ').filter((t: string) => t.length > 2);
+                filtered = filtered.map((h: any) => {
+                    let score = 0;
+                    const hText = h.text.toLowerCase();
+                    if (hText.includes(query.toLowerCase())) score += 10;
+                    searchTerms.forEach((term: string) => {
+                        if (hText.includes(term)) score += (hText.split(term).length - 1);
                     });
-                }
-
-                const collName = collections.find(c => c.id === selectedCollection)?.name;
-                setResults(filtered.slice(0, 30).map((h: any) => {
-                    let hGrades = h.grades || [];
-                    if (hGrades.length === 0 && (selectedCollection === 'eng-bukhari' || selectedCollection === 'eng-muslim'))
-                        hGrades = [{ grade: 'Sahih', name: 'Al-Bukhari & Muslim' }];
-                    return {
-                        text: h.text,
-                        reference: `${collName} — Hadith ${h.hadithnumber}`,
-                        type: 'Hadith',
-                        grades: hGrades,
-                        hadithNumber: h.hadithnumber,
-                        collectionId: selectedCollection,
-                    };
-                }));
+                    return { ...h, score };
+                }).filter((h: any) => h.score > 0);
+                filtered.sort((a: any, b: any) => (b.score || 0) - (a.score || 0));
             }
+
+            if (gradeFilter) {
+                filtered = filtered.filter((h: any) => {
+                    const hGrades = h.grades || [];
+                    if (hGrades.length === 0 && (selectedCollection === 'eng-bukhari' || selectedCollection === 'eng-muslim'))
+                        return gradeFilter.toLowerCase() === 'sahih';
+                    return hGrades.some((g: any) => g.grade.toLowerCase().includes(gradeFilter.toLowerCase()));
+                });
+            }
+
+            const collName = collections.find(c => c.id === selectedCollection)?.name;
+            setResults(filtered.slice(0, 30).map((h: any) => {
+                let hGrades = h.grades || [];
+                if (hGrades.length === 0 && (selectedCollection === 'eng-bukhari' || selectedCollection === 'eng-muslim'))
+                    hGrades = [{ grade: 'Sahih', name: 'Al-Bukhari & Muslim' }];
+                return {
+                    text: h.text,
+                    reference: `${collName} — Hadith ${h.hadithnumber}`,
+                    type: 'Hadith',
+                    grades: hGrades,
+                    hadithNumber: h.hadithnumber,
+                    collectionId: selectedCollection,
+                };
+            }));
         } catch (err) {
             console.error(err);
             setResults([]);
@@ -587,11 +559,12 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                 // For deep-link format "eng-collection:number"
                 const deepLink = initialQuery.match(/^(eng-[\w]+):(\d+)$/);
                 if (deepLink) {
-                    const [, collId] = deepLink;
+                    const [, collId, hadithNum] = deepLink;
                     setSelectedCollection(collId);
+                    setJumpToNum(hadithNum);
                     setSubTab('hadith');
-                    // Small delay to ensure state updates reach the library logic
-                    setTimeout(() => fetchHadith(initialQuery), 150);
+                    // Use the standardized jump-to protocol
+                    setTimeout(() => jumpToHadith(hadithNum, collId), 50);
                 } else {
                     // keyword — go to Search tab
                     setSubTab('search');
