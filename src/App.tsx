@@ -1,8 +1,11 @@
 import { Compass, BookOpen, Shield, Heart, Globe, MessageSquare, Library, X } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import SheikhChat from './components/SheikhChat';
 import KnowledgeLibrary from './components/KnowledgeLibrary';
 import SupportUs from './components/SupportUs';
+import StatsDisplay from './components/StatsDisplay';
+import RollingReviews from './components/RollingReviews';
+import { statsService } from './lib/stats-service';
 import { motion, AnimatePresence } from 'framer-motion';
 
 type ActiveTab = 'chat' | 'library' | 'support';
@@ -48,6 +51,11 @@ function App() {
     const params = new URLSearchParams(window.location.search);
     return params.get('donation') as 'success' | 'cancel' | null;
   });
+
+  useEffect(() => {
+    // Track visit on mount
+    statsService.trackVisit();
+  }, []);
 
   // Opens the Knowledge Library in its own browser tab, preserving the current chat
   const handleOpenLibrary = (tab: 'quran' | 'hadith', query: string) => {
@@ -216,6 +224,8 @@ function App() {
               <span>MULTI-LINGUAL</span>
             </div>
           </div>
+
+          <StatsDisplay />
         </header>
       )}
 
@@ -299,6 +309,9 @@ function App() {
           </div>
         </section>
       )}
+
+      {/* Community Reflections */}
+      {activeTab === 'chat' && <RollingReviews />}
 
       {/* Footer */}
       <footer className="py-12 px-6 border-t border-slate-900 bg-bg-dark">

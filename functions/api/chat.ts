@@ -110,6 +110,16 @@ export const onRequestPost = async (context: any) => {
 
         const data = await response.json();
 
+        // Increment questions_answered counter in RATE_LIMIT KV if bound
+        if (env.RATE_LIMIT) {
+            try {
+                const current = await env.RATE_LIMIT.get('questions_answered') || '0';
+                await env.RATE_LIMIT.put('questions_answered', (parseInt(current) + 1).toString());
+            } catch (e) {
+                console.error('Failed to update questions counter:', e);
+            }
+        }
+
         return new Response(JSON.stringify(data), {
             headers: {
                 'Content-Type': 'application/json',
