@@ -12,13 +12,26 @@ const pad = (n: number, len: number) => String(n).padStart(len, '0');
 
 
 const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initialQuery }) => {
-    const [subTab, setSubTab] = useState<'quran' | 'hadith' | 'search'>(initialQuery ? 'search' : (initialTab || 'quran'));
-    const [searchQuery, setSearchQuery] = useState(initialQuery || '');
+    // Parse initial state to prevent race conditions during mount
+    const initialParsed = (() => {
+        if (!initialQuery) return { tab: initialTab || 'quran', query: '', jump: '' };
+        const deepLink = initialQuery.match(/^(eng-[\w]+):(\d+)$/);
+        if (deepLink && initialTab === 'hadith') {
+            return { tab: 'hadith' as const, query: '', jump: deepLink[2], coll: deepLink[1] };
+        }
+        if (initialQuery.match(/^\d+$/) || initialQuery.match(/^\d+:\d+$/)) {
+            return { tab: 'quran' as const, query: initialQuery, jump: '' };
+        }
+        return { tab: 'search' as const, query: initialQuery, jump: '' };
+    })();
+
+    const [subTab, setSubTab] = useState<'quran' | 'hadith' | 'search'>(initialParsed.tab);
+    const [searchQuery, setSearchQuery] = useState(initialParsed.query);
     const [searchSource, setSearchSource] = useState<'both' | 'quran' | 'hadith'>('both');
     const [results, setResults] = useState<any[]>([]);
     const [surahs, setSurahs] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(false);
-    const [selectedCollection, setSelectedCollection] = useState('eng-bukhari');
+    const [selectedCollection, setSelectedCollection] = useState('coll' in initialParsed ? (initialParsed as any).coll : 'eng-bukhari');
     const [gradeFilter, setGradeFilter] = useState<string | null>('Sahih');
     const [showGlossary, setShowGlossary] = useState(false);
     const [currentSurah, setCurrentSurah] = useState<number | null>(null);
@@ -62,7 +75,7 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
     // Book navigation state
     const [books, setBooks] = useState<any[]>([]);
     const [selectedBook, setSelectedBook] = useState<any | null>(null);
-    const [jumpToNum, setJumpToNum] = useState('');
+    const [jumpToNum, setJumpToNum] = useState(initialParsed.jump || '');
     const [browseOffset, setBrowseOffset] = useState(0); // first hadith number in current view
     const BROWSE_PAGE = 15; // hadiths shown per page when browsing a book
 
@@ -368,7 +381,9 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                 setBrowseOffset(1);
                 if (!skipResults) fetchHadithRange(collectionId, 1, BROWSE_PAGE);
             }
-        } catch { /* ignore */ }
+        } catch (err) {
+            console.warn(`[KnowledgeLibrary] Failed to load books for ${collectionId}:`, err);
+        }
     };
 
     // ── Jump directly to a hadith by number ──
@@ -393,7 +408,8 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                 hadithNumber: h.hadithnumber,
                 collectionId: targetColl,
             })));
-        } catch {
+        } catch (err) {
+            console.error(`[KnowledgeLibrary] Hadith jump failed (#${num} in ${targetColl}):`, err);
             setResults([]);
         } finally {
             setIsLoading(false);
@@ -492,33 +508,23 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
             const timer = setTimeout(() => fetchSearchBoth(searchQuery, searchSource), 700);
             return () => clearTimeout(timer);
         }
-    }, [searchQuery, searchSource]);
+    }, [searchQuery, searchSource, subTab]);
 
     useEffect(() => {
-        if (initialQuery && !initialProcessed.current) {
-            initialProcessed.current = true;
-            if (initialTab === 'quran') {
-                setSubTab('quran');
-                fetchQuran(initialQuery);
-            } else if (initialTab === 'hadith') {
-                // For deep-link format "eng-collection:number"
-                const deepLink = initialQuery.match(/^(eng-[\w]+):(\d+)$/);
-                if (deepLink) {
-                    const [, collId, hadithNum] = deepLink;
-                    setSelectedCollection(collId);
-                    setJumpToNum(hadithNum);
-                    setSubTab('hadith');
-                    // Increased delay to 300ms to ensure all state transitions (tab switch) settle
-                    setTimeout(() => jumpToHadith(hadithNum, collId), 300);
-                } else {
-                    // keyword — go to Search tab
-                    setSubTab('search');
-                    setSearchQuery(initialQuery);
-                    setTimeout(() => fetchSearchBoth(initialQuery, 'hadith'), 50);
-                }
-            }
+        if (!initialQuery || initialProcessed.current) return;
+        initialProcessed.current = true;
+
+        if (initialParsed.tab === 'quran') {
+            fetchQuran(initialQuery);
+        } else if (initialParsed.tab === 'hadith' && initialParsed.jump) {
+            // Already set by useState initialization, just need the fetch
+            setTimeout(() => {
+                jumpToHadith(initialParsed.jump, (initialParsed as any).coll);
+            }, 300);
+        } else if (initialParsed.tab === 'search') {
+            setTimeout(() => fetchSearchBoth(searchQuery, 'both'), 50);
         }
-    }, [initialQuery, initialTab]);
+    }, [initialQuery]);
 
     // Get WBW words for a cached ayah key
     const getWbwWords = (surahNum: number, ayahNum: number): any[] =>
