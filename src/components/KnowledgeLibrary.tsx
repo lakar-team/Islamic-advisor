@@ -341,7 +341,7 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
     };
 
     // ── Load books for a collection (fetch hadith #1 to get metadata) ──
-    const loadBooks = async (collectionId: string) => {
+    const loadBooks = async (collectionId: string, skipResults = false) => {
         setBooks([]);
         setSelectedBook(null);
         try {
@@ -361,11 +361,11 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                 setSelectedBook(bookList[0]);
                 // Note: total is bookList[bookList.length - 1].last
                 setBrowseOffset(bookList[0].first);
-                fetchHadithRange(collectionId, bookList[0].first, BROWSE_PAGE);
+                if (!skipResults) fetchHadithRange(collectionId, bookList[0].first, BROWSE_PAGE);
             } else {
                 // Small collections (Nawawi 40 etc.) — no sections, load from start
                 setBrowseOffset(1);
-                fetchHadithRange(collectionId, 1, BROWSE_PAGE);
+                if (!skipResults) fetchHadithRange(collectionId, 1, BROWSE_PAGE);
             }
         } catch { /* ignore */ }
     };
@@ -476,7 +476,9 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
             setResults([]);
             setBooks([]);
             setSelectedBook(null);
-            loadBooks(selectedCollection);
+            // If we have a jumpToNum (deep-link), skip loading the first page of results
+            // to prevent overwriting the target Hadith.
+            loadBooks(selectedCollection, !!jumpToNum);
         }
         if (subTab === 'search') {
             setResults([]);
@@ -504,8 +506,8 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                     setSelectedCollection(collId);
                     setJumpToNum(hadithNum);
                     setSubTab('hadith');
-                    // Use the standardized jump-to protocol
-                    setTimeout(() => jumpToHadith(hadithNum, collId), 50);
+                    // Increased delay to 200ms to ensure all state transitions (tab switch) settle
+                    setTimeout(() => jumpToHadith(hadithNum, collId), 200);
                 } else {
                     // keyword — go to Search tab
                     setSubTab('search');
