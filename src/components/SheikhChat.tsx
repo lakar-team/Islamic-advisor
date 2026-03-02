@@ -75,23 +75,46 @@ const resolveLibraryQuery = (ref: { type: 'quran' | 'hadith'; source: string }):
         if (surahAyahMatch) return `${surahAyahMatch[1]}:${surahAyahMatch[2]}`;
         return ref.source;
     }
-    // For hadith, return "collectionId:number" (e.g. "muslim:7139") so the library
+    // For hadith, return "collectionId:number" (e.g. "eng-muslim:7139") so the library
     // can auto-select the right collection and fetch directly by number.
     const collectionMap: Record<string, string> = {
+        'sahih bukhari': 'eng-bukhari',
         'bukhari': 'eng-bukhari',
+        'sahih muslim': 'eng-muslim',
         'muslim': 'eng-muslim',
         'tirmidhi': 'eng-tirmidhi',
+        'jami at-tirmidhi': 'eng-tirmidhi',
         'abu dawud': 'eng-abudawud',
         'abudawud': 'eng-abudawud',
+        'sunan abu dawud': 'eng-abudawud',
         "nasa'i": 'eng-nasai',
         'nasai': 'eng-nasai',
+        "sunan an-nasa'i": 'eng-nasai',
         'ibn majah': 'eng-ibnmajah',
         'ibnmajah': 'eng-ibnmajah',
+        'sunan ibn majah': 'eng-ibnmajah',
+        'hadith nawawi': 'eng-nawawi42',
+        '40 hadith nawawi': 'eng-nawawi42',
+        'forty hadith nawawi': 'eng-nawawi42',
+        'riyad-us-saliheen': 'eng-riyadussalihin',
+        'riyadh al-salihin': 'eng-riyadussalihin',
+        'riyadhus salihin': 'eng-riyadussalihin',
+        'al-adab al-mufrad': 'eng-adab',
+        'adab al-mufrad': 'eng-adab'
     };
+
+    const lowerSource = ref.source.toLowerCase();
     const hadithNumMatch = ref.source.match(/Hadith\s+(\d+)/i);
-    const collectionRaw = ref.source.match(/^(\w[\w\s']*?)(?:\s*[-–]|\s+Hadith)/i);
-    const collectionKey = collectionRaw ? collectionRaw[1].trim().toLowerCase() : '';
-    const collectionId = collectionMap[collectionKey] || 'eng-bukhari';
+
+    // Find matching collection ID by checking if any key is contained in the source
+    let collectionId = 'eng-bukhari'; // default
+    for (const [key, id] of Object.entries(collectionMap)) {
+        if (lowerSource.includes(key)) {
+            collectionId = id;
+            break;
+        }
+    }
+
     if (hadithNumMatch) return `${collectionId}:${hadithNumMatch[1]}`;
     return ref.source;
 };
@@ -169,8 +192,8 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
                 }
             }
 
-            // Matches: "Sahih Muslim (Book 042, Hadith 7139)" or "Bukhari - Hadith 1234" or just "Muslim 1234"
-            const hadithPattern = /\b(?:Sahih\s+)?(Bukhari|Muslim|Tirmidhi|Abu\s*Dawud|Nasa['']?i|Ibn\s*Majah)(?:[^\d()]*(?:Book\s*\d+,?\s*)?(?:Hadith\s*)?(\d+))?\b/gi;
+            // Matches variants like "Sahih Muslim (Book 042, Hadith 7139)" or "Bukhari - Hadith 1234"
+            const hadithPattern = /\b(?:Sahih\s+)?(Bukhari|Muslim|Tirmidhi|Abu\s*Dawud|Nasa['']?i|Ibn\s*Majah|Riyad[h\s]us\s+Salihin|Adab\s+Al-Mufrad|Nawawi)(?:[^\d()]*(?:Book\s*\d+,?\s*)?(?:Hadith\s*)?(\d+))?\b/gi;
             let h;
             while ((h = hadithPattern.exec(cleanedContent)) !== null) {
                 const source = h[2] ? `${h[1]} – Hadith ${h[2]}` : h[1];

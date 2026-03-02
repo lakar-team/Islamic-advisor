@@ -590,7 +590,8 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                     const [, collId] = deepLink;
                     setSelectedCollection(collId);
                     setSubTab('hadith');
-                    setTimeout(() => fetchHadith(initialQuery), 50);
+                    // Small delay to ensure state updates reach the library logic
+                    setTimeout(() => fetchHadith(initialQuery), 150);
                 } else {
                     // keyword — go to Search tab
                     setSubTab('search');
