@@ -36,8 +36,7 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
 
     // Audio state
     const audioRef = useRef<HTMLAudioElement | null>(null);
-    const playingAyah = useRef<string | null>(null); // State used was "useState", switching to ref for sync checks if needed, but let's keep the ref add where safe
-    const [playingAyahState, setPlayingAyah] = useState<string | null>(null);
+    const [playingAyah, setPlayingAyah] = useState<string | null>(null); // "surah:ayah"
     const [, setAudioLoading] = useState(false);
     const initialProcessed = useRef(false);
 
@@ -88,7 +87,7 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
             return;
         }
         // Mark as loading (empty array = loading in-progress)
-        setWbwCache(prev => ({ ...prev, [key]: [] }));
+        setWbwCache((prev: any) => ({ ...prev, [key]: [] }));
         setWbwActive(key);
         try {
             const url = `https://api.quran.com/api/v4/verses/by_key/${surahNum}:${ayahNum}?language=en&words=true&word_fields=text_uthmani,translation_text`;
@@ -102,9 +101,9 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                     translation: w.translation?.text || '',
                     transliteration: w.transliteration?.text || '',
                 }));
-            setWbwCache(prev => ({ ...prev, [key]: words }));
+            setWbwCache((prev: any) => ({ ...prev, [key]: words }));
         } catch {
-            setWbwCache(prev => ({ ...prev, [key]: [{ text: '—', translation: 'unavailable', transliteration: '' }] }));
+            setWbwCache((prev: any) => ({ ...prev, [key]: [{ text: '—', translation: 'unavailable', transliteration: '' }] }));
         }
     };
 
