@@ -10,9 +10,7 @@ export const onRequestPost = async (context: any) => {
         });
     }
 
-    const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
-        apiVersion: '2025-02-15-preview', // Use a stable version or the latest
-    });
+    const stripe = new Stripe(env.STRIPE_SECRET_KEY);
 
     try {
         const { amount } = await request.json();
