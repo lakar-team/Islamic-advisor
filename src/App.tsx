@@ -46,7 +46,7 @@ const Modal = ({ title, children, onClose }: { title: string; children: React.Re
 function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('chat');
   const [libraryContext, setLibraryContext] = useState<{ tab: 'quran' | 'hadith', query: string } | null>(null);
-  const [modal, setModal] = useState<'privacy' | 'terms' | 'contact' | null>(null);
+  const [modal, setModal] = useState<'privacy' | 'terms' | 'contact' | 'commerce' | null>(null);
   const [donationStatus, setDonationStatus] = useState<'success' | 'cancel' | null>(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get('donation') as 'success' | 'cancel' | null;
@@ -326,6 +326,7 @@ function App() {
           <div className="flex gap-6 text-sm font-bold text-slate-400 uppercase tracking-widest">
             <button onClick={() => setModal('privacy')} className="hover:text-white transition-colors">Privacy</button>
             <button onClick={() => setModal('terms')} className="hover:text-white transition-colors">Terms</button>
+            <button onClick={() => setModal('commerce')} className="hover:text-white transition-colors">Commerce Disclosure</button>
             <button onClick={() => setModal('contact')} className="hover:text-white transition-colors">Contact</button>
           </div>
         </div>
@@ -344,6 +345,37 @@ function App() {
           <p>This platform provides AI-generated Islamic guidance for educational and informational purposes only. It is <strong className="text-white">not a substitute</strong> for qualified human scholars, imams, or jurists.</p>
           <p>For matters requiring an official Fatwa (religious ruling), always consult a qualified local scholar. Online Sheikh AI and its creators bear no responsibility for actions taken based solely on AI-generated advice.</p>
           <p>By using this service, you agree to use it in good faith and not attempt to extract harmful, offensive, or misleading content. Abuse may result in access being restricted.</p>
+        </Modal>
+      )}
+      {modal === 'commerce' && (
+        <Modal title="Commerce Disclosure" onClose={() => setModal(null)}>
+          <div className="space-y-6 text-sm">
+            <div className="grid grid-cols-2 gap-4 border-b border-white/5 pb-4">
+              <span className="text-emerald-400 font-bold uppercase">Legal Name</span>
+              <span className="text-slate-300">We will disclose without delay if requested</span>
+            </div>
+            <div className="grid grid-cols-2 gap-4 border-b border-white/5 pb-4">
+              <span className="text-emerald-400 font-bold uppercase">Address</span>
+              <span className="text-slate-300">We will disclose without delay if requested</span>
+            </div>
+            <div className="grid grid-cols-2 gap-4 border-b border-white/5 pb-4">
+              <span className="text-emerald-400 font-bold uppercase">Phone Number</span>
+              <span className="text-slate-300">We will disclose without delay if requested</span>
+            </div>
+            <div className="grid grid-cols-2 gap-4 border-b border-white/5 pb-4">
+              <span className="text-emerald-400 font-bold uppercase">Email</span>
+              <span className="text-slate-300">lakar.team@gmail.com</span>
+            </div>
+            <div className="grid grid-cols-2 gap-4 border-b border-white/5 pb-4">
+              <span className="text-emerald-400 font-bold uppercase">Head of Operations</span>
+              <span className="text-slate-300">Adam Raman</span>
+            </div>
+            <div className="grid grid-cols-2 gap-4 border-b border-white/5 pb-4">
+              <span className="text-emerald-400 font-bold uppercase">Returns/Refunds</span>
+              <span className="text-slate-300">Donations are non-refundable. Contact us for duplicate errors.</span>
+            </div>
+            <p className="text-[10px] text-slate-500 italic mt-4">Full disclosure available on the <button onClick={() => { setModal(null); setActiveTab('support'); }} className="text-emerald-400 hover:underline">Support Us</button> page.</p>
+          </div>
         </Modal>
       )}
       {modal === 'contact' && (
