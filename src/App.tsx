@@ -11,36 +11,41 @@ import { motion, AnimatePresence } from 'framer-motion';
 type ActiveTab = 'chat' | 'library' | 'support';
 
 // Simple modal for footer pages
+// Simple modal for footer pages
 const Modal = ({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) => (
-  <AnimatePresence>
+  <motion.div
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+    className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm"
+    onClick={onClose}
+  >
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm"
-      onClick={onClose}
+      initial={{ scale: 0.9, y: 20 }}
+      animate={{ scale: 1, y: 0 }}
+      exit={{ scale: 0.9, y: 20 }}
+      className="glass bg-slate-900 w-full max-w-2xl rounded-[3rem] p-10 relative border border-emerald-500/20 shadow-2xl"
+      onClick={(e) => e.stopPropagation()}
     >
-      <motion.div
-        initial={{ scale: 0.9, y: 20 }}
-        animate={{ scale: 1, y: 0 }}
-        exit={{ scale: 0.9, y: 20 }}
-        className="glass bg-slate-900 w-full max-w-2xl rounded-[3rem] p-10 relative border border-emerald-500/20 shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
+      <button
+        onClick={onClose}
+        className="absolute top-8 right-8 text-slate-500 hover:text-white transition-colors p-2 z-[60]"
+        aria-label="Close modal"
       >
-        <button onClick={onClose} className="absolute top-8 right-8 text-slate-500 hover:text-white transition-colors">
-          <X className="w-7 h-7" />
-        </button>
-        <h3 className="text-3xl font-black gold-text tracking-tighter mb-8">{title}</h3>
-        <div className="text-slate-400 leading-relaxed space-y-4 font-medium">{children}</div>
-        <button
-          onClick={onClose}
-          className="w-full mt-10 py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-2xl transition-all uppercase tracking-widest"
-        >
-          Close
-        </button>
-      </motion.div>
+        <X className="w-8 h-8" />
+      </button>
+      <h3 className="text-3xl font-black gold-text tracking-tighter mb-8">{title}</h3>
+      <div className="text-slate-400 leading-relaxed space-y-4 font-medium max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+        {children}
+      </div>
+      <button
+        onClick={onClose}
+        className="w-full mt-10 py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-2xl transition-all uppercase tracking-widest"
+      >
+        Close
+      </button>
     </motion.div>
-  </AnimatePresence>
+  </motion.div>
 );
 
 function App() {
@@ -333,64 +338,89 @@ function App() {
       </footer>
 
       {/* Footer Modals */}
-      {modal === 'privacy' && (
-        <Modal title="Privacy Policy" onClose={() => setModal(null)}>
-          <p>Online Sheikh AI does not store your conversations on any server. All chat history is saved locally in your browser only and never transmitted to third parties.</p>
-          <p>We use a third-party AI API (OpenRouter) to route requests to language models. Your questions are sent to their servers for processing; please review <a href="https://openrouter.ai/privacy" target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline">OpenRouter's Privacy Policy</a> for details on how they handle data.</p>
-          <p>We do not use cookies, trackers, or analytics beyond basic Cloudflare hosting metrics.</p>
-        </Modal>
-      )}
-      {modal === 'terms' && (
-        <Modal title="Terms of Use" onClose={() => setModal(null)}>
-          <p>This platform provides AI-generated Islamic guidance for educational and informational purposes only. It is <strong className="text-white">not a substitute</strong> for qualified human scholars, imams, or jurists.</p>
-          <p>For matters requiring an official Fatwa (religious ruling), always consult a qualified local scholar. Online Sheikh AI and its creators bear no responsibility for actions taken based solely on AI-generated advice.</p>
-          <p>By using this service, you agree to use it in good faith and not attempt to extract harmful, offensive, or misleading content. Abuse may result in access being restricted.</p>
-        </Modal>
-      )}
-      {modal === 'commerce' && (
-        <Modal title="Commerce Disclosure" onClose={() => setModal(null)}>
-          <div className="space-y-6 text-sm">
-            <div className="grid grid-cols-2 gap-4 border-b border-white/5 pb-4">
-              <span className="text-emerald-400 font-bold uppercase">Legal Name</span>
-              <span className="text-slate-300">We will disclose without delay if requested</span>
+      <AnimatePresence>
+        {modal === 'privacy' && (
+          <Modal title="Privacy Policy" onClose={() => setModal(null)}>
+            <p>Online Sheikh AI does not store your conversations on any server. All chat history is saved locally in your browser only and never transmitted to third parties.</p>
+            <p>We use a third-party AI API (OpenRouter) to route requests to language models. Your questions are sent to their servers for processing; please review <a href="https://openrouter.ai/privacy" target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline">OpenRouter's Privacy Policy</a> for details on how they handle data.</p>
+            <p>We do not use cookies, trackers, or analytics beyond basic Cloudflare hosting metrics.</p>
+          </Modal>
+        )}
+        {modal === 'terms' && (
+          <Modal title="Terms of Use" onClose={() => setModal(null)}>
+            <p>This platform provides AI-generated Islamic guidance for educational and informational purposes only. It is <strong className="text-white">not a substitute</strong> for qualified human scholars, imams, or jurists.</p>
+            <p>For matters requiring an official Fatwa (religious ruling), always consult a qualified local scholar. Online Sheikh AI and its creators bear no responsibility for actions taken based solely on AI-generated advice.</p>
+            <p>By using this service, you agree to use it in good faith and not attempt to extract harmful, offensive, or misleading content. Abuse may result in access being restricted.</p>
+          </Modal>
+        )}
+        {modal === 'commerce' && (
+          <Modal title="Commerce Disclosure / 特定商取引法に基づく表記" onClose={() => setModal(null)}>
+            <div className="space-y-6 text-sm">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                <div className="space-y-4">
+                  <div className="border-b border-white/5 pb-2">
+                    <p className="text-emerald-400 font-bold uppercase tracking-wider text-[10px]">Legal Name</p>
+                    <p className="text-slate-300 font-medium">We will disclose without delay if requested</p>
+                  </div>
+                  <div className="border-b border-white/5 pb-2">
+                    <p className="text-emerald-400 font-bold uppercase tracking-wider text-[10px]">Address</p>
+                    <p className="text-slate-300 font-medium">We will disclose without delay if requested</p>
+                  </div>
+                  <div className="border-b border-white/5 pb-2">
+                    <p className="text-emerald-400 font-bold uppercase tracking-wider text-[10px]">Phone Number</p>
+                    <p className="text-slate-300 font-medium">We will disclose without delay if requested</p>
+                  </div>
+                  <div className="border-b border-white/5 pb-2">
+                    <p className="text-emerald-400 font-bold uppercase tracking-wider text-[10px]">Email Address</p>
+                    <p className="text-slate-300 font-medium">lakar.team@gmail.com</p>
+                  </div>
+                  <div className="border-b border-white/5 pb-2">
+                    <p className="text-emerald-400 font-bold uppercase tracking-wider text-[10px]">Head of Operations</p>
+                    <p className="text-slate-300 font-medium">Adam Raman</p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="border-b border-white/5 pb-2">
+                    <p className="text-emerald-400 font-bold uppercase tracking-wider text-[10px]">Additional Fees</p>
+                    <p className="text-slate-300 font-medium">No added fees for digital donations.</p>
+                  </div>
+                  <div className="border-b border-white/5 pb-2">
+                    <p className="text-emerald-400 font-bold uppercase tracking-wider text-[10px]">Returns Policy</p>
+                    <p className="text-slate-300 font-medium leading-tight text-xs">Donations are non-refundable. For errors, contact us.</p>
+                  </div>
+                  <div className="border-b border-white/5 pb-2">
+                    <p className="text-emerald-400 font-bold uppercase tracking-wider text-[10px]">Delivery Times</p>
+                    <p className="text-slate-300 font-medium">Email confirmation immediate after donation.</p>
+                  </div>
+                  <div className="border-b border-white/5 pb-2">
+                    <p className="text-emerald-400 font-bold uppercase tracking-wider text-[10px]">Payment Methods</p>
+                    <p className="text-slate-300 font-medium">Cards, Apple/Google Pay, PayPal.</p>
+                  </div>
+                  <div className="border-b border-white/5 pb-2">
+                    <p className="text-emerald-400 font-bold uppercase tracking-wider text-[10px]">Price</p>
+                    <p className="text-slate-300 font-medium">As shown on donation checkout.</p>
+                  </div>
+                </div>
+              </div>
+              <p className="text-[10px] text-slate-500 italic">This disclosure is provided in compliance with the Japanese Specified Commercial Transactions Act.</p>
             </div>
-            <div className="grid grid-cols-2 gap-4 border-b border-white/5 pb-4">
-              <span className="text-emerald-400 font-bold uppercase">Address</span>
-              <span className="text-slate-300">We will disclose without delay if requested</span>
-            </div>
-            <div className="grid grid-cols-2 gap-4 border-b border-white/5 pb-4">
-              <span className="text-emerald-400 font-bold uppercase">Phone Number</span>
-              <span className="text-slate-300">We will disclose without delay if requested</span>
-            </div>
-            <div className="grid grid-cols-2 gap-4 border-b border-white/5 pb-4">
-              <span className="text-emerald-400 font-bold uppercase">Email</span>
-              <span className="text-slate-300">lakar.team@gmail.com</span>
-            </div>
-            <div className="grid grid-cols-2 gap-4 border-b border-white/5 pb-4">
-              <span className="text-emerald-400 font-bold uppercase">Head of Operations</span>
-              <span className="text-slate-300">Adam Raman</span>
-            </div>
-            <div className="grid grid-cols-2 gap-4 border-b border-white/5 pb-4">
-              <span className="text-emerald-400 font-bold uppercase">Returns/Refunds</span>
-              <span className="text-slate-300">Donations are non-refundable. Contact us for duplicate errors.</span>
-            </div>
-            <p className="text-[10px] text-slate-500 italic mt-4">Full disclosure available on the <button onClick={() => { setModal(null); setActiveTab('support'); }} className="text-emerald-400 hover:underline">Support Us</button> page.</p>
-          </div>
-        </Modal>
-      )}
-      {modal === 'contact' && (
-        <Modal title="Contact" onClose={() => setModal(null)}>
-          <p>This project is built and maintained by the <strong className="text-white">Lakar Team</strong> as a service to the Ummah.</p>
-          <p>For questions, bug reports, or collaboration inquiries, please reach out via email:</p>
-          <a
-            href="mailto:lakar.team@gmail.com"
-            className="block text-center py-4 px-8 bg-emerald-600/20 border border-emerald-500/30 rounded-2xl text-emerald-400 font-black hover:bg-emerald-600/30 transition-all"
-          >
-            lakar.team@gmail.com
-          </a>
-          <p>You can also support the project financially to help cover API costs — click <button onClick={() => { setModal(null); setActiveTab('support'); }} className="text-emerald-400 hover:underline font-bold">Support Us</button>.</p>
-        </Modal>
-      )}
+          </Modal>
+        )}
+        {modal === 'contact' && (
+          <Modal title="Contact" onClose={() => setModal(null)}>
+            <p>This project is built and maintained by the <strong className="text-white">Lakar Team</strong> as a service to the Ummah.</p>
+            <p>For questions, bug reports, or collaboration inquiries, please reach out via email:</p>
+            <a
+              href="mailto:lakar.team@gmail.com"
+              className="block text-center py-4 px-8 bg-emerald-600/20 border border-emerald-500/30 rounded-2xl text-emerald-400 font-black hover:bg-emerald-600/30 transition-all"
+            >
+              lakar.team@gmail.com
+            </a>
+            <p>You can also support the project financially to help cover API costs — click <button onClick={() => { setModal(null); setActiveTab('support'); }} className="text-emerald-400 hover:underline font-bold">Support Us</button>.</p>
+          </Modal>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
