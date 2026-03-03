@@ -219,73 +219,7 @@ const SupportUs: React.FC = () => {
                     </div>
                 </div>
             </motion.div>
-            {/* Commerce Disclosure Section */}
-            <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.6 }}
-                className="mt-24 max-w-4xl mx-auto"
-            >
-                <div className="glass p-10 rounded-[2.5rem] border border-white/5 bg-slate-900/20">
-                    <h2 className="text-2xl font-black mb-8 gold-text tracking-tight uppercase">Commerce Disclosure / 特定商取引法に基づく表記</h2>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6 text-sm">
-                        <div className="space-y-6">
-                            <div className="border-b border-white/5 pb-4">
-                                <p className="text-emerald-400 font-bold uppercase tracking-wider mb-1">Legal Name</p>
-                                <p className="text-slate-300 font-medium">We will disclose without delay if requested</p>
-                            </div>
-                            <div className="border-b border-white/5 pb-4">
-                                <p className="text-emerald-400 font-bold uppercase tracking-wider mb-1">Address</p>
-                                <p className="text-slate-300 font-medium">We will disclose without delay if requested</p>
-                            </div>
-                            <div className="border-b border-white/5 pb-4">
-                                <p className="text-emerald-400 font-bold uppercase tracking-wider mb-1">Phone Number</p>
-                                <p className="text-slate-300 font-medium">We will disclose without delay if requested</p>
-                            </div>
-                            <div className="border-b border-white/5 pb-4">
-                                <p className="text-emerald-400 font-bold uppercase tracking-wider mb-1">Email Address</p>
-                                <p className="text-slate-300 font-medium">lakar.team@gmail.com</p>
-                            </div>
-                            <div className="border-b border-white/5 pb-4">
-                                <p className="text-emerald-400 font-bold uppercase tracking-wider mb-1">Head of Operations</p>
-                                <p className="text-slate-300 font-medium">Adam Raman</p>
-                            </div>
-                        </div>
-
-                        <div className="space-y-6">
-                            <div className="border-b border-white/5 pb-4">
-                                <p className="text-emerald-400 font-bold uppercase tracking-wider mb-1">Additional Fees</p>
-                                <p className="text-slate-300 font-medium">No additional fees for digital donations. Credit card processing fees are handled by the payment provider.</p>
-                            </div>
-                            <div className="border-b border-white/5 pb-4">
-                                <p className="text-emerald-400 font-bold uppercase tracking-wider mb-1">Exchanges & Returns Policy</p>
-                                <p className="text-slate-300 font-medium">Donations are voluntary and non-refundable. For any accidental duplicate transactions, please contact us at lakar.team@gmail.com.</p>
-                            </div>
-                            <div className="border-b border-white/5 pb-4">
-                                <p className="text-emerald-400 font-bold uppercase tracking-wider mb-1">Delivery Times</p>
-                                <p className="text-slate-300 font-medium">Donation confirmation is provided via email immediately after a successful transaction.</p>
-                            </div>
-                            <div className="border-b border-white/5 pb-4">
-                                <p className="text-emerald-400 font-bold uppercase tracking-wider mb-1">Accepted Payment Methods</p>
-                                <p className="text-slate-300 font-medium">Credit cards, Debit cards, Apple Pay, Google Pay, and PayPal.</p>
-                            </div>
-                            <div className="border-b border-white/5 pb-4">
-                                <p className="text-emerald-400 font-bold uppercase tracking-wider mb-1">Payment Period</p>
-                                <p className="text-slate-300 font-medium">Payments are processed immediately upon confirmation of the transaction.</p>
-                            </div>
-                            <div className="border-b border-white/5 pb-4">
-                                <p className="text-emerald-400 font-bold uppercase tracking-wider mb-1">Price</p>
-                                <p className="text-slate-300 font-medium">The amount chosen by the donor as shown on the donation page.</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <p className="mt-8 text-xs text-slate-500 italic font-medium">
-                        This disclosure is provided in compliance with the Japanese Specified Commercial Transactions Act.
-                    </p>
-                </div>
-            </motion.div>
         </div>
     );
 };
