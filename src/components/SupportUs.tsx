@@ -72,7 +72,7 @@ const SupportUs: React.FC = () => {
                     transition={{ delay: 0.1 }}
                     className="text-5xl md:text-7xl font-black mb-6 leading-tight tracking-tighter"
                 >
-                    Keep the <span className="gold-text">Sheikh</span><br />
+                    Keep <span className="gold-text">Islamic-advisor</span><br />
                     Free for the <span className="text-emerald-400">Ummah.</span>
                 </motion.h1>
 

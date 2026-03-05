@@ -91,7 +91,7 @@ function App() {
             <div className="bg-primary p-2 rounded-lg shadow-lg">
               <Compass className="text-amber-500 w-6 h-6" />
             </div>
-            <span className="text-2xl font-bold tracking-tight gold-text">Online Sheikh AI</span>
+            <span className="text-2xl font-bold tracking-tight gold-text">Islamic-advisor</span>
           </div>
           <span className="text-sm text-slate-500 font-bold">Knowledge Library</span>
         </nav>
@@ -114,7 +114,7 @@ function App() {
           <div className="bg-primary p-2 rounded-lg group-hover:rotate-12 transition-transform shadow-lg">
             <Compass className="text-amber-500 w-6 h-6" />
           </div>
-          <span className="text-2xl font-bold tracking-tight gold-text">Online Sheikh AI</span>
+          <span className="text-2xl font-bold tracking-tight gold-text">Islamic-advisor</span>
         </div>
 
         <div className="flex items-center gap-2 md:gap-6 text-xs md:text-sm font-semibold text-slate-400">
@@ -250,7 +250,7 @@ function App() {
                     <Heart className="w-7 h-7 text-emerald-400" />
                   </div>
                   <div>
-                    <p className="font-black text-white text-lg tracking-tight">Keep the Sheikh Free for All</p>
+                    <p className="font-black text-white text-lg tracking-tight">Keep Islamic-advisor Free for All</p>
                     <p className="text-slate-400 text-sm font-medium mt-0.5">API costs money. Your sadaqah keeps this running for the entire Ummah.</p>
                   </div>
                 </div>
@@ -323,7 +323,7 @@ function App() {
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
           <div className="flex items-center gap-2">
             <Compass className="text-amber-500 w-5 h-5" />
-            <span className="font-bold gold-text">Online Sheikh AI</span>
+            <span className="font-bold gold-text">Islamic-advisor</span>
           </div>
           <div className="text-sm text-slate-500">
             © 2026 Built with 💚 for the Ummah. Use responsibly.
@@ -341,7 +341,7 @@ function App() {
       <AnimatePresence>
         {modal === 'privacy' && (
           <Modal title="Privacy Policy" onClose={() => setModal(null)}>
-            <p>Online Sheikh AI does not store your conversations on any server. All chat history is saved locally in your browser only and never transmitted to third parties.</p>
+            <p>Islamic-advisor does not store your conversations on any server. All chat history is saved locally in your browser only and never transmitted to third parties.</p>
             <p>We use a third-party AI API (OpenRouter) to route requests to language models. Your questions are sent to their servers for processing; please review <a href="https://openrouter.ai/privacy" target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline">OpenRouter's Privacy Policy</a> for details on how they handle data.</p>
             <p>We do not use cookies, trackers, or analytics beyond basic Cloudflare hosting metrics.</p>
           </Modal>
@@ -349,7 +349,7 @@ function App() {
         {modal === 'terms' && (
           <Modal title="Terms of Use" onClose={() => setModal(null)}>
             <p>This platform provides AI-generated Islamic guidance for educational and informational purposes only. It is <strong className="text-white">not a substitute</strong> for qualified human scholars, imams, or jurists.</p>
-            <p>For matters requiring an official Fatwa (religious ruling), always consult a qualified local scholar. Online Sheikh AI and its creators bear no responsibility for actions taken based solely on AI-generated advice.</p>
+            <p>For matters requiring an official Fatwa (religious ruling), always consult a qualified local scholar. Islamic-advisor and its creators bear no responsibility for actions taken based solely on AI-generated advice.</p>
             <p>By using this service, you agree to use it in good faith and not attempt to extract harmful, offensive, or misleading content. Abuse may result in access being restricted.</p>
           </Modal>
         )}

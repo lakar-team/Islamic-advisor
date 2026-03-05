@@ -29,7 +29,7 @@ export const onRequestPost = async (context: any) => {
                     price_data: {
                         currency: 'usd',
                         product_data: {
-                            name: 'Donation to Online Sheikh AI',
+                            name: 'Donation to Islamic-advisor',
                             description: 'Support the Ummah with AI-powered Islamic guidance',
                         },
                         unit_amount: Math.round(amount * 100), // Stripe expects amount in cents

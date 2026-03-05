@@ -43,7 +43,7 @@ const RollingReviews: React.FC = () => {
                         Community <span className="text-emerald-500">Voices</span>
                     </h2>
                     <p className="text-slate-400 font-medium max-w-xl">
-                        Real reflections from users across the Ummah finding guidance through Online Sheikh AI.
+                        Real reflections from users across the Ummah finding guidance through Islamic-advisor.
                     </p>
                 </div>
                 <button
