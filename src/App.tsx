@@ -348,9 +348,25 @@ function App() {
         )}
         {modal === 'terms' && (
           <Modal title="Terms of Use" onClose={() => setModal(null)}>
-            <p>This platform provides AI-generated Islamic guidance for educational and informational purposes only. It is <strong className="text-white">not a substitute</strong> for qualified human scholars, imams, or jurists.</p>
-            <p>For matters requiring an official Fatwa (religious ruling), always consult a qualified local scholar. Islamic-advisor and its creators bear no responsibility for actions taken based solely on AI-generated advice.</p>
-            <p>By using this service, you agree to use it in good faith and not attempt to extract harmful, offensive, or misleading content. Abuse may result in access being restricted.</p>
+            <div className="space-y-4">
+              <section>
+                <h4 className="text-emerald-400 font-bold uppercase tracking-widest text-[10px] mb-2">Service Disclaimer</h4>
+                <p>This platform provides AI-generated Islamic guidance for educational and informational purposes only. It is <strong className="text-white">not a substitute</strong> for qualified human scholars, imams, or jurists.</p>
+                <p>For matters requiring an official Fatwa (religious ruling), always consult a qualified local scholar. Islamic-advisor and its creators bear no responsibility for actions taken based solely on AI-generated advice.</p>
+              </section>
+
+              <section>
+                <h4 className="text-emerald-400 font-bold uppercase tracking-widest text-[10px] mb-2">Legal Restrictions</h4>
+                <p>Advice provided by this AI is generated based on general Islamic principles. All religious practice and legal rulings are <strong className="text-white">subject to the specific laws and regulations of your local jurisdiction</strong>. Users must comply with all applicable local, national, and international laws when using this service.</p>
+              </section>
+
+              <section>
+                <h4 className="text-emerald-400 font-bold uppercase tracking-widest text-[10px] mb-2">Cancellations & Refunds</h4>
+                <p>As Islamic-advisor currently only accepts one-time donations to support infrastructure costs, there are no recurring subscriptions to cancel. <strong className="text-white">All donations are final and non-refundable.</strong></p>
+              </section>
+
+              <p className="pt-2 italic text-slate-500">By using this service, you agree to use it in good faith and not attempt to extract harmful, offensive, or misleading content.</p>
+            </div>
           </Modal>
         )}
         {modal === 'commerce' && (
@@ -386,8 +402,12 @@ function App() {
                     <p className="text-slate-300 font-medium">No added fees for digital donations.</p>
                   </div>
                   <div className="border-b border-white/5 pb-2">
-                    <p className="text-emerald-400 font-bold uppercase tracking-wider text-[10px]">Returns Policy</p>
-                    <p className="text-slate-300 font-medium leading-tight text-xs">Donations are non-refundable. For errors, contact us.</p>
+                    <p className="text-emerald-400 font-bold uppercase tracking-wider text-[10px]">Returns & Cancellations</p>
+                    <p className="text-slate-300 font-medium leading-tight text-xs">One-time donations are non-refundable. There are no recurring fees or cancellation required.</p>
+                  </div>
+                  <div className="border-b border-white/5 pb-2">
+                    <p className="text-emerald-400 font-bold uppercase tracking-wider text-[10px]">Legal Restrictions</p>
+                    <p className="text-slate-300 font-medium leading-tight text-xs">AI guidance is subject to local laws and regulations.</p>
                   </div>
                   <div className="border-b border-white/5 pb-2">
                     <p className="text-emerald-400 font-bold uppercase tracking-wider text-[10px]">Delivery Times</p>
