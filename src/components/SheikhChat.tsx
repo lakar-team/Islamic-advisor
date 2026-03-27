@@ -183,7 +183,7 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
         if (references.length === 0) {
             const seen = new Set<string>();
 
-            const quranPattern = /\(?(?:Surah\s+)?([\w\s-]+),?\s*(\d+):(\d+)\)?/g;
+            const quranPattern = /\(?(?:Surah\s+)?([a-zA-Z\s-]+),?\s*(\d+):(\d+)\)?/g;
             let q;
             while ((q = quranPattern.exec(cleanedContent)) !== null) {
                 const source = `${q[1].trim()} ${q[2]}:${q[3]}`;
@@ -193,8 +193,8 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
                 }
             }
 
-            // Matches variants like "Sahih Muslim (Book 042, Hadith 7139)" or "Bukhari - Hadith 1234"
-            const hadithPattern = /\b(?:Sahih\s+)?(Bukhari|Muslim|Tirmidhi|Abu\s*Dawud|Nasa['']?i|Ibn\s*Majah|Riyad[h\s]us\s+Salihin|Adab\s+Al-Mufrad|Nawawi)(?:[^\d()]*(?:Book\s*\d+,?\s*)?(?:Hadith\s*)?(\d+))?\b/gi;
+            // Matches variants like "Sahih Muslim (Book 042, Hadith 7139)" or "Bukhari #1234"
+            const hadithPattern = /\b(?:Sahih\s+)?(Bukhari|Muslim|Tirmidhi|Abu\s*Davud|Nasa['']?i|Ibn\s*Majah|Riyad[h\s]us\s+Salihin|Adab\s+Al-Mufrad|Nawawi)(?:[^\d()#]*(?:Book\s*\d+,?\s*)?(?:Hadith\s*|#\s*)?(\d+))?\b/gi;
             let h;
             while ((h = hadithPattern.exec(cleanedContent)) !== null) {
                 const source = h[2] ? `${h[1]} – Hadith ${h[2]}` : h[1];
