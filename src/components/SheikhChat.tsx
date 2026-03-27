@@ -144,6 +144,7 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
     const [input, setInput] = useState('');
     const [messages, setMessages] = useState<Message[]>(loadMessages);
     const [isLoading, setIsLoading] = useState(false);
+    const sendingRef = useRef(false);
     const [error, setError] = useState<string | null>(null);
     const [expandedMessages, setExpandedMessages] = useState<Record<string, boolean>>({});
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -208,7 +209,7 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
     };
 
     const handleSend = async () => {
-        if (!input.trim() || isLoading) return;
+        if (!input.trim() || isLoading || sendingRef.current) return;
 
         const { allowed } = checkRateLimit();
         if (!allowed) {
@@ -223,6 +224,8 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
             timestamp: Date.now(),
         };
 
+        // Synchronously block additional sends
+        sendingRef.current = true;
         setMessages((prev: Message[]) => [...prev, userMsg]);
         setInput('');
         setIsLoading(true);
@@ -237,9 +240,18 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
                 })
             });
 
-            if (!response.ok) throw new Error('Failed to fetch');
+            let data: any;
+            try {
+                data = await response.json();
+            } catch (e) {
+                if (!response.ok) throw new Error(`Server error (${response.status}). Keep trying or check your connection.`);
+                throw new Error("Invalid response from server.");
+            }
 
-            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.error || `Error ${response.status}: Failed to reach the Sheikh.`);
+            }
+
             const aiRawContent = data.choices[0].message.content;
             const { cleanedContent, references } = parseCitations(aiRawContent);
 
@@ -253,10 +265,11 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
 
             setMessages((prev: Message[]) => [...prev, assistantMsg]);
             incrementUsage();
-        } catch (err) {
-            setError("The connection to the Sheikh was interrupted. Please try again.");
+        } catch (err: any) {
+            setError(err.message || "The connection to the Sheikh was interrupted. Please try again.");
         } finally {
             setIsLoading(false);
+            sendingRef.current = false;
         }
     };
 

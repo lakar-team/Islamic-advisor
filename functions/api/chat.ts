@@ -110,6 +110,28 @@ export const onRequestPost = async (context: any) => {
 
         const data = await response.json();
 
+        // ── AI Response Error handling ─────────────────────────────────────────
+        if (!response.ok) {
+            return new Response(
+                JSON.stringify({ error: data.error?.message || 'Artificial Intelligence component failed. Check your API key or usage limits.' }),
+                { 
+                    status: response.status,
+                    headers: { 'Content-Type': 'application/json' }
+                }
+            );
+        }
+
+        // Sometimes OpenRouter returns 200 with an empty choice or error body in specific cases
+        if (!data.choices || !data.choices[0]) {
+            return new Response(
+                JSON.stringify({ error: 'The AI provided an invalid response format. This usually means the model is busy or inaccessible.' }),
+                { 
+                    status: 502,
+                    headers: { 'Content-Type': 'application/json' }
+                }
+            );
+        }
+
         // Increment questions_answered counter in RATE_LIMIT KV if bound
         if (env.RATE_LIMIT) {
             try {
