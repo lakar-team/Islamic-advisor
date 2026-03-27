@@ -131,7 +131,7 @@ export const onRequestPost = async (context: any) => {
                 messages: [
                     { 
                         role: 'system', 
-                        content: 'You are a research bot. For the user query, list the 3 most likely Quran verses (Surah:Verse) and 3 most likely Sahih Hadiths (Collection name and number) that directly answer it. Output ONLY a comma-separated list like: "Al-Baqarah 2:255, Sahih Bukhari 1234, Sahih Muslim 45".' 
+                        content: 'You are a research bot. For the user query, list the 5 most relevant Quran verses (Surah:Verse) and 5 most relevant Sahih Hadiths (Collection name and number) that directly answer it. Output ONLY a comma-separated list like: "Al-Baqarah 2:255, Sahih Bukhari 1234, Sahih Muslim 45".' 
                     },
                     { role: 'user', content: userQuery }
                 ],
@@ -143,21 +143,23 @@ export const onRequestPost = async (context: any) => {
 
         // --- STAGE 2: Verification Fetching (Ground Truth) ---
         const quranRegex = /(\d+):(\d+)/g;
-        const hadithRegex = /(Sahih Bukhari|Sahih Muslim|Sunan Abu Dawood|Sunan An-Nasai|Sunan Ibn Majah|Jami At-Tirmidhi)[^,.]+\s+(\d+)/gi;
+        const hadithRegex = /(Sahih Bukhari|Sahih Muslim|Sunan Abu Dawud|Sunan An-Nasai|Sunan Ibn Majah|Jami At-Tirmidhi|40 Hadith Nawawi|Riyad us Saliheen|Al-Adab al-Mufrad)[^,.\d]*[\s#]*(\d+)/gi;
         
         const qMatches = [...huntingList.matchAll(quranRegex)];
         const hMatches = [...huntingList.matchAll(hadithRegex)];
         
         const collectionMap: Record<string, string> = {
             'sahih bukhari': 'eng-bukhari', 'sahih muslim': 'eng-muslim',
-            'sunan abu dawood': 'eng-abudawud', 'sunan an-nasai': 'eng-nasai',
-            'sunan ibn majah': 'eng-ibnmajah', 'jami at-tirmidhi': 'eng-tirmidhi'
+            'sunan abu dawud': 'eng-abudawud', 'sunan an-nasai': 'eng-nasai',
+            'sunan ibn majah': 'eng-ibnmajah', 'jami at-tirmidhi': 'eng-tirmidhi',
+            '40 hadith nawawi': 'eng-nawawi42', 'riyad us saliheen': 'eng-riyadussalihin',
+            'al-adab al-mufrad': 'eng-adab'
         };
 
         const verifiedContext: string[] = [];
 
-        // Fetch Quran verses
-        for (const m of qMatches.slice(0, 3)) {
+        // Fetch Quran verses (up to 5)
+        for (const m of qMatches.slice(0, 5)) {
             try {
                 const res = await fetch(`https://api.alquran.cloud/v1/ayah/${m[1]}:${m[2]}/en.asad`);
                 if (res.ok) {
@@ -167,15 +169,18 @@ export const onRequestPost = async (context: any) => {
             } catch (e) {}
         }
 
-        // Fetch Hadiths
-        for (const m of hMatches.slice(0, 3)) {
-            const collId = collectionMap[m[1].toLowerCase()];
+        // Fetch Hadiths (up to 5)
+        for (const m of hMatches.slice(0, 5)) {
+            const collName = m[1].toLowerCase().replace(/['"“”]/g, '').trim();
+            const collId = collectionMap[collName];
             if (collId) {
                 try {
                     const res = await fetch(`https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/${collId}/${m[2]}.json`);
                     if (res.ok) {
                         const d = await res.json();
-                        verifiedContext.push(`${m[1]} #${m[2]}: ${d.hadiths[0].text}`);
+                        if (d.hadiths && d.hadiths[0]) {
+                            verifiedContext.push(`${m[1]} #${m[2]}: ${d.hadiths[0].text}`);
+                        }
                     }
                 } catch (e) {}
             }
@@ -201,7 +206,9 @@ export const onRequestPost = async (context: any) => {
                             VERIFIED RESEARCH CONTEXT (Grounded Truth):
                             ${verifiedContext.join('\n\n')}
 
-                            FINAL INSTRUCTION: Use the verified context above to answer the user. You MUST prioritize these specific references and match their numbers exactly.
+                            FINAL INSTRUCTION: Use the verified context above to answer the user. 
+                            MANDATORY: Use at least one Quran verse and one verified Hadith. Multiple relevant sources is preferred if they help answer the query.
+                            Match their numbers exactly and prioritize these specific references.
                         `
                     },
                     ...messages,
