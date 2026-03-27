@@ -83,52 +83,89 @@ export const onRequestPost = async (context: any) => {
     }
     // If RATE_LIMIT binding is missing (local dev), skip silently.
 
-    // ── AI Request ────────────────────────────────────────────────────────────
+    // ── AI Request Pipeline ───────────────────────────────────────────────────
     try {
         const { messages } = await request.json();
+        const userQuery = messages[messages.length - 1].content;
 
         const apiUrl = env.AI_API_URL || 'https://openrouter.ai/api/v1/chat/completions';
         const model = env.AI_MODEL || 'google/gemini-2.0-flash-001';
+        const apiKey = env.AI_API_KEY;
 
-        const response = await fetch(apiUrl, {
+        // --- STAGE 1: Keyword Extraction ---
+        const keywordResponse = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+            body: JSON.stringify({
+                model,
+                messages: [
+                    { role: 'system', content: 'You are a search assistant. Extract 2-3 specific Islamic keywords from the user query to search the Quran. Output ONLY the keywords separated by spaces. If no specific keywords, output "Islam".' },
+                    { role: 'user', content: userQuery }
+                ],
+                temperature: 0.1,
+            }),
+        });
+        const keywordData = await keywordResponse.json();
+        const searchTerms = keywordData.choices?.[0]?.message?.content || 'Islam';
+
+        // --- STAGE 2: Quran Search (External API) ---
+        let quranContext = '';
+        try {
+            const searchUrl = `https://api.alquran.cloud/v1/search/${encodeURIComponent(searchTerms)}/all/en.asad`;
+            const searchRes = await fetch(searchUrl);
+            if (searchRes.ok) {
+                const searchData = await searchRes.json();
+                const matches = (searchData.data?.matches || []).slice(0, 3);
+                quranContext = matches.map((m: any) => `Verified Source: ${m.surah.englishName} ${m.surah.number}:${m.numberInSurah}\nText: ${m.text}`).join('\n\n');
+            }
+        } catch (e) {
+            console.error('Quran search failed:', e);
+        }
+
+        // --- STAGE 3: Drafting & Verification ---
+        const finalResponse = await fetch(apiUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${env.AI_API_KEY}`,
+                'Authorization': `Bearer ${apiKey}`,
                 'HTTP-Referer': 'https://islamic-advisor.pages.dev',
                 'X-Title': 'Online Sheikh AI',
             },
             body: JSON.stringify({
                 model,
                 messages: [
-                    { role: 'system', content: env.SHEIKH_PROMPT || SHEIKH_SYSTEM_PROMPT },
+                    { 
+                        role: 'system', 
+                        content: `
+                            ${env.SHEIKH_PROMPT || SHEIKH_SYSTEM_PROMPT}
+
+                            VERIFIED CONTEXT FROM QURAN DATABASE:
+                            ${quranContext || 'No direct search results found. Rely on verified internal knowledge but BE EXTREMELY CAREFUL with numbers.'}
+
+                            INSTRUCTION: Use the verified context above to support your answer. If the context doesn't match the query, ignore it and rely on verified knowledge. 
+                            MANDATORY: You MUST verify the Surah/Verse numbers you provide. If you are unsure, do not cite a number.
+                        `
+                    },
                     ...messages,
                 ],
                 temperature: 0.7,
             }),
         });
 
-        const data = await response.json();
+        const data = await finalResponse.json();
 
         // ── AI Response Error handling ─────────────────────────────────────────
-        if (!response.ok) {
+        if (!finalResponse.ok) {
             return new Response(
-                JSON.stringify({ error: data.error?.message || 'Artificial Intelligence component failed. Check your API key or usage limits.' }),
-                { 
-                    status: response.status,
-                    headers: { 'Content-Type': 'application/json' }
-                }
+                JSON.stringify({ error: data.error?.message || 'Artificial Intelligence component failed.' }),
+                { status: finalResponse.status, headers: { 'Content-Type': 'application/json' } }
             );
         }
 
-        // Sometimes OpenRouter returns 200 with an empty choice or error body in specific cases
         if (!data.choices || !data.choices[0]) {
             return new Response(
-                JSON.stringify({ error: 'The AI provided an invalid response format. This usually means the model is busy or inaccessible.' }),
-                { 
-                    status: 502,
-                    headers: { 'Content-Type': 'application/json' }
-                }
+                JSON.stringify({ error: 'The AI provided an invalid response format.' }),
+                { status: 502, headers: { 'Content-Type': 'application/json' } }
             );
         }
 
