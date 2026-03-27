@@ -141,10 +141,13 @@ export const onRequestPost = async (context: any) => {
         const draftData = await draftResponse.json();
         const draftContent = draftData.choices?.[0]?.message?.content || '';
 
-        // --- STAGE 4: Hadith Validation (External Pre-fetch) ---
-        // Look for things like "Sahih Bukhari, Hadith 1234" in the draft
+        // --- STAGE 4: Citation Validation (External Pre-fetch) ---
+        // Verify both Quran and Hadith citations found in the draft
+        const quranRegex = /Surah\s+[a-z-\s]+(\d+):(\d+)|(\d+):(\d+)/gi;
         const hadithRegex = /(Sahih Bukhari|Sahih Muslim|Sunan Abu Dawood|Sunan An-Nasai|Sunan Ibn Majah|Jami At-Tirmidhi)[^,.]+, Hadith\s+(\d+)/gi;
-        const matches = [...draftContent.matchAll(hadithRegex)];
+        
+        const quranMatches = [...draftContent.matchAll(quranRegex)];
+        const hadithMatches = [...draftContent.matchAll(hadithRegex)];
         
         const collectionMap: Record<string, string> = {
             'sahih bukhari': 'eng-bukhari', 'sahih muslim': 'eng-muslim',
@@ -152,8 +155,23 @@ export const onRequestPost = async (context: any) => {
             'sunan ibn majah': 'eng-ibnmajah', 'jami at-tirmidhi': 'eng-tirmidhi'
         };
 
-        let verifiedHadiths = [];
-        for (const m of matches.slice(0, 2)) { // Verify top 2 hadiths to stay within time limits
+        let verifiedSources = [];
+
+        // 4a. Verify Quran
+        for (const m of quranMatches.slice(0, 3)) {
+            const surah = m[1] || m[3];
+            const ayah = m[2] || m[4];
+            try {
+                const qRes = await fetch(`https://api.alquran.cloud/v1/ayah/${surah}:${ayah}/en.asad`);
+                if (qRes.ok) {
+                    const qData = await qRes.json();
+                    verifiedSources.push(`Verification for Quran ${surah}:${ayah}:\n${qData.data.text}`);
+                }
+            } catch (e) {}
+        }
+
+        // 4b. Verify Hadith
+        for (const m of hadithMatches.slice(0, 2)) {
             const collName = m[1].toLowerCase();
             const num = m[2];
             const collId = collectionMap[collName];
@@ -164,7 +182,7 @@ export const onRequestPost = async (context: any) => {
                     if (hRes.ok) {
                         const hData = await hRes.json();
                         const hText = hData.hadiths?.[0]?.text || '';
-                        verifiedHadiths.push(`Verification for ${m[1]} #${num}:\n${hText}`);
+                        verifiedSources.push(`Verification for Hadith ${m[1]} #${num}:\n${hText}`);
                     }
                 } catch (e) {}
             }
@@ -187,14 +205,13 @@ export const onRequestPost = async (context: any) => {
                         content: `
                             ${env.SHEIKH_PROMPT || SHEIKH_SYSTEM_PROMPT}
 
-                            VERIFIED CONTEXT (QURAN):
+                            VERIFIED CONTEXT FROM PRIMARY DATABASES:
                             ${quranContext}
-
-                            VERIFIED CONTEXT (HADITH SOURCE FILES):
-                            ${verifiedHadiths.join('\n\n')}
+                            
+                            ${verifiedSources.join('\n\n')}
 
                             FINAL INSTRUCTION: We have cross-checked the citations against the database. Use the verified results above.
-                            If a Hadith number you wanted to use is NOT in the verified list, it might be wrong - either correct it or describe the Hadith without a number.
+                            If a reference you wanted to use is NOT in the verified list, it might be wrong - either correct it or omit the citation number.
                         `
                     },
                     ...messages,
