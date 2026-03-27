@@ -122,8 +122,8 @@ export const onRequestPost = async (context: any) => {
             console.error('Quran search failed:', e);
         }
 
-        // --- STAGE 3: Drafting First Pass ---
-        const draftResponse = await fetch(apiUrl, {
+        // --- STAGE 1: Citation Hunting (Proactive suggestion) ---
+        const hunterResponse = await fetch(apiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
             body: JSON.stringify({
@@ -131,23 +131,22 @@ export const onRequestPost = async (context: any) => {
                 messages: [
                     { 
                         role: 'system', 
-                        content: `${env.SHEIKH_PROMPT || SHEIKH_SYSTEM_PROMPT}\n\nVERIFIED CONTEXT:\n${quranContext}`
+                        content: 'You are a research bot. For the user query, list the 3 most likely Quran verses (Surah:Verse) and 3 most likely Sahih Hadiths (Collection name and number) that directly answer it. Output ONLY a comma-separated list like: "Al-Baqarah 2:255, Sahih Bukhari 1234, Sahih Muslim 45".' 
                     },
-                    ...messages,
+                    { role: 'user', content: userQuery }
                 ],
-                temperature: 0.1, // more stable for drafting
+                temperature: 0.1,
             }),
         });
-        const draftData = await draftResponse.json();
-        const draftContent = draftData.choices?.[0]?.message?.content || '';
+        const hunterData = await hunterResponse.json();
+        const huntingList = hunterData.choices?.[0]?.message?.content || '';
 
-        // --- STAGE 4: Citation Validation (External Pre-fetch) ---
-        // Verify both Quran and Hadith citations found in the draft
-        const quranRegex = /Surah\s+[a-z-\s]+(\d+):(\d+)|(\d+):(\d+)/gi;
-        const hadithRegex = /(Sahih Bukhari|Sahih Muslim|Sunan Abu Dawood|Sunan An-Nasai|Sunan Ibn Majah|Jami At-Tirmidhi)[^,.]+, Hadith\s+(\d+)/gi;
+        // --- STAGE 2: Verification Fetching (Ground Truth) ---
+        const quranRegex = /(\d+):(\d+)/g;
+        const hadithRegex = /(Sahih Bukhari|Sahih Muslim|Sunan Abu Dawood|Sunan An-Nasai|Sunan Ibn Majah|Jami At-Tirmidhi)[^,.]+\s+(\d+)/gi;
         
-        const quranMatches = [...draftContent.matchAll(quranRegex)];
-        const hadithMatches = [...draftContent.matchAll(hadithRegex)];
+        const qMatches = [...huntingList.matchAll(quranRegex)];
+        const hMatches = [...huntingList.matchAll(hadithRegex)];
         
         const collectionMap: Record<string, string> = {
             'sahih bukhari': 'eng-bukhari', 'sahih muslim': 'eng-muslim',
@@ -155,40 +154,34 @@ export const onRequestPost = async (context: any) => {
             'sunan ibn majah': 'eng-ibnmajah', 'jami at-tirmidhi': 'eng-tirmidhi'
         };
 
-        let verifiedSources = [];
+        const verifiedContext: string[] = [];
 
-        // 4a. Verify Quran
-        for (const m of quranMatches.slice(0, 3)) {
-            const surah = m[1] || m[3];
-            const ayah = m[2] || m[4];
+        // Fetch Quran verses
+        for (const m of qMatches.slice(0, 3)) {
             try {
-                const qRes = await fetch(`https://api.alquran.cloud/v1/ayah/${surah}:${ayah}/en.asad`);
-                if (qRes.ok) {
-                    const qData = await qRes.json();
-                    verifiedSources.push(`Verification for Quran ${surah}:${ayah}:\n${qData.data.text}`);
+                const res = await fetch(`https://api.alquran.cloud/v1/ayah/${m[1]}:${m[2]}/en.asad`);
+                if (res.ok) {
+                    const d = await res.json();
+                    verifiedContext.push(`Quran ${m[1]}:${m[2]} (${d.data.surah.englishName}): ${d.data.text}`);
                 }
             } catch (e) {}
         }
 
-        // 4b. Verify Hadith
-        for (const m of hadithMatches.slice(0, 2)) {
-            const collName = m[1].toLowerCase();
-            const num = m[2];
-            const collId = collectionMap[collName];
+        // Fetch Hadiths
+        for (const m of hMatches.slice(0, 3)) {
+            const collId = collectionMap[m[1].toLowerCase()];
             if (collId) {
                 try {
-                    const hUrl = `https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/${collId}/${num}.json`;
-                    const hRes = await fetch(hUrl);
-                    if (hRes.ok) {
-                        const hData = await hRes.json();
-                        const hText = hData.hadiths?.[0]?.text || '';
-                        verifiedSources.push(`Verification for Hadith ${m[1]} #${num}:\n${hText}`);
+                    const res = await fetch(`https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/${collId}/${m[2]}.json`);
+                    if (res.ok) {
+                        const d = await res.json();
+                        verifiedContext.push(`${m[1]} #${m[2]}: ${d.hadiths[0].text}`);
                     }
                 } catch (e) {}
             }
         }
 
-        // --- STAGE 5: Final Grounded Response ---
+        // --- STAGE 3: Final Answer Generation (Grounded) ---
         const finalResponse = await fetch(apiUrl, {
             method: 'POST',
             headers: {
@@ -205,13 +198,10 @@ export const onRequestPost = async (context: any) => {
                         content: `
                             ${env.SHEIKH_PROMPT || SHEIKH_SYSTEM_PROMPT}
 
-                            VERIFIED CONTEXT FROM PRIMARY DATABASES:
-                            ${quranContext}
-                            
-                            ${verifiedSources.join('\n\n')}
+                            VERIFIED RESEARCH CONTEXT (Grounded Truth):
+                            ${verifiedContext.join('\n\n')}
 
-                            FINAL INSTRUCTION: We have cross-checked the citations against the database. Use the verified results above.
-                            If a reference you wanted to use is NOT in the verified list, it might be wrong - either correct it or omit the citation number.
+                            FINAL INSTRUCTION: Use the verified context above to answer the user. You MUST prioritize these specific references and match their numbers exactly.
                         `
                     },
                     ...messages,
