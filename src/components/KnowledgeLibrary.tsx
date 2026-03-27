@@ -530,22 +530,36 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
     const getWbwWords = (surahNum: number, ayahNum: number): any[] =>
         wbwCache[`${surahNum}:${ayahNum}`] || [];
 
-    // Scroll-to and highlight target ayah after results finish loading
+    // Scroll-to and highlight target ayah/hadith after results finish loading
     useEffect(() => {
-        if (!targetAyah || results.length === 0 || isLoading) return;
-        // Small delay to let the DOM render the cards
-        const timer = setTimeout(() => {
-            const el = document.getElementById(`ayah-${targetAyah.replace(':', '-')}`);
-            if (el) {
-                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                setHighlightedAyah(targetAyah);
-                // Fade out highlight after 3.5s
-                setTimeout(() => setHighlightedAyah(null), 3500);
-            }
-            setTargetAyah(null); // only scroll once
-        }, 400);
-        return () => clearTimeout(timer);
-    }, [results, isLoading, targetAyah]);
+        if (results.length === 0 || isLoading) return;
+        
+        // Handle Quran deep-links
+        if (targetAyah) {
+            const timer = setTimeout(() => {
+                const el = document.getElementById(`ayah-${targetAyah.replace(':', '-')}`);
+                if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    setHighlightedAyah(targetAyah);
+                    setTimeout(() => setHighlightedAyah(null), 3500);
+                    setTargetAyah(null); // only scroll once
+                }
+            }, 500);
+            return () => clearTimeout(timer);
+        }
+
+        // Handle Hadith deep-links
+        if (subTab === 'hadith' && jumpToNum) {
+            const timer = setTimeout(() => {
+                const el = document.getElementById(`hadith-${selectedCollection}-${jumpToNum}`);
+                if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    // No highlight state for hadith yet, but we scroll to it
+                }
+            }, 600);
+            return () => clearTimeout(timer);
+        }
+    }, [results, isLoading, targetAyah, jumpToNum, subTab, selectedCollection]);
 
     const isPlayingSurah = currentSurah && playingAyah?.startsWith(`${currentSurah}:`);
 
@@ -971,14 +985,19 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                                     const wbwWords = getWbwWords(res.surahNumber, res.ayahNumber);
                                     const wbwLoaded = !!wbwCache[ayahKey];
 
+                                    // Unique IDs for deep-linking
+                                    const cardId = res.type === 'Quran' 
+                                        ? `ayah-${res.surahNumber}-${res.ayahNumber}`
+                                        : `hadith-${res.collectionId}-${res.hadithNumber}`;
+
                                     return (
                                         <motion.div
                                             key={idx}
-                                            id={`ayah-${res.surahNumber}-${res.ayahNumber}`}
+                                            id={cardId}
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             transition={{ delay: idx * 0.02 }}
-                                            className={`glass p-8 rounded-[2.5rem] border transition-all group ${highlightedAyah === ayahKey
+                                            className={`glass p-8 rounded-[2.5rem] border transition-all group ${highlightedAyah === ayahKey || (subTab === 'hadith' && jumpToNum === res.hadithNumber)
                                                 ? 'border-amber-400/60 bg-amber-500/10 shadow-xl shadow-amber-900/30 ring-2 ring-amber-400/30'
                                                 : isThisPlaying
                                                     ? 'border-amber-500/40 bg-amber-500/5 shadow-lg shadow-amber-900/20'

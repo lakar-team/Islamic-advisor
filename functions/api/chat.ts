@@ -122,7 +122,55 @@ export const onRequestPost = async (context: any) => {
             console.error('Quran search failed:', e);
         }
 
-        // --- STAGE 3: Drafting & Verification ---
+        // --- STAGE 3: Drafting First Pass ---
+        const draftResponse = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+            body: JSON.stringify({
+                model,
+                messages: [
+                    { 
+                        role: 'system', 
+                        content: `${env.SHEIKH_PROMPT || SHEIKH_SYSTEM_PROMPT}\n\nVERIFIED CONTEXT:\n${quranContext}`
+                    },
+                    ...messages,
+                ],
+                temperature: 0.1, // more stable for drafting
+            }),
+        });
+        const draftData = await draftResponse.json();
+        const draftContent = draftData.choices?.[0]?.message?.content || '';
+
+        // --- STAGE 4: Hadith Validation (External Pre-fetch) ---
+        // Look for things like "Sahih Bukhari, Hadith 1234" in the draft
+        const hadithRegex = /(Sahih Bukhari|Sahih Muslim|Sunan Abu Dawood|Sunan An-Nasai|Sunan Ibn Majah|Jami At-Tirmidhi)[^,.]+, Hadith\s+(\d+)/gi;
+        const matches = [...draftContent.matchAll(hadithRegex)];
+        
+        const collectionMap: Record<string, string> = {
+            'sahih bukhari': 'eng-bukhari', 'sahih muslim': 'eng-muslim',
+            'sunan abu dawood': 'eng-abudawud', 'sunan an-nasai': 'eng-nasai',
+            'sunan ibn majah': 'eng-ibnmajah', 'jami at-tirmidhi': 'eng-tirmidhi'
+        };
+
+        let verifiedHadiths = [];
+        for (const m of matches.slice(0, 2)) { // Verify top 2 hadiths to stay within time limits
+            const collName = m[1].toLowerCase();
+            const num = m[2];
+            const collId = collectionMap[collName];
+            if (collId) {
+                try {
+                    const hUrl = `https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/${collId}/${num}.json`;
+                    const hRes = await fetch(hUrl);
+                    if (hRes.ok) {
+                        const hData = await hRes.json();
+                        const hText = hData.hadiths?.[0]?.text || '';
+                        verifiedHadiths.push(`Verification for ${m[1]} #${num}:\n${hText}`);
+                    }
+                } catch (e) {}
+            }
+        }
+
+        // --- STAGE 5: Final Grounded Response ---
         const finalResponse = await fetch(apiUrl, {
             method: 'POST',
             headers: {
@@ -139,11 +187,14 @@ export const onRequestPost = async (context: any) => {
                         content: `
                             ${env.SHEIKH_PROMPT || SHEIKH_SYSTEM_PROMPT}
 
-                            VERIFIED CONTEXT FROM QURAN DATABASE:
-                            ${quranContext || 'No direct search results found. Rely on verified internal knowledge but BE EXTREMELY CAREFUL with numbers.'}
+                            VERIFIED CONTEXT (QURAN):
+                            ${quranContext}
 
-                            INSTRUCTION: Use the verified context above to support your answer. If the context doesn't match the query, ignore it and rely on verified knowledge. 
-                            MANDATORY: You MUST verify the Surah/Verse numbers you provide. If you are unsure, do not cite a number.
+                            VERIFIED CONTEXT (HADITH SOURCE FILES):
+                            ${verifiedHadiths.join('\n\n')}
+
+                            FINAL INSTRUCTION: We have cross-checked the citations against the database. Use the verified results above.
+                            If a Hadith number you wanted to use is NOT in the verified list, it might be wrong - either correct it or describe the Hadith without a number.
                         `
                     },
                     ...messages,
