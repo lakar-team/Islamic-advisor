@@ -199,10 +199,9 @@ const SupportUs: React.FC = () => {
             </motion.div>
 
                 <p className="text-center text-xs text-slate-600 font-bold mt-6 leading-relaxed">
-                    You'll be redirected to Stripe or PayPal to complete your donation securely.<br />
+                    Choose Wise for low-fee bank transfers or PayPal for instant gifts.<br />
                     Any amount is a barakah. JazakAllahu Khayran 🌿
                 </p>
-            </motion.div>
 
             {/* Story Section */}
             <motion.div
