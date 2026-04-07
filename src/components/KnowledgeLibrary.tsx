@@ -65,11 +65,20 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
         { id: 'eng-riyadussalihin', name: 'Riyadhus Salihin', count: 1900 },
     ];
 
-    const gradeMap: Record<string, string> = {
-        'Sahih': 'Authentic',
-        'Hasan': 'Good',
-        'Daif': 'Weak',
-        'Maudu': 'Fabricated'
+    const gradeMap: Record<string, { label: string, color: string }> = {
+        'Sahih': { label: 'Verified (Authentic)', color: 'emerald' },
+        'Hasan': { label: 'Reliable (Good)', color: 'blue' },
+        'Daif': { label: 'Needs Caution (Weak)', color: 'amber' },
+        'Maudu': { label: 'Fabricated (Avoid)', color: 'rose' }
+    };
+
+    const simplifyGrade = (gradeStr: string) => {
+        const lower = gradeStr.toLowerCase();
+        if (lower.includes('sahih')) return gradeMap['Sahih'];
+        if (lower.includes('hasan')) return gradeMap['Hasan'];
+        if (lower.includes('daif') || lower.includes('weak')) return gradeMap['Daif'];
+        if (lower.includes('maudu') || lower.includes('fabricated')) return gradeMap['Maudu'];
+        return { label: gradeStr, color: 'slate' };
     };
 
     // Book navigation state
@@ -821,21 +830,14 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                             >Go</button>
                         </div>
                         <div className="h-6 w-px bg-white/10 hidden sm:block" />
-                        {/* Grade filter */}
-                        <div className="flex flex-wrap gap-2 items-center">
-                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 flex items-center gap-1.5">
-                                <Filter className="w-3 h-3" /> Grade:
-                            </span>
-                            {['Sahih', 'Hasan', 'Daif'].map(grade => (
-                                <button
-                                    key={grade}
-                                    onClick={() => setGradeFilter(gradeFilter === grade ? null : grade)}
-                                    className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${gradeFilter === grade ? 'bg-emerald-500 border-emerald-400 text-white shadow-lg' : 'bg-slate-900 border-white/5 text-slate-400 hover:border-emerald-500/30'}`}
-                                >
-                                    {gradeMap[grade]}
-                                </button>
-                            ))}
-                        </div>
+                        {/* Explainer: Replace confusing filters with a clear help button */}
+                        <button
+                            onClick={() => setShowGlossary(true)}
+                            className="ml-auto flex items-center gap-2.5 px-6 py-2.5 bg-slate-900 border border-white/5 hover:border-emerald-500/30 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-white transition-all shadow-sm"
+                        >
+                            <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
+                            How do we verify these Hadiths?
+                        </button>
                     </div>
                 )}
 
@@ -1015,19 +1017,44 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                                                 </div>
 
                                                 <div className="flex items-center gap-2">
-                                                    {/* Hadith grades */}
+                                                    {/* Simplified Hadith groups */}
                                                     {res.type === 'Hadith' && res.grades && res.grades.length > 0 && (
-                                                        <div className="flex flex-wrap gap-2">
-                                                            {res.grades.map((g: any, i: number) => {
-                                                                const cleanGrade = g.grade.replace(/ Sahih| Sahih| Hasan| Daif/g, '');
-                                                                const simpleLabel = gradeMap[cleanGrade] || gradeMap[g.grade] || g.grade;
-                                                                return (
-                                                                    <div key={i} className={`flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border shadow-sm ${g.grade.toLowerCase().includes('sahih') ? 'bg-emerald-400/5 border-emerald-400/20 text-emerald-400' : g.grade.toLowerCase().includes('hasan') ? 'bg-blue-400/5 border-blue-400/20 text-blue-400' : 'bg-amber-400/5 border-amber-400/20 text-amber-500'}`}>
-                                                                        <CheckCircle2 className="w-3 h-3" />
-                                                                        {simpleLabel} <span className="opacity-40 ml-1 font-medium">— {g.name}</span>
+                                                        <div className="flex flex-wrap gap-3">
+                                                            {(() => {
+                                                                // Group scholars by their simplified grade level
+                                                                const groups: Record<string, { label: string, color: string, scholars: string[] }> = {};
+                                                                res.grades.forEach((g: any) => {
+                                                                    const { label, color } = simplifyGrade(g.grade);
+                                                                    if (!groups[label]) groups[label] = { label, color, scholars: [] };
+                                                                    groups[label].scholars.push(g.name);
+                                                                });
+
+                                                                return Object.values(groups).map((group, i) => (
+                                                                    <div 
+                                                                        key={i} 
+                                                                        title={`Evaluated as ${group.label} by: ${group.scholars.join(', ')}`}
+                                                                        className={`flex items-center gap-2 text-[9px] font-black uppercase tracking-widest px-4 py-2 rounded-2xl border shadow-sm 
+                                                                            ${group.color === 'emerald' ? 'bg-emerald-400/5 border-emerald-400/20 text-emerald-400' 
+                                                                            : group.color === 'blue' ? 'bg-blue-400/5 border-blue-400/20 text-blue-400' 
+                                                                            : 'bg-amber-400/5 border-amber-400/20 text-amber-500'}`}
+                                                                    >
+                                                                        <CheckCircle2 className="w-3.5 h-3.5" />
+                                                                        {group.label}
+                                                                        <div className="flex -space-x-1.5 ml-2">
+                                                                            {group.scholars.slice(0, 3).map((s, si) => (
+                                                                                <div key={si} className="w-4 h-4 rounded-full bg-slate-800 border border-white/10 flex items-center justify-center text-[7px]" title={s}>
+                                                                                    {s[0]}
+                                                                                </div>
+                                                                            ))}
+                                                                            {group.scholars.length > 3 && (
+                                                                                <div className="w-4 h-4 rounded-full bg-slate-900 border border-white/10 flex items-center justify-center text-[7px]">
+                                                                                    +{group.scholars.length - 3}
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
                                                                     </div>
-                                                                );
-                                                            })}
+                                                                ));
+                                                            })()}
                                                         </div>
                                                     )}
 
@@ -1182,8 +1209,9 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                     )}
                 </div>
             </div>
-        </>
-    );
+        </div>
+    </>
+);
 };
 
 export default KnowledgeLibrary;
