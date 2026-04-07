@@ -564,15 +564,15 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
     const isPlayingSurah = currentSurah && playingAyah?.startsWith(`${currentSurah}:`);
 
     return (
-        <div className="max-w-7xl mx-auto py-12 px-6 animate-fade-in relative">
-            {/* Glossary Overlay */}
+        <>
+            {/* Modals outside the animated container to prevent transform localising fixed children */}
             <AnimatePresence>
                 {showGlossary && (
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6 bg-black/90 backdrop-blur-md cursor-pointer"
+                        className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6 bg-black/95 backdrop-blur-md cursor-pointer"
                         onClick={() => setShowGlossary(false)}
                     >
                         <motion.div
@@ -727,7 +727,8 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                 )}
             </AnimatePresence>
 
-            {/* Header */}
+            <div className="max-w-7xl mx-auto py-12 px-6 animate-fade-in relative">
+                {/* Header */}
             <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8 mb-12">
                 <div>
                     <h2 className="text-5xl font-black mb-3 gold-text tracking-tighter">Knowledge Library</h2>
@@ -1181,7 +1182,7 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                     )}
                 </div>
             </div>
-        </div>
+        </>
     );
 };
 

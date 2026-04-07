@@ -165,19 +165,25 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
     }, [messages]);
 
     const parseCitations = (content: string) => {
-        const regex = /\[\[CITATIONS:\s*(\[[\s\S]*?\])\s*\]\]/;
-        const match = content.match(regex);
+        // Robust regex to capture the citation block including multiple instances or trailing whitespace
+        const regex = /\[\[CITATIONS:\s*(\[[\s\S]*?\])\s*\]\]/g;
         let cleanedContent = content;
         let references: any[] = [];
 
-        if (match) {
+        let match;
+        while ((match = regex.exec(content)) !== null) {
             try {
-                references = JSON.parse(match[1]);
-                cleanedContent = content.replace(regex, '').trim();
+                const parsed = JSON.parse(match[1]);
+                if (Array.isArray(parsed)) {
+                    references.push(...parsed);
+                }
             } catch (e) {
-                cleanedContent = content.replace(regex, '').trim();
+                console.error('Failed to parse citations block:', e);
             }
         }
+
+        // Remove all instances of the citations block from the displayed text
+        cleanedContent = content.replace(regex, '').trim();
 
         // Fallback: scan text for inline references
         if (references.length === 0) {
