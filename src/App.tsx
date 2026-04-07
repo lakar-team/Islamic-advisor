@@ -415,7 +415,7 @@ function App() {
                   </div>
                   <div className="border-b border-white/5 pb-2">
                     <p className="text-emerald-400 font-bold uppercase tracking-wider text-[10px]">Payment Methods</p>
-                    <p className="text-slate-300 font-medium">Cards, Apple/Google Pay, PayPal.</p>
+                    <p className="text-slate-300 font-medium">Wise Bank Transfer, PayPal.</p>
                   </div>
                   <div className="border-b border-white/5 pb-2">
                     <p className="text-emerald-400 font-bold uppercase tracking-wider text-[10px]">Price</p>
