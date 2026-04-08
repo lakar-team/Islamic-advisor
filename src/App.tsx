@@ -250,9 +250,9 @@ function App() {
               ) : activeTab === 'library' ? (
                 <div className="px-6 flex-1">
                   <KnowledgeLibrary
-                    key={hashParams?.query || 'default'}
-                    initialTab={hashParams?.tab}
-                    initialQuery={hashParams?.query}
+                    key={(hashParams as any)?.query || 'default'}
+                    initialTab={(hashParams as any)?.tab}
+                    initialQuery={(hashParams as any)?.query}
                   />
                 </div>
               ) : (
