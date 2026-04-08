@@ -582,6 +582,8 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
         );
     };
 
+    const isPlayingSurah = currentSurah && playingAyah?.startsWith(`${currentSurah}:`);
+
     return (
         <>
             {/* Modals outside the animated container to prevent transform localising fixed children */}

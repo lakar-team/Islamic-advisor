@@ -6,6 +6,7 @@ const SupportUs: React.FC = () => {
     const [customAmount, setCustomAmount] = useState('');
     const [selectedAmount, setSelectedAmount] = useState<number | null>(5);
     const [copiedField, setCopiedField] = useState<string | null>(null);
+    const [selectedMethod, setSelectedMethod] = useState<'paypal' | 'bank' | null>(null);
 
     const suggestedAmounts = [3, 5, 10, 20];
 
@@ -92,116 +93,136 @@ const SupportUs: React.FC = () => {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
-                className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 items-start"
+                className="max-w-4xl mx-auto glass p-8 md:p-12 rounded-[3rem] border border-emerald-900/30 shadow-2xl shadow-emerald-900/10 flex flex-col items-center"
             >
-                {/* Left: Wise Details */}
-                <div className="glass p-8 md:p-10 rounded-[3rem] border border-emerald-900/30 shadow-2xl shadow-emerald-900/10 flex flex-col h-full">
-                    <div className="flex items-center gap-3 mb-8">
-                        <div className="bg-emerald-500/20 p-2.5 rounded-xl">
-                            <Globe className="w-5 h-5 text-emerald-400" />
-                        </div>
-                        <h2 className="text-2xl font-black tracking-tight">Wise Bank Transfer</h2>
-                    </div>
-
-                    <p className="text-slate-400 text-sm font-bold mb-8 leading-relaxed">
-                        Transfers via <strong className="text-white">Wise</strong> have the lowest fees worldwide. Direct transfer is the best way to ensure 100% of your gift goes to the project.
-                    </p>
-
-                    <div className="space-y-4">
-                        {[
-                            { label: 'Name', value: wiseDetails.name, id: 'name' },
-                            { label: 'IBAN', value: wiseDetails.iban, id: 'iban' },
-                            { label: 'Swift/BIC', value: wiseDetails.swift, id: 'swift' },
-                        ].map((field) => (
-                            <div key={field.id} className="group relative">
-                                <p className="text-[10px] font-black uppercase tracking-widest text-emerald-500/50 mb-1.5 ml-1">{field.label}</p>
-                                <button
-                                    onClick={() => handleCopy(field.value, field.id)}
-                                    className="w-full flex items-center justify-between p-4 bg-black/40 border border-white/5 rounded-2xl hover:border-emerald-500/30 transition-all text-left"
-                                >
-                                    <span className="text-sm font-black text-slate-200 tracking-tight truncate mr-4">{field.value}</span>
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500 bg-emerald-500/10 px-3 py-1 rounded-lg shrink-0">
-                                        {copiedField === field.id ? 'Copied!' : 'Copy'}
-                                    </span>
-                                </button>
-                            </div>
-                        ))}
-
-                        <div className="pt-4 mt-4 border-t border-white/5">
-                            <div className="flex items-center gap-2 mb-2">
-                                <Server className="w-3.5 h-3.5 text-slate-500" />
-                                <p className="text-[10px] font-black uppercase text-slate-500">Bank & Address</p>
-                            </div>
-                            <p className="text-[11px] text-slate-400 leading-relaxed font-bold">
-                                {wiseDetails.bank}<br />
-                                {wiseDetails.address}
-                            </p>
+                {!selectedMethod ? (
+                    <div className="w-full text-center">
+                        <h2 className="text-3xl font-black tracking-tight mb-8">Choose a Giving Method</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl mx-auto">
+                            <button
+                                onClick={() => setSelectedMethod('paypal')}
+                                className="flex flex-col items-center p-8 bg-black/40 border border-white/5 rounded-3xl hover:border-emerald-500/50 hover:bg-emerald-500/5 transition-all group"
+                            >
+                                <div className="bg-amber-500/20 p-4 rounded-2xl mb-4 group-hover:scale-110 transition-transform">
+                                    <Sparkles className="w-8 h-8 text-amber-500" />
+                                </div>
+                                <span className="font-black text-xl mb-2">Donate via PayPal</span>
+                                <span className="text-sm font-medium text-slate-400">Quick, instant, and secure gifts.</span>
+                            </button>
+                            
+                            <button
+                                onClick={() => setSelectedMethod('bank')}
+                                className="flex flex-col items-center p-8 bg-black/40 border border-white/5 rounded-3xl hover:border-emerald-500/50 hover:bg-emerald-500/5 transition-all group"
+                            >
+                                <div className="bg-emerald-500/20 p-4 rounded-2xl mb-4 group-hover:scale-110 transition-transform">
+                                    <Globe className="w-8 h-8 text-emerald-400" />
+                                </div>
+                                <span className="font-black text-xl mb-2">Bank Transfer (Wise)</span>
+                                <span className="text-sm font-medium text-slate-400">Low fees worldwide, 100% impact.</span>
+                            </button>
                         </div>
                     </div>
-                </div>
-
-                {/* Right: Selection & PayPal */}
-                <div className="glass p-8 md:p-10 rounded-[3rem] border border-emerald-900/30 shadow-2xl shadow-emerald-900/10 flex flex-col h-full">
-                    <div className="flex items-center gap-3 mb-8">
-                        <div className="bg-amber-500/20 p-2.5 rounded-xl">
-                            <Sparkles className="w-5 h-5 text-amber-500" />
+                ) : selectedMethod === 'bank' ? (
+                    <div className="w-full max-w-xl mx-auto animate-fade-in">
+                        <div className="flex items-center justify-between mb-8">
+                            <h2 className="text-2xl font-black tracking-tight flex items-center gap-3">
+                                <Globe className="w-6 h-6 text-emerald-400" /> Wise Bank Transfer
+                            </h2>
+                            <button onClick={() => setSelectedMethod(null)} className="text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-white px-3 py-1.5 border border-white/10 rounded-xl transition-all">Back</button>
                         </div>
-                        <h2 className="text-2xl font-black tracking-tight">Quick Alternative</h2>
-                    </div>
 
-                    <div className="flex-1 space-y-8">
-                        {/* Quick Select */}
-                        <div className="grid grid-cols-4 gap-3">
-                            {suggestedAmounts.map(amt => (
-                                <button
-                                    key={amt}
-                                    onClick={() => { setSelectedAmount(amt); setCustomAmount(''); }}
-                                    className={`py-4 rounded-2xl font-black text-lg transition-all border ${selectedAmount === amt && !customAmount
-                                        ? 'bg-emerald-600 border-emerald-500 text-white shadow-lg'
-                                        : 'bg-slate-900 border-white/5 text-slate-400 hover:border-emerald-500/30 hover:text-white'
-                                        }`}
-                                >
-                                    ${amt}
-                                </button>
+                        <p className="text-slate-400 text-sm font-bold mb-8 leading-relaxed">
+                            Transfers via <strong className="text-white">Wise</strong> have the lowest fees worldwide. Simply copy these details into your baking app to complete the transfer.
+                        </p>
+
+                        <div className="space-y-4">
+                            {[
+                                { label: 'Name', value: wiseDetails.name, id: 'name' },
+                                { label: 'IBAN', value: wiseDetails.iban, id: 'iban' },
+                                { label: 'Swift/BIC', value: wiseDetails.swift, id: 'swift' },
+                            ].map((field) => (
+                                <div key={field.id} className="group relative">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-emerald-500/50 mb-1.5 ml-1">{field.label}</p>
+                                    <button
+                                        onClick={() => handleCopy(field.value, field.id)}
+                                        className="w-full flex items-center justify-between p-4 bg-black/40 border border-white/5 rounded-2xl hover:border-emerald-500/30 transition-all text-left"
+                                    >
+                                        <span className="text-sm font-black text-slate-200 tracking-tight truncate mr-4">{field.value}</span>
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500 bg-emerald-500/10 px-3 py-1 rounded-lg shrink-0">
+                                            {copiedField === field.id ? 'Copied!' : 'Copy'}
+                                        </span>
+                                    </button>
+                                </div>
                             ))}
-                        </div>
 
-                        {/* Custom Amount */}
-                        <div className="relative">
-                            <span className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 font-black text-xl">$</span>
-                            <input
-                                type="number"
-                                min="1"
-                                placeholder="Custom..."
-                                value={customAmount}
-                                onChange={(e) => { setCustomAmount(e.target.value); setSelectedAmount(null); }}
-                                className="w-full bg-black/40 border border-white/10 focus:border-emerald-500 px-12 py-5 rounded-2xl text-xl font-bold focus:outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all"
-                            />
+                            <div className="pt-4 mt-4 border-t border-white/5">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Server className="w-3.5 h-3.5 text-slate-500" />
+                                    <p className="text-[10px] font-black uppercase text-slate-500">Bank & Address</p>
+                                </div>
+                                <p className="text-[11px] text-slate-400 leading-relaxed font-bold">
+                                    {wiseDetails.bank}<br />
+                                    {wiseDetails.address}
+                                </p>
+                            </div>
                         </div>
-
-                        {/* PayPal Button */}
-                        <a
-                            href={paypalUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="w-full flex items-center justify-center gap-4 py-6 bg-white hover:bg-slate-100 text-slate-950 font-black text-xl rounded-2xl transition-all shadow-2xl shadow-emerald-900/30 hover:scale-[1.02] active:scale-[0.98] uppercase tracking-widest group"
-                        >
-                            <Heart className="w-6 h-6 text-emerald-600 fill-emerald-600/20" />
-                            <span>Donate via PayPal</span>
-                            <ExternalLink className="w-5 h-5 opacity-40 group-hover:opacity-100" />
-                        </a>
                     </div>
+                ) : (
+                    <div className="w-full max-w-md mx-auto animate-fade-in">
+                        <div className="flex items-center justify-between mb-8">
+                            <h2 className="text-2xl font-black tracking-tight flex items-center gap-3">
+                                <Sparkles className="w-6 h-6 text-amber-500" /> PayPal
+                            </h2>
+                            <button onClick={() => setSelectedMethod(null)} className="text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-white px-3 py-1.5 border border-white/10 rounded-xl transition-all">Back</button>
+                        </div>
 
-                    <p className="text-center text-xs text-slate-600 font-bold mt-8 leading-relaxed italic">
-                        "Your generosity is the seed that keeps this garden growing for the Ummah."
-                    </p>
-                </div>
+                        <div className="flex-1 space-y-8">
+                            <p className="text-slate-400 text-sm font-bold text-center">Select an amount or enter your own.</p>
+                            
+                            {/* Quick Select */}
+                            <div className="grid grid-cols-4 gap-3">
+                                {suggestedAmounts.map(amt => (
+                                    <button
+                                        key={amt}
+                                        onClick={() => { setSelectedAmount(amt); setCustomAmount(''); }}
+                                        className={`py-4 rounded-2xl font-black text-lg transition-all border ${selectedAmount === amt && !customAmount
+                                            ? 'bg-emerald-600 border-emerald-500 text-white shadow-lg'
+                                            : 'bg-black/40 border-white/5 text-slate-400 hover:border-emerald-500/30 hover:text-white'
+                                            }`}
+                                    >
+                                        ${amt}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Custom Amount */}
+                            <div className="relative">
+                                <span className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 font-black text-xl">$</span>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    placeholder="Custom amount..."
+                                    value={customAmount}
+                                    onChange={(e) => { setCustomAmount(e.target.value); setSelectedAmount(null); }}
+                                    className="w-full bg-black/40 border border-white/10 focus:border-emerald-500 px-12 py-5 rounded-2xl text-xl font-bold focus:outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all font-sans text-white placeholder:text-slate-600"
+                                />
+                            </div>
+
+                            {/* PayPal Button */}
+                            <a
+                                href={paypalUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="w-full flex items-center justify-center gap-4 py-6 bg-white hover:bg-slate-100 text-slate-950 font-black text-xl rounded-2xl transition-all shadow-xl shadow-emerald-900/30 hover:scale-[1.02] active:scale-[0.98] uppercase tracking-widest group"
+                            >
+                                <Heart className="w-6 h-6 text-emerald-600 fill-emerald-600/20" />
+                                <span>Continue to PayPal</span>
+                                <ExternalLink className="w-5 h-5 opacity-40 group-hover:opacity-100" />
+                            </a>
+                        </div>
+                    </div>
+                )}
             </motion.div>
-
-                <p className="text-center text-xs text-slate-600 font-bold mt-6 leading-relaxed">
-                    Choose Wise for low-fee bank transfers or PayPal for instant gifts.<br />
-                    Any amount is a barakah. JazakAllahu Khayran 🌿
-                </p>
 
             {/* Story Section */}
             <motion.div
