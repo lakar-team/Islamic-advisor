@@ -32,7 +32,6 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
     const [surahs, setSurahs] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [selectedCollection, setSelectedCollection] = useState('coll' in initialParsed ? (initialParsed as any).coll : 'eng-bukhari');
-    const [gradeFilter, setGradeFilter] = useState<string | null>('Sahih');
     const [showGlossary, setShowGlossary] = useState(false);
     const [currentSurah, setCurrentSurah] = useState<number | null>(null);
     // WBW: cache per "surahNumber:ayahNumber" key, value = array of {text,translation}
@@ -1150,7 +1149,7 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                                     <p className="text-2xl font-bold tracking-tight mb-2 uppercase text-slate-400">No Results Found</p>
                                     <p className="text-slate-500 max-w-sm mx-auto font-medium">Try broader keywords like "Prayer", "Faith", or "Patience".</p>
                                     <button
-                                        onClick={() => { setSearchQuery(''); setGradeFilter(null); }}
+                                        onClick={() => { setSearchQuery(''); }}
                                         className="mt-8 px-8 py-3 bg-white/5 hover:bg-white/10 rounded-2xl text-xs font-black uppercase tracking-widest transition-all"
                                     >
                                         Clear Search
