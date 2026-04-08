@@ -92,7 +92,7 @@ function App() {
     window.open(url.toString(), '_blank');
   };
 
-  const hashParams = (() => {
+  const hashParams: { tab: 'quran' | 'hadith', query: string } | null = (() => {
     try {
       const hash = window.location.hash.replace('#', '');
       if (hash.startsWith('library?')) {
