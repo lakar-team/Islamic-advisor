@@ -59,7 +59,7 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
         { id: 'eng-tirmidhi', name: 'Jami at-Tirmidhi', count: 3956 },
         { id: 'eng-nasai', name: "Sunan an-Nasa'i", count: 5761 },
         { id: 'eng-ibnmajah', name: 'Sunan Ibn Majah', count: 4341 },
-        { id: 'eng-nawawi42', name: '40 Hadith Nawawi', count: 42 },
+        { id: 'eng-nawawi', name: '40 Hadith Nawawi', count: 42 },
         { id: 'eng-adab', name: 'Al-Adab Al-Mufrad', count: 1322 },
         { id: 'eng-riyadussalihin', name: 'Riyadhus Salihin', count: 1900 },
     ];
@@ -569,7 +569,18 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
         }
     }, [results, isLoading, targetAyah, jumpToNum, subTab, selectedCollection]);
 
-    const isPlayingSurah = currentSurah && playingAyah?.startsWith(`${currentSurah}:`);
+    const highlightText = (text: string, highlight: string) => {
+        if (!highlight.trim()) return <span>{text}</span>;
+        const regex = new RegExp(`(${highlight.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+        const parts = text.split(regex);
+        return (
+            <span>
+                {parts.map((part, i) =>
+                    regex.test(part) ? <span key={i} className="text-amber-300 font-bold bg-amber-500/10 px-0.5 rounded">{part}</span> : <span key={i}>{part}</span>
+                )}
+            </span>
+        );
+    };
 
     return (
         <>
@@ -866,37 +877,7 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
             <div className={`grid gap-12 ${subTab === 'search' ? '' : 'lg:grid-cols-[320px_1fr]'}`}>
                 {/* Sidebar Navigation */}
                 <div className="space-y-8 order-2 lg:order-1">
-                    {subTab === 'search' ? (
-                        /* Popular Topics — shown full-width above results */
-                        <div className="glass p-6 rounded-[2rem] border border-white/5 mb-2">
-                            <h4 className="font-black text-xs tracking-[0.2em] uppercase mb-5 flex items-center gap-2 text-purple-400">
-                                <Sparkles className="w-4 h-4" /> Popular Topics
-                            </h4>
-                            <div className="flex flex-wrap gap-2">
-                                {[
-                                    'Life', 'Death', 'Work', 'Marriage', 'Divorce', 'Children',
-                                    'Prayer', 'Fasting', 'Charity', 'Pilgrimage', 'Women', 'Men',
-                                    'Business', 'Money', 'Tax', 'Debt', 'Food', 'Halal', 'Haram',
-                                    'Forgiveness', 'Patience', 'Gratitude', 'Justice', 'Knowledge',
-                                    'Parents', 'Sleep', 'Health', 'War', 'Peace', 'Paradise', 'Hell',
-                                ].map(topic => (
-                                    <button
-                                        key={topic}
-                                        onClick={() => {
-                                            setSearchQuery(topic);
-                                            setTimeout(() => fetchSearchBoth(topic, searchSource), 50);
-                                        }}
-                                        className={`px-4 py-2 rounded-xl text-sm font-bold border transition-all hover:scale-105 ${searchQuery === topic
-                                            ? 'bg-purple-600 border-purple-400 text-white shadow-lg shadow-purple-900/20'
-                                            : 'bg-slate-900/60 border-white/8 text-slate-400 hover:border-purple-500/40 hover:text-white'
-                                            }`}
-                                    >
-                                        {topic}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    ) : (
+                    {subTab === 'search' ? null : (
                         <div className="glass p-6 rounded-[2rem] border border-white/5">
                             <h4 className={`font-black text-xs tracking-[0.2em] uppercase mb-6 flex items-center gap-2 ${subTab === 'quran' ? 'text-amber-500' : 'text-emerald-500'}`}>
                                 <Filter className="w-4 h-4" /> {subTab === 'quran' ? 'Chapters' : 'Collections'}
@@ -1138,7 +1119,7 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
 
                                             {/* Translation */}
                                             <p className={`text-xl text-slate-200 selection:bg-emerald-500/30 font-medium leading-relaxed ${res.type === 'Quran' ? 'font-serif' : 'font-sans'}`}>
-                                                {res.text}
+                                                {subTab === 'search' ? highlightText(res.text, searchQuery) : res.text}
                                             </p>
                                         </motion.div>
                                     );

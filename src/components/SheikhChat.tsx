@@ -165,20 +165,22 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
     }, [messages]);
 
     const parseCitations = (content: string) => {
-        // Robust regex to capture the citation block including multiple instances or trailing whitespace
-        const regex = /\[\[CITATIONS:\s*(\[[\s\S]*?\])\s*\]\]/g;
+        // Robust regex to capture the citation block including multiple instances, trailing whitespace, or markdown wrappers
+        const regex = /(?:```(?:json|javascript)?\s*)?\[\[CITATIONS:\s*(\[[\s\S]*?\])\s*\]\](?:\s*```)?|```(?:json)?\s*(\[[\s\S]*?(?:"type":\s*"(?:quran|hadith)")[\s\S]*?\])\s*```/gi;
         let cleanedContent = content;
         let references: any[] = [];
 
         let match;
         while ((match = regex.exec(content)) !== null) {
             try {
-                const parsed = JSON.parse(match[1]);
+                // match[1] is the citations block if using [[CITATIONS...]], match[2] is if it just dumped JSON directly
+                const jsonStr = match[1] || match[2];
+                const parsed = JSON.parse(jsonStr);
                 if (Array.isArray(parsed)) {
                     references.push(...parsed);
                 }
             } catch (e) {
-                console.error('Failed to parse citations block:', e);
+                console.error('Failed to parse citations block:', e, match[0]);
             }
         }
 
