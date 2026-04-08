@@ -201,7 +201,7 @@ export const onRequestPost = async (context: any) => {
                     { 
                         role: 'system', 
                         content: `
-                            ${env.SHEIKH_PROMPT || SHEIKH_SYSTEM_PROMPT}
+                            ${SHEIKH_SYSTEM_PROMPT}
 
                             VERIFIED RESEARCH CONTEXT (Grounded Truth):
                             ${verifiedContext.join('\n\n')}
