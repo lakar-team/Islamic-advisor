@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Search, Book, Filter, Hash, CheckCircle2, AlertCircle, X, Volume2, VolumeX, Play, Pause, SkipForward, SkipBack, BookOpen, ExternalLink, ChevronDown, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -12,6 +13,7 @@ const pad = (n: number, len: number) => String(n).padStart(len, '0');
 
 
 const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initialQuery }) => {
+    const [error, setError] = useState<string | null>(null);
     // Parse initial state to prevent race conditions during mount
     const initialParsed = (() => {
         if (!initialQuery) return { tab: initialTab || 'quran', query: '', jump: '' };
@@ -186,6 +188,7 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
     const fetchSearchBoth = (query: string, source: 'both' | 'quran' | 'hadith') => {
         if (!query || query.length < 2) return;
         setIsLoading(true);
+        setError(null);
         setResults([]);
 
         const scoreAndMap = (data: any, c: { id: string; name: string }) => {
@@ -326,6 +329,7 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
     // ── Fetch a page of hadiths by number range (parallel per-hadith requests) ──
     const fetchHadithRange = async (collectionId: string, from: number, count: number) => {
         setIsLoading(true);
+        setError(null);
         try {
             const nums = Array.from({ length: count }, (_, i) => from + i);
             const settled = await Promise.allSettled(
@@ -366,9 +370,16 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
     const loadBooks = async (collectionId: string, skipResults = false) => {
         setBooks([]);
         setSelectedBook(null);
+        setIsLoading(true);
+        setError(null);
         try {
+            // Try hadith 1 first to check existence and get metadata
             const r = await fetch(`https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/${collectionId}/1.json`);
-            if (!r.ok) return;
+            if (!r.ok) {
+                // Fallback for collections that might only exist as a jumbo file
+                if (!skipResults) fetchHadithRange(collectionId, 1, BROWSE_PAGE);
+                return;
+            }
             const data = await r.json();
             const sections: Record<string, string> = data.metadata?.section || {};
             const details: Record<string, any> = data.metadata?.section_detail || {};
@@ -381,16 +392,18 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
             setBooks(bookList);
             if (bookList.length > 0) {
                 setSelectedBook(bookList[0]);
-                // Note: total is bookList[bookList.length - 1].last
                 setBrowseOffset(bookList[0].first);
                 if (!skipResults) fetchHadithRange(collectionId, bookList[0].first, BROWSE_PAGE);
             } else {
-                // Small collections (Nawawi 40 etc.) — no sections, load from start
                 setBrowseOffset(1);
                 if (!skipResults) fetchHadithRange(collectionId, 1, BROWSE_PAGE);
             }
         } catch (err) {
             console.warn(`[KnowledgeLibrary] Failed to load books for ${collectionId}:`, err);
+            // Last resort fallback
+            if (!skipResults) fetchHadithRange(collectionId, 1, BROWSE_PAGE);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -400,6 +413,7 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
         if (!n || n < 1) return;
         const targetColl = overrideCollection || selectedCollection;
         setIsLoading(true);
+        setError(null);
         setResults([]);
         try {
             const r = await fetch(`https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/${targetColl}/${n}.json`);
@@ -418,6 +432,7 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
             })));
         } catch (err) {
             console.error(`[KnowledgeLibrary] Hadith jump failed (#${num} in ${targetColl}):`, err);
+            setError(`Hadith #${num} not found in this collection.`);
             setResults([]);
         } finally {
             setIsLoading(false);
@@ -586,194 +601,200 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
 
     return (
         <>
-            {/* Modals outside the animated container to prevent transform localising fixed children */}
-            <AnimatePresence>
-                {showGlossary && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6 bg-black/95 backdrop-blur-md cursor-pointer"
-                        onClick={() => setShowGlossary(false)}
-                    >
+            {/* Modals rendered via Portal to escape any transform containers */}
+            {typeof document !== 'undefined' && createPortal(
+                <AnimatePresence>
+                    {showGlossary && (
                         <motion.div
-                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                            animate={{ scale: 1, opacity: 1, y: 0 }}
-                            exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                            className="glass w-full max-w-2xl rounded-[3rem] p-8 md:p-12 relative shadow-2xl bg-slate-900 border border-emerald-500/30 cursor-default"
-                            onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 z-[300] flex items-center justify-center p-4 md:p-6 bg-black/95 backdrop-blur-md cursor-pointer"
+                            onClick={() => setShowGlossary(false)}
                         >
-                            <button
-                                onClick={() => setShowGlossary(false)}
-                                className="absolute top-6 right-6 md:top-8 md:right-8 text-slate-500 hover:text-white transition-colors"
+                            <motion.div
+                                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                                animate={{ scale: 1, opacity: 1, y: 0 }}
+                                exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                                className="bg-surface dark:bg-slate-900 w-full max-w-2xl rounded-[3rem] p-8 md:p-12 relative shadow-2xl border border-outline-variant/30 cursor-default"
+                                onClick={(e: React.MouseEvent) => e.stopPropagation()}
                             >
-                                <X className="w-8 h-8" />
-                            </button>
+                                <button
+                                    onClick={() => setShowGlossary(false)}
+                                    className="absolute top-6 right-6 md:top-8 md:right-8 text-on-surface-variant hover:text-on-surface transition-colors"
+                                >
+                                    <X className="w-8 h-8" />
+                                </button>
 
-                            <h3 className="text-3xl md:text-4xl font-black mb-10 gold-text uppercase tracking-tighter">Grading Definitions</h3>
+                                <h3 className="text-3xl md:text-4xl font-black mb-10 gold-text uppercase tracking-tighter">Grading Definitions</h3>
 
-                            <div className="space-y-10">
-                                <div className="space-y-3">
-                                    <h4 className="text-xl md:text-2xl font-bold text-emerald-400">Authentic (Sahih)</h4>
-                                    <p className="text-slate-400 text-lg leading-relaxed font-medium">Verified reports with continuous chains of reliable narrators. This is the highest standard of verification.</p>
-                                </div>
-                                <div className="space-y-3">
-                                    <h4 className="text-xl md:text-2xl font-bold text-blue-400">Good (Hasan)</h4>
-                                    <p className="text-slate-400 text-lg leading-relaxed font-medium">Reliable reports where narrators are trustworthy but might have slightly lower precision than the highest tier.</p>
-                                </div>
-                                <div className="space-y-3">
-                                    <h4 className="text-xl md:text-2xl font-bold text-amber-500">Weak (Da'if)</h4>
-                                    <p className="text-slate-400 text-lg leading-relaxed font-medium">Reports with identified gaps or flaws in the chain. These are useful for wisdom but not for primary law.</p>
-                                </div>
-                            </div>
-
-                            <button
-                                onClick={() => setShowGlossary(false)}
-                                className="w-full mt-12 py-5 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-2xl transition-all uppercase tracking-widest text-sm shadow-xl shadow-emerald-900/20"
-                            >
-                                Got it, Back to Library
-                            </button>
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
-            {/* Tafsir Modal */}
-            <AnimatePresence>
-                {tafsirAyah && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center bg-black/95 backdrop-blur-lg cursor-pointer"
-                        onClick={() => { setTafsirAyah(null); setTafsirText(''); }}
-                    >
-                        <motion.div
-                            initial={{ y: 60, opacity: 0 }}
-                            animate={{ y: 0, opacity: 1 }}
-                            exit={{ y: 60, opacity: 0 }}
-                            transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-                            className="w-full max-w-3xl max-h-[92vh] sm:max-h-[88vh] bg-[#0a0f0d] border border-amber-500/20 rounded-t-[3rem] sm:rounded-[3rem] overflow-hidden flex flex-col shadow-2xl shadow-amber-900/10 cursor-default"
-                            onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                        >
-                            {/* Modal header */}
-                            <div className="flex items-start justify-between gap-4 p-8 pb-4 border-b border-white/5 shrink-0">
-                                <div>
-                                    <div className="flex items-center gap-3 mb-1">
-                                        <span className="text-[10px] font-black uppercase tracking-[0.2em] px-3 py-1 rounded-full bg-amber-500/10 text-amber-500">Tafsir</span>
-                                        <span className="text-sm text-slate-400 font-medium">{tafsirAyah?.reference}</span>
+                                <div className="space-y-10">
+                                    <div className="space-y-3">
+                                        <h4 className="text-xl md:text-2xl font-bold text-emerald-600 dark:text-emerald-400">Authentic (Sahih)</h4>
+                                        <p className="text-on-surface-variant dark:text-slate-400 text-lg leading-relaxed font-medium">Verified reports with continuous chains of reliable narrators. This is the highest standard of verification.</p>
                                     </div>
-                                    <p className="text-xs text-slate-600 font-bold">Explanation by Imam Ibn Kathir</p>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    {tafsirAyah?.surahNumber && tafsirAyah?.ayahNumber && (
-                                        <a
-                                            href={`https://quran.com/${tafsirAyah.surahNumber}/${tafsirAyah.ayahNumber}`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-xl border border-amber-500/20 text-amber-500/70 hover:text-amber-400 hover:border-amber-500/40 transition-all"
-                                        >
-                                            <ExternalLink className="w-3 h-3" />
-                                            quran.com
-                                        </a>
-                                    )}
-                                    <button
-                                        onClick={() => { setTafsirAyah(null); setTafsirText(''); }}
-                                        className="text-slate-500 hover:text-white transition-colors p-1"
-                                    >
-                                        <X className="w-6 h-6" />
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Scrollable content */}
-                            <div className="overflow-y-auto flex-1 p-8 space-y-8">
-                                {/* Arabic */}
-                                {tafsirAyah?.arabic && (
-                                    <p className="text-3xl font-arabic text-right leading-[2.2] text-amber-100/90">
-                                        {tafsirAyah.arabic}
-                                    </p>
-                                )}
-
-                                {/* English translation */}
-                                <div className="p-6 rounded-2xl bg-emerald-500/5 border border-emerald-500/10">
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-emerald-500/50 mb-3">Translation (Muhammad Asad)</p>
-                                    <p className="text-lg text-slate-200 font-serif leading-relaxed">
-                                        {tafsirAyah?.text}
-                                    </p>
+                                    <div className="space-y-3">
+                                        <h4 className="text-xl md:text-2xl font-bold text-blue-600 dark:text-blue-400">Good (Hasan)</h4>
+                                        <p className="text-on-surface-variant dark:text-slate-400 text-lg leading-relaxed font-medium">Reliable reports where narrators are trustworthy but might have slightly lower precision than the highest tier.</p>
+                                    </div>
+                                    <div className="space-y-3">
+                                        <h4 className="text-xl md:text-2xl font-bold text-amber-600 dark:text-amber-500">Weak (Da'if)</h4>
+                                        <p className="text-on-surface-variant dark:text-slate-400 text-lg leading-relaxed font-medium">Reports with identified gaps or flaws in the chain. These are useful for wisdom but not for primary law.</p>
+                                    </div>
                                 </div>
 
-                                {/* Tafsir body */}
-                                <div className="space-y-4">
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-amber-500/50">Commentary</p>
-                                    {tafsirLoading ? (
-                                        <div className="flex items-center gap-3 py-8 justify-center">
-                                            <div className="w-6 h-6 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
-                                            <span className="text-sm font-bold text-slate-500">Loading commentary...</span>
+                                <button
+                                    onClick={() => setShowGlossary(false)}
+                                    className="w-full mt-12 py-5 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-2xl transition-all uppercase tracking-widest text-sm shadow-xl shadow-emerald-900/20"
+                                >
+                                    Got it, Back to Library
+                                </button>
+                            </motion.div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>,
+                document.body
+            )}
+
+            {typeof document !== 'undefined' && createPortal(
+                <AnimatePresence>
+                    {tafsirAyah && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 z-[400] flex items-end sm:items-center justify-center bg-black/95 backdrop-blur-lg cursor-pointer"
+                            onClick={() => { setTafsirAyah(null); setTafsirText(''); }}
+                        >
+                            <motion.div
+                                initial={{ y: 60, opacity: 0 }}
+                                animate={{ y: 0, opacity: 1 }}
+                                exit={{ y: 60, opacity: 0 }}
+                                transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+                                className="w-full max-w-3xl max-h-[92vh] sm:max-h-[88vh] bg-surface dark:bg-[#0a0f0d] border border-outline-variant/30 sm:border-amber-500/20 rounded-t-[3rem] sm:rounded-[3rem] overflow-hidden flex flex-col shadow-2xl shadow-amber-900/10 cursor-default"
+                                onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                            >
+                                {/* Modal header */}
+                                <div className="flex items-start justify-between gap-4 p-8 pb-4 border-b border-outline-variant/10 shrink-0">
+                                    <div>
+                                        <div className="flex items-center gap-3 mb-1">
+                                            <span className="text-[10px] font-black uppercase tracking-[0.2em] px-3 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-500">Tafsir</span>
+                                            <span className="text-sm text-on-surface-variant dark:text-slate-400 font-medium">{tafsirAyah?.reference}</span>
                                         </div>
-                                    ) : tafsirText ? (
-                                        <div className="space-y-4">
-                                            <div className={`text-base text-slate-300 leading-relaxed whitespace-pre-line font-medium transition-all ${tafsirExpanded ? '' : 'line-clamp-[20]'}`}>
-                                                {tafsirText}
-                                            </div>
-                                            {!tafsirExpanded && tafsirText.length > 600 && (
-                                                <button
-                                                    onClick={() => setTafsirExpanded(true)}
-                                                    className="flex items-center gap-2 text-amber-400 hover:text-amber-300 text-sm font-bold transition-colors"
-                                                >
-                                                    <ChevronDown className="w-4 h-4" />
-                                                    Read full tafsir
-                                                </button>
-                                            )}
-                                        </div>
-                                    ) : (
-                                        <div className="py-6 text-center">
-                                            <BookOpen className="w-10 h-10 mx-auto mb-3 text-slate-700" />
-                                            <p className="text-slate-500 font-medium">Tafsir not available for this verse.</p>
+                                        <p className="text-xs text-on-surface-variant dark:text-slate-600 font-bold">Explanation by Imam Ibn Kathir</p>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        {tafsirAyah?.surahNumber && tafsirAyah?.ayahNumber && (
                                             <a
-                                                href={`https://quran.com/${tafsirAyah?.surahNumber}/${tafsirAyah?.ayahNumber}`}
+                                                href={`https://quran.com/${tafsirAyah.surahNumber}/${tafsirAyah.ayahNumber}`}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="mt-3 inline-flex items-center gap-2 text-amber-400 hover:text-amber-300 text-sm font-bold transition-colors"
+                                                className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-xl border border-amber-500/20 text-amber-600/70 dark:text-amber-500/70 hover:text-amber-500 hover:border-amber-500/40 transition-all"
                                             >
-                                                <ExternalLink className="w-4 h-4" />
-                                                View on quran.com
+                                                <ExternalLink className="w-3 h-3" />
+                                                quran.com
                                             </a>
-                                        </div>
-                                    )}
+                                        )}
+                                        <button
+                                            onClick={() => { setTafsirAyah(null); setTafsirText(''); }}
+                                            className="text-on-surface-variant hover:text-on-surface transition-colors p-1"
+                                        >
+                                            <X className="w-6 h-6" />
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
+
+                                {/* Scrollable content */}
+                                <div className="overflow-y-auto flex-1 p-8 space-y-8 custom-scrollbar">
+                                    {/* Arabic */}
+                                    {tafsirAyah?.arabic && (
+                                        <p className="text-3xl font-arabic text-right leading-[2.2] text-on-surface dark:text-amber-100/90">
+                                            {tafsirAyah.arabic}
+                                        </p>
+                                    )}
+
+                                    {/* English translation */}
+                                    <div className="p-6 rounded-2xl bg-emerald-500/5 border border-emerald-500/10">
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600/50 dark:text-emerald-500/50 mb-3">Translation (Muhammad Asad)</p>
+                                        <p className="text-lg text-on-surface-variant dark:text-slate-200 font-serif leading-relaxed">
+                                            {tafsirAyah?.text}
+                                        </p>
+                                    </div>
+
+                                    {/* Tafsir body */}
+                                    <div className="space-y-4">
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-amber-600/50 dark:text-amber-500/50">Commentary</p>
+                                        {tafsirLoading ? (
+                                            <div className="flex items-center gap-3 py-8 justify-center">
+                                                <div className="w-6 h-6 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+                                                <span className="text-sm font-bold text-on-surface-variant">Loading commentary...</span>
+                                            </div>
+                                        ) : tafsirText ? (
+                                            <div className="space-y-4">
+                                                <div className={`text-base text-on-surface-variant dark:text-slate-300 leading-relaxed whitespace-pre-line font-medium transition-all ${tafsirExpanded ? '' : 'line-clamp-[20]'}`}>
+                                                    {tafsirText}
+                                                </div>
+                                                {!tafsirExpanded && tafsirText.length > 600 && (
+                                                    <button
+                                                        onClick={() => setTafsirExpanded(true)}
+                                                        className="flex items-center gap-2 text-amber-600 dark:text-amber-400 hover:text-amber-500 text-sm font-bold transition-colors"
+                                                    >
+                                                        <ChevronDown className="w-4 h-4" />
+                                                        Read full tafsir
+                                                    </button>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <div className="py-6 text-center">
+                                                <BookOpen className="w-10 h-10 mx-auto mb-3 text-on-surface-variant/30" />
+                                                <p className="text-on-surface-variant font-medium">Tafsir not available for this verse.</p>
+                                                <a
+                                                    href={`https://quran.com/${tafsirAyah?.surahNumber}/${tafsirAyah?.ayahNumber}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="mt-3 inline-flex items-center gap-2 text-amber-600 dark:text-amber-400 hover:text-amber-500 text-sm font-bold transition-colors"
+                                                >
+                                                    <ExternalLink className="w-4 h-4" />
+                                                    View on quran.com
+                                                </a>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </motion.div>
                         </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                    )}
+                </AnimatePresence>,
+                document.body
+            )}
 
             <div className="max-w-7xl mx-auto py-12 px-6 animate-fade-in relative">
                 {/* Header */}
+            {/* Header */}
             <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8 mb-12">
                 <div>
-                    <h2 className="text-5xl font-black mb-3 gold-text tracking-tighter">Knowledge Library</h2>
-                    <p className="text-slate-400 text-lg font-medium">Browse the Quran & Hadith, or search across both at once.</p>
+                    <h2 className="text-5xl font-black mb-3 title-text tracking-tighter">Knowledge Library</h2>
+                    <p className="text-on-surface-variant dark:text-slate-400 text-lg font-medium">Browse the Quran & Hadith, or search across both at once.</p>
                 </div>
 
-                <div className="flex gap-2 p-1.5 bg-slate-900/50 rounded-2xl border border-white/5 backdrop-blur-xl shrink-0">
+                <div className="flex gap-2 p-1.5 bg-surface-container-low dark:bg-slate-900/50 rounded-2xl border border-outline-variant/30 backdrop-blur-xl shrink-0">
                     <button
                         onClick={() => { setSubTab('quran'); setResults([]); stopAudio(); }}
-                        className={`px-6 py-3 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${subTab === 'quran' ? 'bg-amber-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+                        className={`px-6 py-3 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${subTab === 'quran' ? 'bg-[#34D399] text-white shadow-lg' : 'text-on-surface-variant dark:text-slate-400 hover:text-on-surface'}`}
                     >
                         <Book className="w-4 h-4" />
                         Holy Quran
                     </button>
                     <button
                         onClick={() => { setSubTab('hadith'); setResults([]); stopAudio(); }}
-                        className={`px-6 py-3 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${subTab === 'hadith' ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+                        className={`px-6 py-3 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${subTab === 'hadith' ? 'bg-[#34D399] text-white shadow-lg' : 'text-on-surface-variant dark:text-slate-400 hover:text-on-surface'}`}
                     >
                         <Hash className="w-4 h-4" />
                         Hadith Corpus
                     </button>
                     <button
                         onClick={() => { setSubTab('search'); setResults([]); stopAudio(); }}
-                        className={`px-6 py-3 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${subTab === 'search' ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/30' : 'text-slate-400 hover:text-white'}`}
+                        className={`px-6 py-3 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${subTab === 'search' ? 'bg-[#34D399] text-white shadow-lg' : 'text-on-surface-variant dark:text-slate-400 hover:text-on-surface'}`}
                     >
                         <Search className="w-4 h-4" />
                         Search
@@ -781,35 +802,127 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                 </div>
             </div>
 
+            {/* Content areas updated with theme colors */}
+            <div className="grid grid-cols-1 gap-8">
+                {subTab === 'quran' && (
+                    <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                        {surahs.map(s => (
+                            <button
+                                key={s.number}
+                                onClick={() => fetchQuran(s.number)}
+                                className={`p-4 rounded-2xl text-left transition-all border ${currentSurah === s.number ? 'bg-emerald-500/10 border-emerald-500 text-emerald-600 dark:text-emerald-400' : 'bg-surface-container-low dark:bg-white/5 border-outline-variant/20 hover:border-emerald-500/30'}`}
+                            >
+                                <div className="flex justify-between items-start mb-1">
+                                    <span className="text-[10px] font-bold opacity-50">#{s.number}</span>
+                                    <span className="font-arabic text-lg">{s.name.split(' ').pop()}</span>
+                                </div>
+                                <p className="font-bold text-sm truncate">{s.englishName}</p>
+                            </button>
+                        ))}
+                    </div>
+                )}
+
+                {(results.length > 0 || isLoading) && (
+                    <div className="space-y-6">
+                        {isLoading && (
+                            <div className="flex flex-col items-center justify-center py-20 gap-4">
+                                <div className="w-12 h-12 border-4 border-[#34D399] border-t-transparent rounded-full animate-spin" />
+                                <p className="text-on-surface-variant font-bold animate-pulse">Consulting the archives...</p>
+                            </div>
+                        )}
+                        {results.map((r, i) => (
+                            <motion.div
+                                key={`${r.type}-${r.reference}-${i}`}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className={`group bg-surface-container-low dark:bg-white/5 border border-outline-variant/20 rounded-[2.5rem] p-8 md:p-10 hover:border-emerald-500/30 transition-all shadow-sm ${
+                                    (r.type === 'Hadith' && r.hadithNumber == jumpToNum) || (r.type === 'Quran' && highlightedAyah === `${r.surahNumber}:${r.ayahNumber}`)
+                                    ? 'ring-2 ring-emerald-500 bg-emerald-500/5' : ''
+                                }`}
+                            >
+                                <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
+                                    <div className="flex items-center gap-3">
+                                        <span className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest ${r.type === 'Quran' ? 'bg-amber-500/10 text-amber-600' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'}`}>
+                                            {r.type}
+                                        </span>
+                                        <span className="text-on-surface-variant dark:text-slate-500 font-bold text-sm">{r.reference}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        {r.type === 'Quran' && (
+                                            <button 
+                                                onClick={() => fetchTafsir(r)}
+                                                className="flex items-center gap-2 px-5 py-2 rounded-xl bg-amber-500 text-white text-xs font-bold hover:scale-105 transition-all shadow-lg shadow-amber-500/20"
+                                            >
+                                                <BookOpen className="w-4 h-4" /> View Tafsir
+                                            </button>
+                                        )}
+                                        {r.type === 'Quran' && (
+                                            <button 
+                                                onClick={() => playAudio(r.surahNumber, r.ayahNumber)}
+                                                className={`p-2 rounded-xl transition-all ${playingAyah === `${r.surahNumber}:${r.ayahNumber}` ? 'bg-emerald-600 text-white' : 'bg-surface-container-high dark:bg-white/10 text-on-surface-variant hover:text-emerald-500'}`}
+                                            >
+                                                {playingAyah === `${r.surahNumber}:${r.ayahNumber}` ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {r.arabic && (
+                                    <p className="font-arabic text-3xl md:text-4xl text-right leading-[2] mb-8 text-on-surface dark:text-amber-100/90">
+                                        {r.arabic}
+                                    </p>
+                                )}
+                                
+                                <p className="text-xl md:text-2xl font-medium leading-relaxed text-on-surface-variant dark:text-slate-200 font-serif">
+                                    {highlightText(r.text, searchQuery)}
+                                </p>
+                            </motion.div>
+                        ))}
+                    </div>
+                )}
+
+                {!isLoading && !error && results.length === 0 && subTab !== 'quran' && (
+                    <div className="flex flex-col items-center justify-center py-40 text-center gap-6">
+                        <div className="w-24 h-24 bg-emerald-500/5 rounded-[2rem] flex items-center justify-center border border-emerald-500/10 mb-2">
+                            <Library className="w-10 h-10 text-emerald-600/40" />
+                        </div>
+                        <h3 className="text-3xl font-black tracking-tight">The Library is Ready.</h3>
+                        <p className="text-on-surface-variant dark:text-slate-400 max-w-sm font-medium leading-relaxed">
+                            Enter a search above or select a collection from the sidebar to browse our verified scholarly archives.
+                        </p>
+                    </div>
+                )}
+            </div>
+
             {/* Search Tab — unified search UI */}
             {subTab === 'search' && (
                 <div className="mb-10 space-y-5">
                     <div className="relative group">
-                        <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-purple-400 transition-colors" />
+                        <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-on-surface-variant group-focus-within:text-emerald-500 transition-colors" />
                         <input
                             type="text"
                             autoFocus
                             placeholder="Search across all Quran & Hadith — e.g. 'patience', 'charity', 'prayer'..."
                             value={searchQuery}
                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
-                            className="w-full bg-black/40 border border-white/10 focus:border-purple-500/40 px-16 py-6 rounded-[2rem] text-xl focus:outline-none focus:ring-4 focus:ring-purple-500/10 transition-all font-medium"
+                            className="w-full bg-surface-container-low dark:bg-black/40 border border-outline-variant/50 focus:border-emerald-500/40 px-16 py-6 rounded-[2rem] text-xl focus:outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all font-medium text-on-surface"
                         />
                         {searchQuery && (
-                            <button onClick={() => { setSearchQuery(''); setResults([]); }} className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors">
+                            <button onClick={() => { setSearchQuery(''); setResults([]); }} className="absolute right-6 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface transition-colors">
                                 <X className="w-5 h-5" />
                             </button>
                         )}
                     </div>
                     {/* Source filter */}
                     <div className="flex flex-wrap gap-2 items-center">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 mr-1">Search in:</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant mr-1">Search in:</span>
                         {(['both', 'quran', 'hadith'] as const).map(src => (
                             <button
                                 key={src}
                                 onClick={() => setSearchSource(src)}
                                 className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${searchSource === src
-                                    ? 'bg-purple-600 border-purple-400 text-white shadow-lg'
-                                    : 'bg-slate-900 border-white/5 text-slate-400 hover:border-purple-500/30'
+                                    ? 'bg-emerald-600 border-emerald-400 text-white shadow-lg'
+                                    : 'bg-surface-container-low dark:bg-slate-900 border-outline-variant/30 text-on-surface-variant hover:border-emerald-500/30'
                                     }`}
                             >
                                 {src === 'both' ? 'Quran + Hadith' : src === 'quran' ? 'Quran only' : 'Hadith only'}
@@ -827,15 +940,15 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                         {/* Jump to number */}
                         <div className="flex items-center gap-2 flex-1 min-w-[220px]">
                             <Hash className="w-4 h-4 text-emerald-500 shrink-0" />
-                            <input
-                                type="number"
-                                min={1}
-                                placeholder="Jump to Hadith # ..."
-                                value={jumpToNum}
-                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setJumpToNum(e.target.value)}
-                                onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === 'Enter' && jumpToNum) { jumpToHadith(jumpToNum); setSearchQuery(''); } }}
-                                className="bg-transparent border-none outline-none text-sm font-bold text-white placeholder:text-slate-600 w-full"
-                            />
+                                <input
+                                    type="number"
+                                    min={1}
+                                    placeholder="Jump to Hadith # ..."
+                                    value={jumpToNum}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setJumpToNum(e.target.value)}
+                                    onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === 'Enter' && jumpToNum) { jumpToHadith(jumpToNum); setSearchQuery(''); } }}
+                                    className="bg-transparent border-none outline-none text-sm font-bold text-on-surface placeholder:text-on-surface-variant/40 w-full"
+                                />
                             <button
                                 onClick={() => { if (jumpToNum) { jumpToHadith(jumpToNum); setSearchQuery(''); } }}
                                 className="shrink-0 px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
@@ -879,10 +992,36 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
             <div className={`grid gap-12 ${subTab === 'search' ? '' : 'lg:grid-cols-[320px_1fr]'}`}>
                 {/* Sidebar Navigation */}
                 <div className="space-y-8 order-2 lg:order-1">
+                    {/* Library Guide Card */}
+                    <div className="glass p-8 rounded-[2.5rem] bg-emerald-600/5 border border-emerald-500/20 shadow-sm">
+                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-400 mb-6 flex items-center gap-2">
+                            <BookOpen className="w-4 h-4" /> Scholarly Guide
+                        </h4>
+                        <div className="space-y-5">
+                            <div className="flex justify-between items-center text-xs">
+                                <span className="text-on-surface-variant dark:text-slate-400 font-bold uppercase tracking-wider">Surahs (Chapters)</span>
+                                <span className="text-on-surface dark:text-white font-black text-sm">114</span>
+                            </div>
+                            <div className="flex justify-between items-center text-xs">
+                                <span className="text-on-surface-variant dark:text-slate-400 font-bold uppercase tracking-wider">Juz (Sections)</span>
+                                <span className="text-on-surface dark:text-white font-black text-sm">30</span>
+                            </div>
+                            <div className="flex justify-between items-center text-xs border-t border-emerald-500/10 pt-4">
+                                <span className="text-on-surface-variant dark:text-slate-400 font-bold uppercase tracking-wider">Total Verses</span>
+                                <span className="text-on-surface dark:text-white font-black text-sm">6,236</span>
+                            </div>
+                            <div className="bg-emerald-600/10 p-4 rounded-2xl">
+                                <p className="text-[10px] text-emerald-800 dark:text-emerald-200 font-medium leading-relaxed italic">
+                                    "The Holy Quran contains 114 Surahs. For consistent reading and memorization, it is traditionally divided into 30 Juz (equal portions)."
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
                     {subTab === 'search' ? null : (
-                        <div className="glass p-6 rounded-[2rem] border border-white/5">
-                            <h4 className={`font-black text-xs tracking-[0.2em] uppercase mb-6 flex items-center gap-2 ${subTab === 'quran' ? 'text-amber-500' : 'text-emerald-500'}`}>
-                                <Filter className="w-4 h-4" /> {subTab === 'quran' ? 'Chapters' : 'Collections'}
+                        <div className="glass p-6 rounded-[2rem] border border-white/5 shadow-sm">
+                            <h4 className={`font-black text-xs tracking-[0.2em] uppercase mb-6 flex items-center gap-2 ${subTab === 'quran' ? 'text-amber-600 dark:text-amber-500' : 'text-emerald-600 dark:text-emerald-500'}`}>
+                                <Filter className="w-4 h-4" /> {subTab === 'quran' ? 'Surahs (114 Chapters)' : 'Collections'}
                             </h4>
                             <div className="space-y-1 max-h-[600px] overflow-y-auto scrollbar-hide pr-2">
                                 {subTab === 'hadith' ? (
@@ -951,6 +1090,25 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                             </div>
                         </div>
                     )}
+
+                    {/* Library Guide Sidebar Card */}
+                    <div className="mt-8 p-8 bg-amber-500/5 rounded-[2.5rem] border border-amber-500/10 shadow-sm relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 blur-3xl -z-10" />
+                        <div className="flex items-center gap-3 mb-4">
+                            <Sparkles className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                            <h4 className="font-black text-xs tracking-[0.2em] uppercase text-amber-600 dark:text-amber-500">Library Guide</h4>
+                        </div>
+                        <div className="space-y-4">
+                            <div>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">Structure of the Quran</p>
+                                <p className="text-sm text-on-surface-variant font-bold leading-relaxed">The Noble Quran consists of <span className="text-amber-600 dark:text-amber-400">114 Surahs</span> (Chapters). It is also traditionally divided into <span className="text-amber-600 dark:text-amber-400">30 Juz</span> (Parts) for easier recitation over a month.</p>
+                            </div>
+                            <div className="pt-4 border-t border-white/5">
+                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">Authenticated Hadith</p>
+                                <p className="text-sm text-on-surface-variant font-bold leading-relaxed">Our library contains over 37,000 Prophetic traditions evaluated by major scholars. Each is marked with its authenticity grade <span className="text-emerald-500 italic">(Sahih, Hasan, etc)</span>.</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Main View Area */}

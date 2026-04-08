@@ -12,31 +12,86 @@
   <meta name="description"
     content="Consult the Quran and authentic Sunnah with Islamic-advisor. Rooted in tradition, powered by intelligence." />
 
-  <!-- Tailwind CSS (CDN) — this powers ALL the utility classes -->
-  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Tailwind CSS (CDN) -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
   <script>
     tailwind.config = {
+      darkMode: "class",
       theme: {
         extend: {
-          fontFamily: {
-            'sans': ['Inter', 'system-ui', 'sans-serif'],
-            'display': ['Outfit', 'sans-serif'],
-            'arabic': ['Amiri', 'serif'],
-          },
-          colors: {
+          "colors": {
+            "on-secondary-container": "#2a1700",
+            "on-secondary-fixed": "#2a1700",
+            "on-primary-fixed-variant": "#005137",
+            "on-tertiary": "#ffffff",
+            "on-surface": "#191c1e",
+            "primary-container": "#68fcbf",
+            "error": "#ba1a1a",
+            "primary": "#006c4b",
+            "inverse-primary": "#45dfa4",
+            "secondary-fixed": "#ffddb8",
+            "on-secondary": "#ffffff",
+            "on-primary-container": "#002114",
+            "on-error": "#ffffff",
+            "surface-container-lowest": "#ffffff",
+            "surface-container-high": "#e7e8ea",
+            "surface-variant": "#dbe5dd",
+            "on-primary": "#ffffff",
+            "surface-dim": "#d9dbdd",
+            "secondary": "#825500",
+            "surface-bright": "#f9f9fb",
+            "surface-container-low": "#f3f3f5",
+            "error-container": "#ffdad6",
+            "on-secondary-fixed-variant": "#653e00",
+            "primary-fixed-dim": "#45dfa4",
+            "on-surface-variant": "#404943",
+            "on-primary-fixed": "#002114",
+            "tertiary-fixed": "#dfe3e7",
+            "tertiary": "#5b6063",
+            "surface-container-highest": "#e1e2e4",
+            "tertiary-fixed-dim": "#c3c7cb",
+            "on-tertiary-fixed-variant": "#43474b",
+            "outline-variant": "#bfc9c1",
+            "outline": "#707972",
+            "surface-tint": "#006c4b",
+            "surface-container": "#eceef0",
+            "on-error-container": "#410002",
+            "secondary-fixed-dim": "#ffb95f",
+            "on-tertiary-container": "#181d20",
+            "on-background": "#191c1e",
+            "primary-fixed": "#68fcbf",
+            "inverse-on-surface": "#f0f0f3",
+            "surface": "#f9f9fb",
+            "tertiary-container": "#dfe3e7",
+            "secondary-container": "#ffddb8",
+            "inverse-surface": "#2e3133",
+            "on-tertiary-fixed": "#171c1f",
+            "background": "#f9f9fb",
             'bg-dark': '#020617',
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "1.5rem",
+            "full": "9999px"
+          },
+          "fontFamily": {
+            "headline": ["Plus Jakarta Sans", "sans-serif"],
+            "body": ["Inter", "sans-serif"],
+            "label": ["Inter", "sans-serif"],
+            "sans": ["Inter", "system-ui", "sans-serif"],
+            "display": ["Outfit", "sans-serif"],
+            "arabic": ["Amiri", "serif"],
           }
-        }
-      }
+        },
+      },
     }
   </script>
 
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@700;800;900&family=Amiri:ital,wght@0,400;0,700;1,400&display=swap"
-    rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@700;800;900&family=Amiri:ital,wght@0,400;0,700;1,400&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
 </head>
 
 <body class="bg-slate-950 text-slate-100 font-sans antialiased">
