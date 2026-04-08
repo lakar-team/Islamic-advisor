@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Search, Book, Filter, Hash, CheckCircle2, AlertCircle, X, Volume2, VolumeX, Play, Pause, SkipForward, SkipBack, BookOpen, ExternalLink, ChevronDown, Sparkles } from 'lucide-react';
+import { Search, Book, Filter, Hash, CheckCircle2, AlertCircle, X, Volume2, VolumeX, Play, Pause, SkipForward, SkipBack, BookOpen, ExternalLink, ChevronDown, Sparkles, Library } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface KnowledgeLibraryProps {

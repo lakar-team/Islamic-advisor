@@ -41,7 +41,6 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [showSidebar, setShowSidebar] = useState(false);
-    const [expandedMessages, setExpandedMessages] = useState<Record<string, boolean>>({});
     
     const scrollRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);

@@ -1,4 +1,4 @@
-import { Compass, BookOpen, Shield, Heart, Globe, MessageSquare, Library, X, User } from 'lucide-react';
+import { Compass, Shield, Heart, X, User } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import SheikhChat from './components/SheikhChat';
 import KnowledgeLibrary from './components/KnowledgeLibrary';
@@ -62,7 +62,6 @@ function App() {
     return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   });
 
-  const [libraryContext, setLibraryContext] = useState<{ tab: 'quran' | 'hadith', query: string } | null>(null);
   const [modal, setModal] = useState<'privacy' | 'terms' | 'contact' | 'commerce' | null>(null);
   const [donationStatus, setDonationStatus] = useState<'success' | 'cancel' | null>(() => {
     const params = new URLSearchParams(window.location.search);
