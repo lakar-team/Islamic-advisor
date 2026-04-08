@@ -41,6 +41,11 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [showSidebar, setShowSidebar] = useState(false);
+
+    // OAuth & Activity States
+    const [oauthToken, setOauthToken] = useState<string | null>(() => localStorage.getItem('quran_access_token'));
+    const [studyHistory, setStudyHistory] = useState<any[]>([]);
+    const [historyLoading, setHistoryLoading] = useState(false);
     
     const scrollRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -73,6 +78,61 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
             textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
         }
     }, [input]);
+
+    // Handle OAuth Callback from Hash
+    useEffect(() => {
+        const hash = window.location.hash;
+        if (hash.includes('access_token=')) {
+            const params = new URLSearchParams(hash.replace('#chat?', '').replace('#', ''));
+            const token = params.get('access_token');
+            if (token) {
+                setOauthToken(token);
+                localStorage.setItem('quran_access_token', token);
+                // Clear sensitive info from URL
+                window.location.hash = 'chat';
+            }
+        }
+        const errorParam = new URLSearchParams(window.location.hash.split('?')[1]).get('oauth_error');
+        if (errorParam) {
+            setError(`Connection Failed: ${errorParam}`);
+            window.location.hash = 'chat';
+        }
+    }, []);
+
+    // Fetch User Activity (Bookmarks/History) from Quran.com User API
+    useEffect(() => {
+        if (!oauthToken) return;
+
+        const fetchActivity = async () => {
+            setHistoryLoading(true);
+            try {
+                // Fetch recent bookmarks as context for "Discuss My Study"
+                const res = await fetch('https://api.quran.com/api/v4/user/bookmarks', {
+                    headers: { 'Authorization': `Bearer ${oauthToken}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    setStudyHistory(data.bookmarks || []);
+                }
+            } catch (e) {
+                console.error('Failed to fetch user activity', e);
+            } finally {
+                setHistoryLoading(false);
+            }
+        };
+
+        fetchActivity();
+    }, [oauthToken]);
+
+    const handleConnect = () => {
+        window.location.href = '/api/oauth/login';
+    };
+
+    const handleDisconnect = () => {
+        setOauthToken(null);
+        setStudyHistory([]);
+        localStorage.removeItem('quran_access_token');
+    };
 
     const createNewSession = (initialQuery?: string) => {
         const newSession: ChatSession = {
@@ -148,7 +208,14 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
         setInput('');
 
         try {
-            const contextMessages = messages.concat(userMsg).map(m => ({ role: m.role, content: m.content }));
+            // Inject study context if connected
+            let finalUserQuery = currentInput;
+            if (oauthToken && studyHistory.length > 0) {
+                const recent = studyHistory.slice(0, 3).map(b => `${b.surah_name} ${b.verse_key}`).join(', ');
+                finalUserQuery = `[USER STUDY CONTEXT: User recently studied/bookmarked ${recent}]\n\n${currentInput}`;
+            }
+
+            const contextMessages = messages.concat({ ...userMsg, content: finalUserQuery }).map(m => ({ role: m.role, content: m.content }));
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -361,12 +428,35 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
                             </div>
                         </div>
                     </div>
-                    {currentSessionId && (
-                        <div className="hidden sm:flex flex-col items-end opacity-40">
-                            <span className="text-[10px] font-bold uppercase tracking-tighter">Session ID</span>
-                            <span className="text-[9px] font-mono">{currentSessionId}</span>
-                        </div>
-                    )}
+                    
+                    <div className="flex items-center gap-3">
+                        {oauthToken ? (
+                            <div className="flex items-center gap-3 bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 rounded-2xl">
+                                <div className="flex flex-col items-end">
+                                    <span className="text-[9px] font-black uppercase text-emerald-600 tracking-widest">Connected</span>
+                                    <span className="text-[8px] text-slate-500 font-bold uppercase">Quran.com Profile</span>
+                                </div>
+                                <button 
+                                    onClick={handleDisconnect}
+                                    className="p-1.5 hover:bg-red-500/10 text-slate-400 hover:text-red-500 rounded-lg transition-colors"
+                                    title="Disconnect"
+                                >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                            </div>
+                        ) : (
+                            <button
+                                onClick={handleConnect}
+                                className="flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-white/5 border border-outline-variant/30 hover:border-emerald-500/40 rounded-2xl transition-all group"
+                            >
+                                <div className="flex flex-col items-start leading-none">
+                                    <span className="text-[9px] font-black uppercase tracking-widest text-[#34D399]">Connect Quran.com</span>
+                                    <span className="text-[8px] text-slate-500 font-bold uppercase mt-1">Discuss My Study</span>
+                                </div>
+                                <Sparkles className="w-3.5 h-3.5 text-amber-500 group-hover:scale-110 transition-transform" />
+                            </button>
+                        )}
+                    </div>
                 </header>
 
                 {/* Messages Body */}

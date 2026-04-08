@@ -38,7 +38,8 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
     const [currentSurah, setCurrentSurah] = useState<number | null>(null);
     // WBW: cache per "surahNumber:ayahNumber" key, value = array of {text,translation}
     const [wbwCache, setWbwCache] = useState<Record<string, any[]>>({});
-    const [wbwActive, setWbwActive] = useState<string | null>(null); // which ayah key has WBW open
+    const [wbwActive, setWbwActive] = useState<string | null>(null); // which ayah key has WBW open (for individual ayah clicks)
+    const [showWbw, setShowWbw] = useState(false); // Global toggle for WBW in Quran view
     const [targetAyah, setTargetAyah] = useState<string | null>(null); // "surah:ayah" to scroll-to after load
     const [highlightedAyah, setHighlightedAyah] = useState<string | null>(null); // flashing highlight
 
@@ -105,13 +106,9 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
     // Fetch WBW for a single ayah (lazy, cached) via quran.com API v4
     const fetchWbwAyah = async (surahNum: number, ayahNum: number) => {
         const key = `${surahNum}:${ayahNum}`;
-        if (wbwCache[key]) {
-            setWbwActive(prev => prev === key ? null : key); // toggle if already loaded
-            return;
-        }
+        if (wbwCache[key]) return;
         // Mark as loading (empty array = loading in-progress)
         setWbwCache((prev: any) => ({ ...prev, [key]: [] }));
-        setWbwActive(key);
         try {
             const url = `https://api.quran.com/api/v4/verses/by_key/${surahNum}:${ayahNum}?language=en&words=true&word_fields=text_uthmani,translation_text`;
             const r = await fetch(url);
@@ -144,23 +141,42 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
             if (isNumber) {
                 const num = Number(surahOnlyQuery);
                 setCurrentSurah(num);
-                const res = await fetch(`https://api.alquran.cloud/v1/surah/${num}/editions/quran-uthmani,en.asad`);
+
+                // Fetch surah from Quran.com API v4
+                // We use indopak for Arabic as it's often preferred for reading, 
+                // and clear translation fields.
+                const res = await fetch(`https://api.quran.com/api/v4/verses/by_chapter/${num}?language=en&words=true&word_fields=text_uthmani,translation_text&per_page=286`);
                 const data = await res.json();
-                const arabicAyahs = data.data[0].ayahs;
-                const englishAyahs = data.data[1].ayahs;
-                const surahName = data.data[0].englishName;
-                const surahNumber = data.data[0].number;
-                setResults(arabicAyahs.map((a: any, idx: number) => {
-                    let arabicText = a.text;
-                    if (a.numberInSurah === 1 && surahNumber !== 1)
-                        arabicText = arabicText.replace(/^بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ[ \u200f]*/u, '');
+                
+                if (!data.verses) throw new Error("No verses found");
+
+                setResults(data.verses.map((v: any) => {
+                    const ayahNum = v.verse_number;
+                    // Pre-cache WBW data since it's already in the 'words' array
+                    const words = (v.words || [])
+                        .filter((w: any) => w.char_type_name === 'word')
+                        .map((w: any) => ({
+                            text: w.text_uthmani || w.text,
+                            translation: w.translation?.text || '',
+                            transliteration: w.transliteration?.text || '',
+                        }));
+                    
+                    const key = `${num}:${ayahNum}`;
+                    setWbwCache(prev => ({ ...prev, [key]: words }));
+
+                    // Arabic text construction (simple concatenation if u-text isn't provided)
+                    const arabicText = v.text_uthmani || words.map((w: any) => w.text).join(' ');
+                    
+                    // Simple translation (usually first word translation serves as fallback, but we use word translation join for fallback)
+                    const englishTranslation = words.map((w: any) => w.translation).join(' ');
+
                     return {
-                        text: englishAyahs[idx].text,
+                        text: v.translations?.[0]?.text || englishTranslation,
                         arabic: arabicText,
-                        reference: `${surahName} ${surahOnlyQuery}:${a.numberInSurah}`,
+                        reference: `Surah ${num}:${ayahNum}`,
                         type: 'Quran',
-                        surahNumber,
-                        ayahNumber: a.numberInSurah,
+                        surahNumber: num,
+                        ayahNumber: ayahNum,
                     };
                 }));
             } else {
@@ -868,9 +884,23 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                                 </div>
 
                                 {r.arabic && (
-                                    <p className="font-arabic text-3xl md:text-4xl text-right leading-[2] mb-8 text-on-surface dark:text-amber-100/90">
-                                        {r.arabic}
-                                    </p>
+                                    <div className="mb-8">
+                                        {showWbw && r.type === 'Quran' ? (
+                                            <div className="flex flex-row-reverse flex-wrap gap-y-8 gap-x-4">
+                                                {getWbwWords(r.surahNumber, r.ayahNumber).map((w, idx) => (
+                                                    <div key={idx} className="flex flex-col items-center">
+                                                        <span className="font-arabic text-3xl md:text-4xl text-on-surface dark:text-amber-100/90 leading-relaxed">{w.text}</span>
+                                                        <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-tighter text-center max-w-[80px] leading-tight mt-1">{w.translation}</span>
+                                                    </div>
+                                                ))}
+                                                <span className="font-arabic text-3xl md:text-4xl text-amber-500 self-end ml-2">({r.ayahNumber})</span>
+                                            </div>
+                                        ) : (
+                                            <p className="font-arabic text-3xl md:text-4xl text-right leading-[2] text-on-surface dark:text-amber-100/90">
+                                                {r.arabic} {r.type === 'Quran' && <span className="text-amber-500 text-2xl">({r.ayahNumber})</span>}
+                                            </p>
+                                        )}
+                                    </div>
                                 )}
                                 
                                 <p className="text-xl md:text-2xl font-medium leading-relaxed text-on-surface-variant dark:text-slate-200 font-serif">
@@ -966,12 +996,18 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                     </div>
                 )}
 
-                {/* Quran toolbar: play surah button */}
+                {/* Quran toolbar: play surah button + WBW Toggle */}
                 {subTab === 'quran' && results.length > 0 && currentSurah && (
-                    <div className="flex flex-wrap gap-3 items-center justify-end bg-amber-500/5 p-4 rounded-3xl border border-amber-500/10">
+                    <div className="flex flex-wrap gap-4 items-center justify-between bg-emerald-600/5 p-5 rounded-3xl border border-emerald-500/10 shadow-sm">
+                        <button
+                            onClick={() => setShowWbw(!showWbw)}
+                            className={`flex items-center gap-2.5 px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border ${showWbw ? 'bg-amber-500 border-amber-600 text-white shadow-lg' : 'bg-surface dark:bg-slate-900 border-outline-variant/30 text-slate-500 hover:border-amber-500/30 hover:text-amber-500'}`}
+                        >
+                            <span className={showWbw ? 'text-white' : 'text-amber-500'}>W</span> Word by Word
+                        </button>
 
-                        <div className="flex items-center gap-3">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Recitation (Alafasy):</span>
+                        <div className="flex items-center gap-4">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Recitation:</span>
                             <button
                                 onClick={() => {
                                     if (isPlayingSurah) {
@@ -980,7 +1016,7 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                                         playNextAyah(currentSurah, 1, results.length);
                                     }
                                 }}
-                                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${isPlayingSurah ? 'bg-red-600/20 border border-red-500/30 text-red-400 hover:bg-red-600/30' : 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20 hover:bg-emerald-500'}`}
+                                className={`flex items-center gap-3 px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${isPlayingSurah ? 'bg-red-600/20 border border-red-500/30 text-red-500 hover:bg-red-600/30' : 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20 hover:bg-emerald-500'}`}
                             >
                                 {isPlayingSurah ? <><VolumeX className="w-3.5 h-3.5" /> Stop</> : <><Volume2 className="w-3.5 h-3.5" /> Play Surah</>}
                             </button>
@@ -1124,9 +1160,9 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                                 results.map((res, idx) => {
                                     const ayahKey = `${res.surahNumber}:${res.ayahNumber}`;
                                     const isThisPlaying = playingAyah === ayahKey;
-                                    const isWbwOpen = wbwActive === ayahKey;
+                                    const isWbwOpen = showWbw || wbwActive === ayahKey;
                                     const wbwWords = getWbwWords(res.surahNumber, res.ayahNumber);
-                                    const wbwLoaded = !!wbwCache[ayahKey];
+                                    const wbwLoaded = !!wbwCache[ayahKey] && wbwCache[ayahKey].length > 0;
 
                                     // Unique IDs for deep-linking
                                     const cardId = res.type === 'Quran' 
@@ -1225,53 +1261,40 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
 
                                             {/* Arabic text — words as interactive chips */}
                                             {res.arabic && (
-                                                <div className="mb-8">
+                                                <div className="mb-10">
                                                     {isWbwOpen && wbwWords.length > 0 ? (
-                                                        // WBW chip layout — RTL word chips with gloss below
-                                                        <div
-                                                            className="flex flex-wrap gap-x-4 gap-y-6 justify-end"
-                                                            dir="rtl"
-                                                        >
+                                                        <div className="flex flex-row-reverse flex-wrap gap-x-6 gap-y-10 justify-start">
                                                             {wbwWords.map((w: any, wi: number) => (
-                                                                <div
-                                                                    key={wi}
-                                                                    className="flex flex-col items-center gap-1.5 group/word"
-                                                                    dir="ltr"
-                                                                >
-                                                                    <span className="text-3xl font-arabic text-amber-100/90 leading-relaxed">{w.text}</span>
-                                                                    <span className="text-[10px] font-bold text-emerald-400/70 text-center max-w-[90px] leading-snug">{w.translation}</span>
+                                                                <div key={wi} className="flex flex-col items-center gap-2 group/word">
+                                                                    <span className="text-4xl md:text-5xl font-arabic text-amber-100/90 leading-relaxed group-hover/word:text-white transition-colors">{w.text}</span>
+                                                                    <span className="text-[11px] font-black uppercase tracking-tighter text-emerald-400 bg-emerald-500/5 px-2 py-0.5 rounded-md border border-emerald-500/10 text-center max-w-[100px] leading-tight">{w.translation}</span>
                                                                 </div>
                                                             ))}
+                                                            {res.type === 'Quran' && (
+                                                                <div className="flex flex-col items-center justify-center ml-2 self-end mb-1">
+                                                                    <span className="text-2xl font-arabic text-amber-500/60">({res.ayahNumber})</span>
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     ) : isWbwOpen && !wbwLoaded ? (
-                                                        <div className="flex items-center justify-end gap-2 py-2">
-                                                            <div className="w-4 h-4 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
-                                                            <span className="text-xs text-slate-500 font-bold">Loading word translations…</span>
+                                                        <div className="flex items-center justify-end gap-3 py-10 bg-white/5 rounded-[2rem] border border-white/5">
+                                                            <div className="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+                                                            <span className="text-[10px] uppercase font-black tracking-widest text-emerald-500/70">Analyzing word definitions…</span>
                                                         </div>
                                                     ) : (
-                                                        // Plain Arabic — tapping opens WBW
                                                         <button
-                                                            onClick={() => res.surahNumber && res.ayahNumber && fetchWbwAyah(res.surahNumber, res.ayahNumber)}
+                                                            onClick={() => res.surahNumber && res.ayahNumber && fetchWbwAyah(res.surahNumber, res.ayahNumber).then(() => setWbwActive(ayahKey))}
                                                             className="w-full text-right group/arabic"
                                                             title="Tap to see word-by-word translation"
                                                         >
-                                                            <p className="text-4xl font-arabic text-right leading-[2] text-amber-100/90 selection:bg-amber-500/30 group-hover/arabic:text-amber-100 transition-colors">
-                                                                {res.arabic}
+                                                            <p className="text-4xl md:text-5xl font-arabic text-right leading-[2] text-amber-100/90 selection:bg-amber-500/30 group-hover/arabic:text-amber-100 transition-colors">
+                                                                {res.arabic} {res.type === 'Quran' && <span className="text-amber-500/60 text-2xl ml-2">({res.ayahNumber})</span>}
                                                             </p>
-                                                            {res.type === 'Quran' && (
-                                                                <span className="text-[9px] font-black uppercase tracking-widest text-slate-600 group-hover/arabic:text-amber-500/50 transition-colors">
-                                                                    tap for word-by-word ↑
+                                                            <div className="flex justify-end mt-2">
+                                                                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-600 group-hover/arabic:text-emerald-500/50 transition-colors">
+                                                                    Explore Word-by-Word Analysis
                                                                 </span>
-                                                            )}
-                                                        </button>
-                                                    )}
-                                                    {/* Collapse button when open */}
-                                                    {isWbwOpen && (
-                                                        <button
-                                                            onClick={() => setWbwActive(null)}
-                                                            className="mt-3 flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-slate-600 hover:text-slate-400 transition-colors"
-                                                        >
-                                                            <ChevronDown className="w-3 h-3 rotate-180" /> hide word-by-word
+                                                            </div>
                                                         </button>
                                                     )}
                                                 </div>
