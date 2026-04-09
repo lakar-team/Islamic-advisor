@@ -4,11 +4,13 @@ export const onRequestGet = async (context: any) => {
     const { request, env } = context;
     const url = new URL(request.url);
     const code = url.searchParams.get('code');
-    const state = url.searchParams.get('state');
     const error = url.searchParams.get('error');
 
+    const origin = new URL(request.url).origin;
+    const oauthBase = env.QURAN_OAUTH_BASE_URL || 'https://oauth2.quran.foundation';
+
     if (error) {
-        return Response.redirect(`${new URL(request.url).origin}/#chat?oauth_error=${encodeURIComponent(error)}`);
+        return Response.redirect(`${origin}/#chat?oauth_error=${encodeURIComponent(error)}`);
     }
 
     if (!code) {
@@ -16,28 +18,26 @@ export const onRequestGet = async (context: any) => {
     }
 
     try {
-        // Exchange code for tokens
-        const tokenResponse = await fetch('https://api.quran.com/api/v4/oauth/token', {
+        // Exchange authorization code for tokens using the correct environment endpoint
+        const tokenResponse = await fetch(`${oauthBase}/oauth2/token`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
                 client_id: env.QURAN_CLIENT_ID,
                 client_secret: env.QURAN_CLIENT_SECRET,
                 code,
                 grant_type: 'authorization_code',
                 redirect_uri: env.QURAN_REDIRECT_URI,
-            }),
+            }).toString(),
         });
 
         const tokens: any = await tokenResponse.json();
 
         if (!tokenResponse.ok) {
-            throw new Error(tokens.error_description || tokens.error || 'Failed to exchange token');
+            throw new Error(tokens.error_description || tokens.error || 'Token exchange failed');
         }
 
-        // Redirect back to the app with the access token in a secure hash or cookie
-        // For 100% browser-based state as requested, we'll pass it back to the UI
-        // In a real production app, we might use a secure session cookie.
+        // Return access token to the browser via a URL hash — keeps server stateless
         const redirectUrl = new URL(request.url);
         redirectUrl.pathname = '/';
         redirectUrl.search = '';
@@ -45,6 +45,6 @@ export const onRequestGet = async (context: any) => {
 
         return Response.redirect(redirectUrl.toString());
     } catch (e: any) {
-        return Response.redirect(`${new URL(request.url).origin}/#chat?oauth_error=${encodeURIComponent(e.message)}`);
+        return Response.redirect(`${origin}/#chat?oauth_error=${encodeURIComponent(e.message)}`);
     }
 };
