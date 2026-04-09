@@ -433,8 +433,13 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
                         {oauthToken ? (
                             <div className="flex items-center gap-3 bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 rounded-2xl">
                                 <div className="flex flex-col items-end">
-                                    <span className="text-[9px] font-black uppercase text-emerald-600 tracking-widest">Connected</span>
-                                    <span className="text-[8px] text-slate-500 font-bold uppercase">Quran.com Profile</span>
+                                    <span className="text-[9px] font-black uppercase text-emerald-600 tracking-widest flex items-center gap-1.5">
+                                        {historyLoading && <span className="w-2 h-2 border border-emerald-500 border-t-transparent rounded-full animate-spin" />}
+                                        Connected
+                                    </span>
+                                    <span className="text-[8px] text-slate-500 font-bold uppercase">
+                                        {historyLoading ? 'Loading study context…' : `${studyHistory.length} bookmarks synced`}
+                                    </span>
                                 </div>
                                 <button 
                                     onClick={handleDisconnect}
