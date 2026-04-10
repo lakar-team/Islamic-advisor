@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import SheikhChat from './components/SheikhChat';
 import KnowledgeLibrary from './components/KnowledgeLibrary';
 import SupportUs from './components/SupportUs';
-import StatsDisplay from './components/StatsDisplay';
+import { statsService } from './lib/stats-service';
 import RollingReviews from './components/RollingReviews';
 import LandingPage from './components/LandingPage';
 import { MaterialSymbol } from './components/MaterialSymbol';

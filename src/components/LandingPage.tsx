@@ -1,5 +1,4 @@
 import { motion } from 'framer-motion';
-import { Sparkles } from 'lucide-react';
 import { MaterialSymbol } from './MaterialSymbol';
 import StatsDisplay from './StatsDisplay';
 
