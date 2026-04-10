@@ -105,12 +105,12 @@ const SupportUs: React.FC = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl mx-auto">
                             <button
                                 onClick={() => setSelectedMethod('paypal')}
-                                className="flex flex-col items-center p-8 bg-surface-container-low dark:bg-white/5 border border-outline-variant/30 rounded-[2rem] hover:border-emerald-500/50 hover:bg-emerald-500/5 transition-all group"
+                                className="flex flex-col items-center p-8 bg-surface-container-low dark:bg-white/5 border border-outline-variant/30 rounded-[2rem] hover:border-blue-500/50 hover:bg-blue-500/5 transition-all group"
                             >
-                                <div className="bg-amber-500/20 p-4 rounded-2xl mb-4 group-hover:scale-110 transition-transform">
-                                    <Sparkles className="w-8 h-8 text-amber-600 dark:text-amber-500" />
+                                <div className="bg-[#003087]/10 dark:bg-[#003087]/20 px-6 py-3 rounded-2xl mb-4 group-hover:scale-105 transition-transform">
+                                    <span className="text-2xl font-black tracking-tight text-[#003087] dark:text-[#0070ba]">Pay<span className="text-[#0070ba] dark:text-[#00a1f1]">Pal</span></span>
                                 </div>
-                                <span className="font-black text-xl mb-2 text-on-surface">Donate via PayPal</span>
+                                <span className="font-black text-xl mb-2 text-on-surface dark:text-white">Donate via PayPal</span>
                                 <span className="text-sm font-medium text-on-surface-variant dark:text-slate-400">Quick, instant, and secure gifts.</span>
                             </button>
                             
@@ -118,10 +118,10 @@ const SupportUs: React.FC = () => {
                                 onClick={() => setSelectedMethod('bank')}
                                 className="flex flex-col items-center p-8 bg-surface-container-low dark:bg-white/5 border border-outline-variant/30 rounded-[2rem] hover:border-emerald-500/50 hover:bg-emerald-500/5 transition-all group"
                             >
-                                <div className="bg-emerald-500/20 p-4 rounded-2xl mb-4 group-hover:scale-110 transition-transform">
-                                    <Globe className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
+                                <div className="bg-emerald-500/10 dark:bg-emerald-500/20 px-6 py-3 rounded-2xl mb-4 group-hover:scale-105 transition-transform">
+                                    <span className="text-2xl font-black tracking-tight text-emerald-600 dark:text-emerald-400">Wise</span>
                                 </div>
-                                <span className="font-black text-xl mb-2 text-on-surface">Bank Transfer (Wise)</span>
+                                <span className="font-black text-xl mb-2 text-on-surface dark:text-white">Bank Transfer (Wise)</span>
                                 <span className="text-sm font-medium text-on-surface-variant dark:text-slate-400">Low fees worldwide, 100% impact.</span>
                             </button>
                         </div>

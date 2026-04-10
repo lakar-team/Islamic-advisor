@@ -821,107 +821,23 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
             {/* Content areas updated with theme colors */}
             <div className="grid grid-cols-1 gap-8">
                 {subTab === 'quran' && (
-                    <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2">
                         {surahs.map(s => (
                             <button
                                 key={s.number}
                                 onClick={() => fetchQuran(s.number)}
-                                className={`p-4 rounded-2xl text-left transition-all border ${currentSurah === s.number ? 'bg-emerald-500/10 border-emerald-500 text-emerald-600 dark:text-emerald-400' : 'bg-surface-container-low dark:bg-white/5 border-outline-variant/20 hover:border-emerald-500/30'}`}
+                                className={`px-3 py-2.5 rounded-xl text-left transition-all border flex items-center gap-2.5 group ${currentSurah === s.number ? 'bg-emerald-500/10 border-emerald-500 text-emerald-600 dark:text-emerald-400' : 'bg-surface-container-low dark:bg-white/5 border-outline-variant/20 hover:border-emerald-500/30'}`}
                             >
-                                <div className="flex justify-between items-start mb-1">
-                                    <span className="text-[10px] font-bold opacity-50">#{s.number}</span>
-                                    <span className="font-arabic text-lg">{s.name.split(' ').pop()}</span>
+                                <span className={`w-6 h-6 rounded-md flex items-center justify-center text-[10px] font-black shrink-0 ${currentSurah === s.number ? 'bg-emerald-500 text-white' : 'bg-emerald-500/10 text-emerald-600/60 dark:text-emerald-500/50'}`}>{s.number}</span>
+                                <div className="min-w-0">
+                                    <p className="font-bold text-xs truncate leading-tight">{s.englishName}</p>
+                                    <p className="text-[9px] text-on-surface-variant dark:text-slate-500 truncate leading-tight italic">{s.englishNameTranslation}</p>
                                 </div>
-                                <p className="font-bold text-sm truncate">{s.englishName}</p>
                             </button>
                         ))}
                     </div>
                 )}
 
-                {(results.length > 0 || isLoading) && (
-                    <div className="space-y-6">
-                        {isLoading && (
-                            <div className="flex flex-col items-center justify-center py-20 gap-4">
-                                <div className="w-12 h-12 border-4 border-[#34D399] border-t-transparent rounded-full animate-spin" />
-                                <p className="text-on-surface-variant font-bold animate-pulse">Consulting the archives...</p>
-                            </div>
-                        )}
-                        {results.map((r, i) => (
-                            <motion.div
-                                key={`${r.type}-${r.reference}-${i}`}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className={`group bg-surface-container-low dark:bg-white/5 border border-outline-variant/20 rounded-[2.5rem] p-8 md:p-10 hover:border-emerald-500/30 transition-all shadow-sm ${
-                                    (r.type === 'Hadith' && r.hadithNumber == jumpToNum) || (r.type === 'Quran' && highlightedAyah === `${r.surahNumber}:${r.ayahNumber}`)
-                                    ? 'ring-2 ring-emerald-500 bg-emerald-500/5' : ''
-                                }`}
-                            >
-                                <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
-                                    <div className="flex items-center gap-3">
-                                        <span className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest ${r.type === 'Quran' ? 'bg-amber-500/10 text-amber-600' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'}`}>
-                                            {r.type}
-                                        </span>
-                                        <span className="text-on-surface-variant dark:text-slate-500 font-bold text-sm">{r.reference}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        {r.type === 'Quran' && (
-                                            <button 
-                                                onClick={() => fetchTafsir(r)}
-                                                className="flex items-center gap-2 px-5 py-2 rounded-xl bg-amber-500 text-white text-xs font-bold hover:scale-105 transition-all shadow-lg shadow-amber-500/20"
-                                            >
-                                                <BookOpen className="w-4 h-4" /> View Tafsir
-                                            </button>
-                                        )}
-                                        {r.type === 'Quran' && (
-                                            <button 
-                                                onClick={() => playAudio(r.surahNumber, r.ayahNumber)}
-                                                className={`p-2 rounded-xl transition-all ${playingAyah === `${r.surahNumber}:${r.ayahNumber}` ? 'bg-emerald-600 text-white' : 'bg-surface-container-high dark:bg-white/10 text-on-surface-variant hover:text-emerald-500'}`}
-                                            >
-                                                {playingAyah === `${r.surahNumber}:${r.ayahNumber}` ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {r.arabic && (
-                                    <div className="mb-8">
-                                        {showWbw && r.type === 'Quran' ? (
-                                            <div className="flex flex-row-reverse flex-wrap gap-y-8 gap-x-4">
-                                                {getWbwWords(r.surahNumber, r.ayahNumber).map((w, idx) => (
-                                                    <div key={idx} className="flex flex-col items-center">
-                                                        <span className="font-arabic text-3xl md:text-4xl text-on-surface dark:text-amber-100/90 leading-relaxed">{w.text}</span>
-                                                        <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-tighter text-center max-w-[80px] leading-tight mt-1">{w.translation}</span>
-                                                    </div>
-                                                ))}
-                                                <span className="font-arabic text-3xl md:text-4xl text-amber-500 self-end ml-2">({r.ayahNumber})</span>
-                                            </div>
-                                        ) : (
-                                            <p className="font-arabic text-3xl md:text-4xl text-right leading-[2] text-on-surface dark:text-amber-100/90">
-                                                {r.arabic} {r.type === 'Quran' && <span className="text-amber-500 text-2xl">({r.ayahNumber})</span>}
-                                            </p>
-                                        )}
-                                    </div>
-                                )}
-                                
-                                <p className="text-xl md:text-2xl font-medium leading-relaxed text-on-surface-variant dark:text-slate-200 font-serif">
-                                    {highlightText(r.text, searchQuery)}
-                                </p>
-                            </motion.div>
-                        ))}
-                    </div>
-                )}
-
-                {!isLoading && !error && results.length === 0 && subTab !== 'quran' && (
-                    <div className="flex flex-col items-center justify-center py-40 text-center gap-6">
-                        <div className="w-24 h-24 bg-emerald-500/5 rounded-[2rem] flex items-center justify-center border border-emerald-500/10 mb-2">
-                            <Library className="w-10 h-10 text-emerald-600/40" />
-                        </div>
-                        <h3 className="text-3xl font-black tracking-tight">The Library is Ready.</h3>
-                        <p className="text-on-surface-variant dark:text-slate-400 max-w-sm font-medium leading-relaxed">
-                            Enter a search above or select a collection from the sidebar to browse our verified scholarly archives.
-                        </p>
-                    </div>
-                )}
             </div>
 
             {/* Search Tab — unified search UI */}
@@ -935,7 +851,7 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                             placeholder="Search across all Quran & Hadith — e.g. 'patience', 'charity', 'prayer'..."
                             value={searchQuery}
                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
-                            className="w-full bg-surface-container-low dark:bg-black/40 border border-outline-variant/50 focus:border-emerald-500/40 px-16 py-6 rounded-[2rem] text-xl focus:outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all font-medium text-on-surface"
+                            className="w-full bg-surface-container-low dark:bg-black/40 border border-outline-variant/50 focus:border-emerald-500/40 px-16 py-6 rounded-[2rem] text-xl focus:outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all font-medium text-on-surface dark:text-white dark:placeholder:text-slate-500"
                         />
                         {searchQuery && (
                             <button onClick={() => { setSearchQuery(''); setResults([]); }} className="absolute right-6 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface transition-colors">
@@ -966,33 +882,53 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
             <div className="flex flex-col gap-6 mb-12">
 
                 {subTab === 'hadith' && (
-                    <div className="flex flex-wrap gap-3 items-center bg-white/5 p-4 rounded-3xl border border-white/5">
-                        {/* Jump to number */}
-                        <div className="flex items-center gap-2 flex-1 min-w-[220px]">
-                            <Hash className="w-4 h-4 text-emerald-500 shrink-0" />
-                                <input
-                                    type="number"
-                                    min={1}
-                                    placeholder="Jump to Hadith # ..."
-                                    value={jumpToNum}
-                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setJumpToNum(e.target.value)}
-                                    onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === 'Enter' && jumpToNum) { jumpToHadith(jumpToNum); setSearchQuery(''); } }}
-                                    className="bg-transparent border-none outline-none text-sm font-bold text-on-surface placeholder:text-on-surface-variant/40 w-full"
-                                />
-                            <button
-                                onClick={() => { if (jumpToNum) { jumpToHadith(jumpToNum); setSearchQuery(''); } }}
-                                className="shrink-0 px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
-                            >Go</button>
+                    <div className="space-y-4">
+                        {/* Collection selector — horizontal scrollable */}
+                        <div className="flex flex-wrap gap-2">
+                            {collections.map(c => (
+                                <button
+                                    key={c.id}
+                                    onClick={() => {
+                                        setSelectedCollection(c.id);
+                                        setSearchQuery('');
+                                        setJumpToNum('');
+                                        setResults([]);
+                                        setBooks([]);
+                                        loadBooks(c.id);
+                                    }}
+                                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${selectedCollection === c.id ? 'bg-emerald-500 border-emerald-400 text-white shadow-lg' : 'bg-surface-container-low dark:bg-white/5 border-outline-variant/20 text-on-surface-variant dark:text-slate-400 hover:border-emerald-500/30'}`}
+                                >
+                                    {c.name}
+                                </button>
+                            ))}
                         </div>
-                        <div className="h-6 w-px bg-white/10 hidden sm:block" />
-                        {/* Explainer: Replace confusing filters with a clear help button */}
-                        <button
-                            onClick={() => setShowGlossary(true)}
-                            className="ml-auto flex items-center gap-2.5 px-6 py-2.5 bg-slate-900 border border-white/5 hover:border-emerald-500/30 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-white transition-all shadow-sm"
-                        >
-                            <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
-                            How do we verify these Hadiths?
-                        </button>
+                        {/* Jump to number + verify info */}
+                        <div className="flex flex-wrap gap-3 items-center bg-white/5 p-4 rounded-3xl border border-white/5">
+                            <div className="flex items-center gap-2 flex-1 min-w-[220px]">
+                                <Hash className="w-4 h-4 text-emerald-500 shrink-0" />
+                                    <input
+                                        type="number"
+                                        min={1}
+                                        placeholder="Jump to Hadith # ..."
+                                        value={jumpToNum}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setJumpToNum(e.target.value)}
+                                        onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === 'Enter' && jumpToNum) { jumpToHadith(jumpToNum); setSearchQuery(''); } }}
+                                        className="bg-transparent border-none outline-none text-sm font-bold text-on-surface dark:text-white placeholder:text-on-surface-variant/40 dark:placeholder:text-slate-500 w-full"
+                                    />
+                                <button
+                                    onClick={() => { if (jumpToNum) { jumpToHadith(jumpToNum); setSearchQuery(''); } }}
+                                    className="shrink-0 px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+                                >Go</button>
+                            </div>
+                            <div className="h-6 w-px bg-white/10 hidden sm:block" />
+                            <button
+                                onClick={() => setShowGlossary(true)}
+                                className="ml-auto flex items-center gap-2.5 px-6 py-2.5 bg-slate-900 border border-white/5 hover:border-emerald-500/30 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-white transition-all shadow-sm"
+                            >
+                                <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
+                                How do we verify these Hadiths?
+                            </button>
+                        </div>
                     </div>
                 )}
 
@@ -1028,88 +964,44 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
             <div className={`grid gap-12 ${subTab === 'search' ? '' : 'lg:grid-cols-[320px_1fr]'}`}>
                 {/* Sidebar Navigation */}
                 <div className="space-y-8 order-2 lg:order-1">
-                    {/* Library Guide Card */}
-                    <div className="glass p-8 rounded-[2.5rem] bg-emerald-600/5 border border-emerald-500/20 shadow-sm">
-                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-400 mb-6 flex items-center gap-2">
-                            <BookOpen className="w-4 h-4" /> Scholarly Guide
-                        </h4>
-                        <div className="space-y-5">
-                            <div className="flex justify-between items-center text-xs">
-                                <span className="text-on-surface-variant dark:text-slate-400 font-bold uppercase tracking-wider">Surahs (Chapters)</span>
-                                <span className="text-on-surface dark:text-white font-black text-sm">114</span>
+                    {subTab === 'search' ? null : subTab === 'hadith' ? (
+                        /* Hadith sidebar: only show book list for selected collection */
+                        books.length > 0 && (
+                            <div className="glass p-6 rounded-[2rem] border border-white/5 shadow-sm">
+                                <h4 className="font-black text-xs tracking-[0.2em] uppercase mb-6 flex items-center gap-2 text-emerald-600 dark:text-emerald-500">
+                                    <Filter className="w-4 h-4" /> Books in {collections.find(c => c.id === selectedCollection)?.name}
+                                </h4>
+                                <div className="space-y-1 max-h-[600px] overflow-y-auto scrollbar-hide pr-2">
+                                    {books.map(b => (
+                                        <button
+                                            key={b.num}
+                                            onClick={() => {
+                                                setSelectedBook(b);
+                                                setJumpToNum('');
+                                                setSearchQuery('');
+                                                setBrowseOffset(b.first);
+                                                fetchHadithRange(selectedCollection, b.first, BROWSE_PAGE);
+                                            }}
+                                            className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-start gap-2 ${selectedBook?.num === b.num
+                                                ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-300'
+                                                : 'text-slate-500 hover:bg-white/5 hover:text-slate-300'
+                                                }`}
+                                        >
+                                            <span className="shrink-0 text-[10px] font-black text-slate-600 pt-0.5">#{b.num}</span>
+                                            <span className="leading-snug line-clamp-2">{b.name}</span>
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
-                            <div className="flex justify-between items-center text-xs">
-                                <span className="text-on-surface-variant dark:text-slate-400 font-bold uppercase tracking-wider">Juz (Sections)</span>
-                                <span className="text-on-surface dark:text-white font-black text-sm">30</span>
-                            </div>
-                            <div className="flex justify-between items-center text-xs border-t border-emerald-500/10 pt-4">
-                                <span className="text-on-surface-variant dark:text-slate-400 font-bold uppercase tracking-wider">Total Verses</span>
-                                <span className="text-on-surface dark:text-white font-black text-sm">6,236</span>
-                            </div>
-                            <div className="bg-emerald-600/10 p-4 rounded-2xl">
-                                <p className="text-[10px] text-emerald-800 dark:text-emerald-200 font-medium leading-relaxed italic">
-                                    "The Holy Quran contains 114 Surahs. For consistent reading and memorization, it is traditionally divided into 30 Juz (equal portions)."
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    {subTab === 'search' ? null : (
+                        )
+                    ) : (
+                        /* Quran sidebar: surah list */
                         <div className="glass p-6 rounded-[2rem] border border-white/5 shadow-sm">
-                            <h4 className={`font-black text-xs tracking-[0.2em] uppercase mb-6 flex items-center gap-2 ${subTab === 'quran' ? 'text-amber-600 dark:text-amber-500' : 'text-emerald-600 dark:text-emerald-500'}`}>
-                                <Filter className="w-4 h-4" /> {subTab === 'quran' ? 'Surahs (114 Chapters)' : 'Collections'}
+                            <h4 className="font-black text-xs tracking-[0.2em] uppercase mb-6 flex items-center gap-2 text-amber-600 dark:text-amber-500">
+                                <Filter className="w-4 h-4" /> Surahs (114 Chapters)
                             </h4>
                             <div className="space-y-1 max-h-[600px] overflow-y-auto scrollbar-hide pr-2">
-                                {subTab === 'hadith' ? (
-                                    <>
-                                        {/* Collection list */}
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-2 px-2">Collections</p>
-                                        {collections.map(c => (
-                                            <button
-                                                key={c.id}
-                                                onClick={() => {
-                                                    setSelectedCollection(c.id);
-                                                    setSearchQuery('');
-                                                    setJumpToNum('');
-                                                    setResults([]);
-                                                    setBooks([]);
-                                                    loadBooks(c.id);
-                                                }}
-                                                className={`w-full text-left px-4 py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-between group ${selectedCollection === c.id ? 'bg-emerald-500 text-white shadow-lg' : 'text-slate-400 hover:bg-white/5'
-                                                    }`}
-                                            >
-                                                <span className="leading-snug">{c.name}</span>
-                                                <span className={`text-[10px] font-black tabular-nums ${selectedCollection === c.id ? 'text-white/70' : 'text-slate-600'}`}>{c.count.toLocaleString()}</span>
-                                            </button>
-                                        ))}
-
-                                        {/* Book list for selected collection */}
-                                        {books.length > 0 && (
-                                            <>
-                                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-600 mt-5 mb-2 px-2">Books</p>
-                                                {books.map(b => (
-                                                    <button
-                                                        key={b.num}
-                                                        onClick={() => {
-                                                            setSelectedBook(b);
-                                                            setJumpToNum('');
-                                                            setSearchQuery('');
-                                                            setBrowseOffset(b.first);
-                                                            fetchHadithRange(selectedCollection, b.first, BROWSE_PAGE);
-                                                        }}
-                                                        className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-start gap-2 ${selectedBook?.num === b.num
-                                                            ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-300'
-                                                            : 'text-slate-500 hover:bg-white/5 hover:text-slate-300'
-                                                            }`}
-                                                    >
-                                                        <span className="shrink-0 text-[10px] font-black text-slate-600 pt-0.5">#{b.num}</span>
-                                                        <span className="leading-snug line-clamp-2">{b.name}</span>
-                                                    </button>
-                                                ))}
-                                            </>
-                                        )}
-                                    </>
-                                ) : surahs.map(s => (
+                                {surahs.map(s => (
                                     <button
                                         key={s.number}
                                         onClick={() => fetchQuran(s.number)}
@@ -1126,25 +1018,6 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                             </div>
                         </div>
                     )}
-
-                    {/* Library Guide Sidebar Card */}
-                    <div className="mt-8 p-8 bg-amber-500/5 rounded-[2.5rem] border border-amber-500/10 shadow-sm relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 blur-3xl -z-10" />
-                        <div className="flex items-center gap-3 mb-4">
-                            <Sparkles className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-                            <h4 className="font-black text-xs tracking-[0.2em] uppercase text-amber-600 dark:text-amber-500">Library Guide</h4>
-                        </div>
-                        <div className="space-y-4">
-                            <div>
-                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">Structure of the Quran</p>
-                                <p className="text-sm text-on-surface-variant font-bold leading-relaxed">The Noble Quran consists of <span className="text-amber-600 dark:text-amber-400">114 Surahs</span> (Chapters). It is also traditionally divided into <span className="text-amber-600 dark:text-amber-400">30 Juz</span> (Parts) for easier recitation over a month.</p>
-                            </div>
-                            <div className="pt-4 border-t border-white/5">
-                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">Authenticated Hadith</p>
-                                <p className="text-sm text-on-surface-variant font-bold leading-relaxed">Our library contains over 37,000 Prophetic traditions evaluated by major scholars. Each is marked with its authenticity grade <span className="text-emerald-500 italic">(Sahih, Hasan, etc)</span>.</p>
-                            </div>
-                        </div>
-                    </div>
                 </div>
 
                 {/* Main View Area */}

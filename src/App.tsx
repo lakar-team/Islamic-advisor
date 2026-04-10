@@ -171,7 +171,22 @@ function App() {
             >
               <MaterialSymbol icon={theme === 'light' ? 'dark_mode' : 'light_mode'} />
             </button>
-            <button className="p-2 text-on-surface-variant dark:text-slate-400 hover:text-emerald-600 transition-colors hidden sm:block">
+            <button 
+              onClick={() => {
+                const token = localStorage.getItem('quran_access_token');
+                if (token) {
+                  if (confirm('You are connected to Quran.com. Disconnect?')) {
+                    localStorage.removeItem('quran_access_token');
+                    localStorage.removeItem('quran_refresh_token');
+                    window.location.reload();
+                  }
+                } else {
+                  window.location.href = '/api/oauth/login';
+                }
+              }}
+              className={`p-2 transition-colors hidden sm:block ${localStorage.getItem('quran_access_token') ? 'text-emerald-500 hover:text-emerald-400' : 'text-on-surface-variant dark:text-slate-400 hover:text-emerald-600'}`}
+              title={localStorage.getItem('quran_access_token') ? 'Connected to Quran.com — click to disconnect' : 'Sign in with Quran.com'}
+            >
               <User className="w-6 h-6" />
             </button>
             {activeTab === 'landing' && (

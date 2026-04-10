@@ -294,6 +294,8 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
                 } catch {}
                 return matchStr; // keep if it wasn't a library citation
             })
+            // Catch-all: strip any remaining ```json...``` or ```javascript...``` blocks
+            .replace(/```(?:json|javascript)?\s*[\s\S]*?```/gi, '')
             .trim();
 
         return { cleanedContent, references };
@@ -504,7 +506,28 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
                                                 {m.references.map((ref, idx) => (
                                                     <button
                                                         key={idx}
-                                                        onClick={() => onOpenLibrary(ref.type, ref.source)}
+                                                        onClick={() => {
+                                                            if (ref.type === 'hadith') {
+                                                                // Parse 'Sahih Bukhari 1234' or 'Bukhari — Hadith 1234' into library deep-link format
+                                                                const collMap: Record<string, string> = {
+                                                                    'bukhari': 'eng-bukhari', 'muslim': 'eng-muslim', 'abu dawud': 'eng-abudawud', 'abudawud': 'eng-abudawud',
+                                                                    'tirmidhi': 'eng-tirmidhi', "nasa'i": 'eng-nasai', 'nasai': 'eng-nasai',
+                                                                    'ibn majah': 'eng-ibnmajah', 'ibnmajah': 'eng-ibnmajah', 'nawawi': 'eng-nawawi',
+                                                                    'riyadhus': 'eng-riyadussalihin', 'riyadussalihin': 'eng-riyadussalihin', 'adab': 'eng-adab',
+                                                                };
+                                                                const src = ref.source || ref.link || '';
+                                                                const numMatch = src.match(/(\d+)/);
+                                                                const num = numMatch ? numMatch[1] : '';
+                                                                const srcLower = src.toLowerCase();
+                                                                let collId = 'eng-bukhari'; // default
+                                                                for (const [key, val] of Object.entries(collMap)) {
+                                                                    if (srcLower.includes(key)) { collId = val; break; }
+                                                                }
+                                                                onOpenLibrary('hadith', `${collId}:${num}`);
+                                                            } else {
+                                                                onOpenLibrary(ref.type, ref.source);
+                                                            }
+                                                        }}
                                                         className="flex items-center justify-between gap-4 p-3.5 rounded-2xl bg-white dark:bg-white/5 hover:bg-emerald-500/10 border border-outline-variant/20 hover:border-emerald-500/30 transition-all group text-left"
                                                     >
                                                         <div className="flex items-center gap-3 min-w-0">
