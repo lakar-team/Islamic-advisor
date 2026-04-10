@@ -157,7 +157,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onExploreLibrary }) 
       <section className="px-8 py-32 max-w-screen-2xl mx-auto border-t border-outline-variant/10">
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-20 gap-8">
           <div className="max-w-2xl">
-            <h2 className="text-5xl font-black text-on-surface dark:text-white mb-6 tracking-tight">Analyze <span className="text-emerald-600 dark:text-emerald-400">Original Islamic sources.</span></h2>
+            <h2 className="text-5xl md:text-6xl font-black mb-6 leading-[1.1] tracking-tighter text-on-surface dark:text-white">
+              Analyze <span className="gold-text">Original</span><br className="sm:hidden" />
+              <span className="text-emerald-600 dark:text-emerald-400"> Islamic sources.</span>
+            </h2>
             <p className="text-on-surface-variant dark:text-slate-400 text-xl font-medium leading-relaxed">A meticulously indexed archive of the world's most trusted Islamic sources, accessible at your fingertips.</p>
           </div>
           <button 

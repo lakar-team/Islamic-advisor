@@ -149,11 +149,11 @@ function App() {
               ].map(item => (
                 <button
                   key={item.id}
-                  onClick={() => setActiveTab(item.id as ActiveTab)}
-                  className={`font-black font-headline tracking-widest text-[10px] uppercase transition-all duration-300 pb-1 border-b-2 ${
+                  onClick={() => { setActiveTab(item.id as ActiveTab); window.scrollTo({ top: 0, behavior: 'instant' }); }}
+                  className={`font-black font-headline tracking-widest text-[10px] uppercase transition-all duration-300 px-4 py-2 rounded-xl ${
                     activeTab === item.id 
-                    ? 'text-emerald-600 border-emerald-600 dark:text-emerald-400 dark:border-emerald-400' 
-                    : 'text-on-surface-variant dark:text-slate-400 border-transparent hover:text-emerald-600'
+                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shadow-sm border border-emerald-500/20' 
+                    : 'text-on-surface-variant dark:text-slate-400 border border-transparent hover:bg-surface-container-highest dark:hover:bg-white/5 hover:text-emerald-600'
                   }`}
                 >
                   {item.label}
@@ -190,7 +190,7 @@ function App() {
             </button>
             {activeTab === 'landing' && (
               <button 
-                onClick={() => setActiveTab('chat')}
+                onClick={() => { setActiveTab('chat'); window.scrollTo({ top: 0, behavior: 'instant' }); }}
                 className="ml-4 bg-emerald-600 text-white px-6 py-2 rounded-xl font-black uppercase tracking-widest text-[10px] scale-95 hover:scale-100 transition-all duration-200 shadow-lg shadow-emerald-900/20"
               >
                 Get Started
@@ -211,8 +211,8 @@ function App() {
               transition={{ duration: 0.3 }}
             >
               <LandingPage 
-                onStart={() => setActiveTab('chat')} 
-                onExploreLibrary={() => setActiveTab('library')} 
+                onStart={() => { setActiveTab('chat'); window.scrollTo({ top: 0, behavior: 'instant' }); }} 
+                onExploreLibrary={() => { setActiveTab('library'); window.scrollTo({ top: 0, behavior: 'instant' }); }} 
               />
               <div className="pb-24">
                 <RollingReviews />
