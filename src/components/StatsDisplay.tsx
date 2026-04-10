@@ -31,10 +31,8 @@ const StatsDisplay: React.FC = () => {
         .sort(([, a], [, b]) => (b as number) - (a as number))
         .slice(0, 8);
 
-    const getFlagEmoji = (countryCode: string) => 
-        countryCode.toUpperCase().replace(/./g, char => 
-            String.fromCodePoint(char.charCodeAt(0) + 127397)
-        );
+    const getFlagImage = (countryCode: string) => 
+        `https://flagcdn.com/w40/${countryCode.toLowerCase()}.png`;
 
     return (
         <div className="flex flex-col gap-4 max-w-4xl mx-auto w-full">
@@ -83,8 +81,13 @@ const StatsDisplay: React.FC = () => {
                         <div className="w-px h-6 bg-outline-variant/30 hidden sm:block mx-1"></div>
                         <div className="flex gap-3">
                             {topCountries.map(([code]) => (
-                                <div key={code} className="flex items-center justify-center p-1 bg-surface-container-highest dark:bg-white/5 rounded-lg border border-outline-variant/20 hover:scale-110 transition-transform" title={code}>
-                                    <span className="text-lg leading-none select-none">{getFlagEmoji(code)}</span>
+                                <div key={code} className="flex items-center justify-center overflow-hidden rounded-lg border border-outline-variant/20 hover:scale-110 transition-transform shadow-sm" title={code} style={{ width: 44, height: 30 }}>
+                                    <img
+                                        src={getFlagImage(code)}
+                                        alt={code}
+                                        className="w-full h-full object-cover"
+                                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                    />
                                 </div>
                             ))}
                         </div>
