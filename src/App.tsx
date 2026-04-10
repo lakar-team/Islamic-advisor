@@ -242,25 +242,7 @@ function App() {
                   </header>
                   <SheikhChat onOpenLibrary={handleOpenLibrary} />
                   
-                  <div className="max-w-4xl mx-auto my-12">
-                    <div
-                      className="p-8 rounded-[2.5rem] border border-emerald-500/20 bg-emerald-500/5 dark:bg-emerald-950/40 backdrop-blur flex flex-col sm:flex-row items-center justify-between gap-6 cursor-pointer hover:border-emerald-500/40 transition-all group"
-                      onClick={() => setActiveTab('support')}
-                    >
-                      <div className="flex items-center gap-5">
-                        <div className="bg-emerald-500/10 p-4 rounded-2xl border border-emerald-500/10 group-hover:bg-emerald-500/20 transition-all">
-                          <Heart className="w-7 h-7 text-emerald-500" />
-                        </div>
-                        <div>
-                          <p className="font-black text-on-surface dark:text-white text-lg tracking-tight">Support the Mission</p>
-                          <p className="text-on-surface-variant dark:text-slate-400 text-sm font-medium mt-0.5">Your support helps keep this platform free and accessible for the Ummah.</p>
-                        </div>
-                      </div>
-                      <button className="shrink-0 px-8 py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-2xl transition-all shadow-lg shadow-emerald-900/30 text-sm uppercase tracking-widest group-hover:scale-105">
-                        Donate →
-                      </button>
-                    </div>
-                  </div>
+
                 </div>
               ) : activeTab === 'library' ? (
                 <div className="px-6 flex-1">
@@ -281,8 +263,28 @@ function App() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-white dark:bg-slate-950 w-full border-t border-outline-variant/30 py-12 transition-colors duration-300">
+      <footer className="bg-white dark:bg-slate-950 w-full border-t border-outline-variant/30 pt-16 pb-12 transition-colors duration-300">
         <div className="max-w-screen-2xl mx-auto px-8">
+          
+          <div className="max-w-4xl mx-auto mb-16">
+            <div
+              className="p-8 rounded-[2.5rem] border border-emerald-500/20 bg-emerald-500/5 dark:bg-emerald-950/40 flex flex-col sm:flex-row items-center justify-between gap-6 cursor-pointer hover:border-emerald-500/40 transition-all group shadow-sm"
+              onClick={() => { setActiveTab('support'); window.scrollTo(0, 0); }}
+            >
+              <div className="flex items-center gap-5">
+                <div className="bg-emerald-500/10 p-4 rounded-2xl border border-emerald-500/10 group-hover:bg-emerald-500/20 transition-all">
+                  <Heart className="w-7 h-7 text-emerald-500" />
+                </div>
+                <div className="text-left">
+                  <p className="font-black text-on-surface dark:text-white text-lg tracking-tight">Support the Mission</p>
+                  <p className="text-on-surface-variant dark:text-slate-400 text-sm font-medium mt-0.5">Your support helps keep this platform free and accessible for the Ummah.</p>
+                </div>
+              </div>
+              <button className="shrink-0 px-8 py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-2xl transition-all shadow-lg shadow-emerald-900/30 text-sm uppercase tracking-widest group-hover:scale-105">
+                Donate →
+              </button>
+            </div>
+          </div>
           <div className="flex flex-col md:flex-row justify-between items-center gap-8">
             <div className="text-center md:text-left">
               <span className="text-[#34D399] font-black text-2xl tracking-tighter font-headline">Islamic-advisor</span>

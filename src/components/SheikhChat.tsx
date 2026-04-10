@@ -257,23 +257,31 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
     };
 
     const parseCitations = (content: string) => {
-        // Multi-stage regex to catch various patterns of JSON and CITATION tags
-        const jsonBlockRegex = /```(?:json|javascript)?\s*(\[[\s\S]*?\])\s*```/gi;
-        const tagRegex = /\[\[CITATIONS:\s*(\[[\s\S]*?\])\s*\]\]/gi;
-        
         let references: any[] = [];
-        let match;
+        let cleanedContent = content;
 
-        // 1. Extract from [[CITATIONS: [...] ]] tags
-        while ((match = tagRegex.exec(content)) !== null) {
+        // 1. Extract from [[CITATIONS: ... prefix at the end (robust against missing brackets)
+        const citPrefix = "[[CITATIONS:";
+        const idx = cleanedContent.lastIndexOf(citPrefix);
+        if (idx !== -1) {
+            const rawJson = cleanedContent.substring(idx + citPrefix.length).replace(/\]+[\s<]*$/, '').trim();
             try {
-                const parsed = JSON.parse(match[1]);
+                const parsed = JSON.parse(rawJson);
                 if (Array.isArray(parsed)) references.push(...parsed);
-            } catch { /* ignore invalid JSON */ }
+            } catch {
+                // Try appending a missing closing bracket just in case
+                try {
+                    const parsed = JSON.parse(rawJson + ']');
+                    if (Array.isArray(parsed)) references.push(...parsed);
+                } catch { /* ignore invalid JSON */ }
+            }
+            cleanedContent = cleanedContent.substring(0, idx).trim();
         }
 
         // 2. Extract from ```json [...] ``` blocks that look like references
-        while ((match = jsonBlockRegex.exec(content)) !== null) {
+        const jsonBlockRegex = /```(?:json|javascript)?\s*(\[[\s\S]*?\])\s*```/gi;
+        let match;
+        while ((match = jsonBlockRegex.exec(cleanedContent)) !== null) {
             try {
                 const parsed = JSON.parse(match[1]);
                 if (Array.isArray(parsed) && parsed.some(item => typeof item === 'object' && (item.type === 'quran' || item.type === 'hadith'))) {
@@ -282,9 +290,8 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
             } catch { /* ignore */ }
         }
 
-        // 3. Clean the content by removing ALL matches
-        let cleanedContent = content
-            .replace(tagRegex, '')
+        // 3. Clean the content by removing JSON blocks that we extracted
+        cleanedContent = cleanedContent
             .replace(jsonBlockRegex, (matchStr, p1) => {
                 try {
                     const parsed = JSON.parse(p1);
