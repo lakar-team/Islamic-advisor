@@ -515,7 +515,7 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
                                                                     'ibn majah': 'eng-ibnmajah', 'ibnmajah': 'eng-ibnmajah', 'nawawi': 'eng-nawawi',
                                                                     'riyadhus': 'eng-riyadussalihin', 'riyadussalihin': 'eng-riyadussalihin', 'adab': 'eng-adab',
                                                                 };
-                                                                const src = ref.source || ref.link || '';
+                                                                const src = ref.source || '';
                                                                 const numMatch = src.match(/(\d+)/);
                                                                 const num = numMatch ? numMatch[1] : '';
                                                                 const srcLower = src.toLowerCase();

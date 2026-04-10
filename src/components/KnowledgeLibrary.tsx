@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Search, Book, Filter, Hash, CheckCircle2, AlertCircle, X, Volume2, VolumeX, Play, Pause, SkipForward, SkipBack, BookOpen, ExternalLink, ChevronDown, Sparkles, Library } from 'lucide-react';
+import { Search, Book, Filter, Hash, CheckCircle2, AlertCircle, X, Volume2, VolumeX, Play, Pause, SkipForward, SkipBack, BookOpen, ExternalLink, ChevronDown, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface KnowledgeLibraryProps {
@@ -13,7 +13,7 @@ const pad = (n: number, len: number) => String(n).padStart(len, '0');
 
 
 const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initialQuery }) => {
-    const [error, setError] = useState<string | null>(null);
+    const [, setError] = useState<string | null>(null);
     // Parse initial state to prevent race conditions during mount
     const initialParsed = (() => {
         if (!initialQuery) return { tab: initialTab || 'quran', query: '', jump: '' };
