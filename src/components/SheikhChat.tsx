@@ -41,13 +41,13 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [showSidebar, setShowSidebar] = useState(false);
-    const [expandedRefs, setExpandedRefs] = useState<Set<string>>(new Set());
+    const [hiddenRefs, setHiddenRefs] = useState<Set<string>>(new Set());
 
     const toggleRefs = (id: string) => {
-        const newSet = new Set(expandedRefs);
+        const newSet = new Set(hiddenRefs);
         if (newSet.has(id)) newSet.delete(id);
         else newSet.add(id);
-        setExpandedRefs(newSet);
+        setHiddenRefs(newSet);
     };
 
     // OAuth & Activity States
@@ -311,6 +311,8 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
             })
             // Catch-all: strip any remaining ```json...``` or ```javascript...``` blocks
             .replace(/```(?:json|javascript)?\s*[\s\S]*?```/gi, '')
+            // Strip unclosed trailing json blocks
+            .replace(/```(?:json|javascript)?[\s\S]*$/i, '')
             .trim();
 
         // 4. Inline fallback: scan text for Quran/Hadith references when no structured citations found
@@ -546,11 +548,11 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
                                                 className="w-full flex items-center justify-between p-4 hover:bg-emerald-500/5 transition-colors"
                                             >
                                                 <div className="flex items-center gap-3 text-emerald-600 dark:text-emerald-400 font-black tracking-[0.2em] uppercase text-[10px]">
-                                                    {expandedRefs.has(m.id) ? 'SEE LESS' : 'SEE CITATIONS'}
+                                                    {hiddenRefs.has(m.id) ? 'SEE CITATIONS' : 'SEE LESS'}
                                                 </div>
                                             </button>
                                             
-                                            <div className={`px-4 pb-4 transition-all duration-300 ${expandedRefs.has(m.id) ? 'block' : 'hidden'}`}>
+                                            <div className={`px-4 pb-4 transition-all duration-300 ${hiddenRefs.has(m.id) ? 'hidden' : 'block'}`}>
                                                 <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-on-surface-variant dark:text-slate-500 mb-3 pl-2 border-t border-outline-variant/20 pt-4">
                                                     <ExternalLink className="w-3.5 h-3.5" /> OPEN IN KNOWLEDGE LIBRARY
                                                 </div>

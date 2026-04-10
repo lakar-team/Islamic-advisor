@@ -11,13 +11,25 @@ async function hashIp(ip: string): Promise<string> {
         .join('')
         .slice(0, 32);
 }
+const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+};
+
+export const onRequestOptions = async () => {
+    return new Response(null, { headers: corsHeaders });
+};
 
 export const onRequestGet = async (context: any) => {
     const { env } = context;
     const kv = env.RATE_LIMIT;
 
     if (!kv) {
-        return new Response(JSON.stringify({ error: 'KV binding missing' }), { status: 500 });
+        return new Response(JSON.stringify({ error: 'KV binding missing' }), { 
+            status: 500,
+            headers: { 'Content-Type': 'application/json', ...corsHeaders }
+        });
     }
 
     const visitors = await kv.get('total_visitors') || '0';
@@ -30,7 +42,7 @@ export const onRequestGet = async (context: any) => {
         questions_answered: parseInt(questions),
         country_counts: countries
     }), {
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
     });
 };
 
@@ -39,7 +51,10 @@ export const onRequestPost = async (context: any) => {
     const kv = env.RATE_LIMIT;
 
     if (!kv) {
-        return new Response(JSON.stringify({ error: 'KV binding missing' }), { status: 500 });
+        return new Response(JSON.stringify({ error: 'KV binding missing' }), { 
+            status: 500,
+            headers: { 'Content-Type': 'application/json', ...corsHeaders }
+        });
     }
 
     const url = new URL(request.url);
@@ -74,9 +89,12 @@ export const onRequestPost = async (context: any) => {
         }
 
         return new Response(JSON.stringify({ success: true, count: newCount, unique: !alreadyTracked }), {
-            headers: { 'Content-Type': 'application/json' }
+            headers: { 'Content-Type': 'application/json', ...corsHeaders }
         });
     }
 
-    return new Response(JSON.stringify({ error: 'Invalid action' }), { status: 400 });
+    return new Response(JSON.stringify({ error: 'Invalid action' }), { 
+        status: 400,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+    });
 };
