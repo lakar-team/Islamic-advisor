@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
 import { MaterialSymbol } from './MaterialSymbol';
+import StatsDisplay from './StatsDisplay';
 
 interface LandingPageProps {
   onStart: () => void;
@@ -63,22 +64,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onExploreLibrary }) 
               </button>
             </motion.div>
 
-            <div className="flex items-center gap-8 pt-6 border-t border-outline-variant/20">
-               <div>
-                  <p className="text-2xl font-black text-on-surface dark:text-white leading-none mb-1">10k+</p>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">People Helped</p>
-               </div>
-               <div className="w-px h-8 bg-outline-variant/30" />
-               <div>
-                  <p className="text-2xl font-black text-on-surface dark:text-white leading-none mb-1">50k+</p>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">Questions Answered</p>
-               </div>
-               <div className="w-px h-8 bg-outline-variant/30" />
-               <div>
-                  <p className="text-2xl font-black text-on-surface dark:text-white leading-none mb-1">Top 5</p>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">Spreading The Word</p>
-               </div>
-            </div>
+            <StatsDisplay />
           </div>
 
           {/* AI Interface Preview Module */}

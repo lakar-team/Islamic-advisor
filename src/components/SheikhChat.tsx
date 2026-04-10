@@ -41,6 +41,14 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [showSidebar, setShowSidebar] = useState(false);
+    const [expandedRefs, setExpandedRefs] = useState<Set<string>>(new Set());
+
+    const toggleRefs = (id: string) => {
+        const newSet = new Set(expandedRefs);
+        if (newSet.has(id)) newSet.delete(id);
+        else newSet.add(id);
+        setExpandedRefs(newSet);
+    };
 
     // OAuth & Activity States
     const [oauthToken, setOauthToken] = useState<string | null>(() => localStorage.getItem('quran_access_token'));
@@ -505,50 +513,61 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
 
                                     {/* References Block */}
                                     {m.references && m.references.length > 0 && (
-                                        <div className="mt-6 pt-6 border-t border-outline-variant/40">
-                                            <p className="text-[9px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 mb-4 flex items-center gap-2">
-                                                <ExternalLink className="w-3 h-3" /> Scholarly Citations
-                                            </p>
-                                            <div className="grid grid-cols-1 gap-2">
-                                                {m.references.map((ref, idx) => (
-                                                    <button
-                                                        key={idx}
-                                                        onClick={() => {
-                                                            if (ref.type === 'hadith') {
-                                                                // Parse 'Sahih Bukhari 1234' or 'Bukhari — Hadith 1234' into library deep-link format
-                                                                const collMap: Record<string, string> = {
-                                                                    'bukhari': 'eng-bukhari', 'muslim': 'eng-muslim', 'abu dawud': 'eng-abudawud', 'abudawud': 'eng-abudawud',
-                                                                    'tirmidhi': 'eng-tirmidhi', "nasa'i": 'eng-nasai', 'nasai': 'eng-nasai',
-                                                                    'ibn majah': 'eng-ibnmajah', 'ibnmajah': 'eng-ibnmajah', 'nawawi': 'eng-nawawi',
-                                                                    'riyadhus': 'eng-riyadussalihin', 'riyadussalihin': 'eng-riyadussalihin', 'adab': 'eng-adab',
-                                                                };
-                                                                const src = ref.source || '';
-                                                                const numMatch = src.match(/(\d+)/);
-                                                                const num = numMatch ? numMatch[1] : '';
-                                                                const srcLower = src.toLowerCase();
-                                                                let collId = 'eng-bukhari'; // default
-                                                                for (const [key, val] of Object.entries(collMap)) {
-                                                                    if (srcLower.includes(key)) { collId = val; break; }
+                                        <div className="mt-6 border border-outline-variant/30 rounded-3xl bg-surface-container-low dark:bg-white/[0.02] shadow-sm overflow-hidden transition-all">
+                                            <button 
+                                                onClick={() => toggleRefs(m.id)}
+                                                className="w-full flex items-center justify-between p-4 hover:bg-emerald-500/5 transition-colors"
+                                            >
+                                                <div className="flex items-center gap-3 text-emerald-600 dark:text-emerald-400 font-black tracking-[0.2em] uppercase text-[10px]">
+                                                    {expandedRefs.has(m.id) ? 'SEE LESS' : 'SEE CITATIONS'}
+                                                </div>
+                                            </button>
+                                            
+                                            <div className={`px-4 pb-4 transition-all duration-300 ${expandedRefs.has(m.id) ? 'block' : 'hidden'}`}>
+                                                <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-on-surface-variant dark:text-slate-500 mb-3 pl-2 border-t border-outline-variant/20 pt-4">
+                                                    <ExternalLink className="w-3.5 h-3.5" /> OPEN IN KNOWLEDGE LIBRARY
+                                                </div>
+                                                <div className="grid grid-cols-1 gap-2">
+                                                    {m.references.map((ref, idx) => (
+                                                        <button
+                                                            key={idx}
+                                                            onClick={() => {
+                                                                if (ref.type === 'hadith') {
+                                                                    // Parse 'Sahih Bukhari 1234' or 'Bukhari — Hadith 1234' into library deep-link format
+                                                                    const collMap: Record<string, string> = {
+                                                                        'bukhari': 'eng-bukhari', 'muslim': 'eng-muslim', 'abu dawud': 'eng-abudawud', 'abudawud': 'eng-abudawud',
+                                                                        'tirmidhi': 'eng-tirmidhi', "nasa'i": 'eng-nasai', 'nasai': 'eng-nasai',
+                                                                        'ibn majah': 'eng-ibnmajah', 'ibnmajah': 'eng-ibnmajah', 'nawawi': 'eng-nawawi',
+                                                                        'riyadhus': 'eng-riyadussalihin', 'riyadussalihin': 'eng-riyadussalihin', 'adab': 'eng-adab',
+                                                                    };
+                                                                    const src = ref.source || '';
+                                                                    const numMatch = src.match(/(\d+)/);
+                                                                    const num = numMatch ? numMatch[1] : '';
+                                                                    const srcLower = src.toLowerCase();
+                                                                    let collId = 'eng-bukhari'; // default
+                                                                    for (const [key, val] of Object.entries(collMap)) {
+                                                                        if (srcLower.includes(key)) { collId = val; break; }
+                                                                    }
+                                                                    onOpenLibrary('hadith', `${collId}:${num}`);
+                                                                } else {
+                                                                    onOpenLibrary(ref.type, ref.source);
                                                                 }
-                                                                onOpenLibrary('hadith', `${collId}:${num}`);
-                                                            } else {
-                                                                onOpenLibrary(ref.type, ref.source);
-                                                            }
-                                                        }}
-                                                        className="flex items-center justify-between gap-4 p-3.5 rounded-2xl bg-white dark:bg-white/5 hover:bg-emerald-500/10 border border-outline-variant/20 hover:border-emerald-500/30 transition-all group text-left"
-                                                    >
-                                                        <div className="flex items-center gap-3 min-w-0">
-                                                            <div className={`p-2 rounded-xl ${ref.type === 'quran' ? 'bg-amber-500/10 text-amber-500' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'}`}>
-                                                                {ref.type === 'quran' ? <BookOpen className="w-3.5 h-3.5" /> : <Hash className="w-3.5 h-3.5" />}
+                                                            }}
+                                                            className="flex items-center justify-between gap-4 p-3.5 rounded-2xl bg-white dark:bg-white/5 hover:bg-emerald-500/10 border border-outline-variant/20 hover:border-emerald-500/30 transition-all group text-left"
+                                                        >
+                                                            <div className="flex items-center gap-3 min-w-0">
+                                                                <div className={`p-2 rounded-xl ${ref.type === 'quran' ? 'bg-amber-500/10 text-amber-500' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'}`}>
+                                                                    {ref.type === 'quran' ? <BookOpen className="w-3.5 h-3.5" /> : <Hash className="w-3.5 h-3.5" />}
+                                                                </div>
+                                                                <div className="min-w-0">
+                                                                    <p className="text-[11px] font-bold text-on-surface dark:text-slate-200 uppercase tracking-tighter truncate">{ref.source}</p>
+                                                                    <p className="text-[9px] text-on-surface-variant dark:text-slate-500 font-medium uppercase tracking-widest leading-none mt-1">Verified Source</p>
+                                                                </div>
                                                             </div>
-                                                            <div className="min-w-0">
-                                                                <p className="text-[11px] font-bold text-on-surface dark:text-slate-200 uppercase tracking-tighter truncate">{ref.source}</p>
-                                                                <p className="text-[9px] text-on-surface-variant dark:text-slate-500 font-medium uppercase tracking-widest leading-none mt-1">Verified Source</p>
-                                                            </div>
-                                                        </div>
-                                                        <ExternalLink className="w-4 h-4 text-outline-variant group-hover:text-emerald-600 transition-colors" />
-                                                    </button>
-                                                ))}
+                                                            <ExternalLink className="w-4 h-4 text-outline-variant group-hover:text-emerald-600 transition-colors" />
+                                                        </button>
+                                                    ))}
+                                                </div>
                                             </div>
                                         </div>
                                     )}

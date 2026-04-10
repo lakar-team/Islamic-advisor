@@ -1146,11 +1146,6 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                                                             <p className="text-4xl md:text-5xl font-arabic text-right leading-[2] text-emerald-950 dark:text-amber-100/90 selection:bg-amber-500/30 group-hover/arabic:text-emerald-800 dark:group-hover/arabic:text-amber-100 transition-colors">
                                                                 {res.arabic} {res.type === 'Quran' && <span className="text-emerald-700/60 dark:text-amber-500/60 text-2xl ml-2">({res.ayahNumber})</span>}
                                                             </p>
-                                                            <div className="flex justify-end mt-2">
-                                                                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-600 group-hover/arabic:text-emerald-500/50 transition-colors">
-                                                                    Explore Word-by-Word Analysis
-                                                                </span>
-                                                            </div>
                                                         </button>
                                                     )}
                                                 </div>
