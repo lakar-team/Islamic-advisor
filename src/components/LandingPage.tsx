@@ -24,11 +24,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onExploreLibrary }) 
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
             >
-              <h1 className="text-6xl md:text-8xl font-black leading-[0.9] tracking-tighter text-on-surface dark:text-white mb-8">
+              <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-black leading-[0.9] tracking-tighter text-on-surface dark:text-white mb-8">
                 Your <span className="gold-text">Personal</span><br />
                 <span className="text-emerald-600 dark:text-emerald-400">Sheikh.</span>
               </h1>
-              <p className="text-xl md:text-2xl text-on-surface-variant dark:text-slate-400 leading-relaxed max-w-xl font-medium font-serif italic">
+              <p className="text-base md:text-2xl text-on-surface-variant dark:text-slate-400 leading-relaxed max-w-xl font-medium font-serif italic">
                 Direct access to verified scholarly guidance, the Holy Quran and Sahih Hadith. 
                 Bridging classical wisdom with modern clarity.
               </p>
@@ -42,14 +42,14 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onExploreLibrary }) 
             >
               <button 
                 onClick={onStart}
-                className="px-10 py-5 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-[2rem] shadow-2xl shadow-emerald-600/20 transition-all hover:scale-[1.03] active:scale-[0.97] flex items-center gap-3 group"
+                className="px-8 py-4 md:px-10 md:py-5 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-[2rem] shadow-2xl shadow-emerald-600/20 transition-all hover:scale-[1.03] active:scale-[0.97] flex items-center gap-3 group text-sm md:text-base"
               >
                 Start Consultation
                 <MaterialSymbol icon="arrow_forward" className="group-hover:translate-x-1 transition-transform" />
               </button>
               <button 
                 onClick={onExploreLibrary}
-                className="px-10 py-5 bg-surface-container-low dark:bg-white/5 border border-outline-variant/30 rounded-[2rem] text-on-surface dark:text-slate-200 font-bold hover:bg-emerald-500/5 hover:border-emerald-500/30 transition-all"
+                className="px-8 py-4 md:px-10 md:py-5 bg-surface-container-low dark:bg-white/5 border border-outline-variant/30 rounded-[2rem] text-on-surface dark:text-slate-200 font-bold hover:bg-emerald-500/5 hover:border-emerald-500/30 transition-all text-sm md:text-base"
               >
                 Browse Library
               </button>
@@ -145,14 +145,14 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onExploreLibrary }) 
       </section>
 
       {/* Feature Section */}
-      <section className="px-8 py-32 max-w-screen-2xl mx-auto border-t border-outline-variant/10">
+      <section className="px-8 py-16 md:py-32 max-w-screen-2xl mx-auto border-t border-outline-variant/10">
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-20 gap-8">
           <div className="max-w-2xl">
-            <h2 className="text-5xl md:text-6xl font-black mb-6 leading-[1.1] tracking-tighter text-on-surface dark:text-white">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black mb-6 leading-[1.1] tracking-tighter text-on-surface dark:text-white">
               <span className="gold-text">Original</span><br className="sm:hidden" />
               <span className="text-emerald-600 dark:text-emerald-400"> Islamic</span> Sources.
             </h2>
-            <p className="text-on-surface-variant dark:text-slate-400 text-xl font-medium leading-relaxed">A meticulously indexed archive of the world's most trusted Islamic sources, accessible at your fingertips.</p>
+            <p className="text-on-surface-variant dark:text-slate-400 text-base md:text-xl font-medium leading-relaxed">A meticulously indexed archive of the world's most trusted Islamic sources, accessible at your fingertips.</p>
           </div>
           <button 
             onClick={onExploreLibrary}

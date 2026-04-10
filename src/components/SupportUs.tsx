@@ -34,7 +34,7 @@ const SupportUs: React.FC = () => {
     ];
 
     return (
-        <div className="max-w-5xl mx-auto py-16 px-6 animate-fade-in relative z-10">
+        <div className="max-w-5xl mx-auto py-8 md:py-16 px-6 animate-fade-in relative z-10">
             {/* Header */}
             <div className="text-center mb-16">
                 <motion.div
@@ -50,7 +50,7 @@ const SupportUs: React.FC = () => {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 }}
-                    className="text-5xl md:text-7xl font-black mb-6 leading-tight tracking-tighter title-text"
+                    className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-black mb-6 leading-tight tracking-tighter title-text"
                 >
                     Keep <span className="gold-text">Islamic-advisor</span><br />
                     Free for the <span className="text-emerald-600 dark:text-emerald-400">Ummah.</span>
@@ -60,7 +60,7 @@ const SupportUs: React.FC = () => {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 }}
-                    className="text-xl text-on-surface-variant dark:text-slate-400 max-w-2xl mx-auto leading-relaxed font-medium"
+                    className="text-base md:text-xl text-on-surface-variant dark:text-slate-400 max-w-2xl mx-auto leading-relaxed font-medium"
                 >
                     This platform is maintained as a <em className="text-emerald-600 dark:text-emerald-300">sadaqah jariyah</em>.
                     Running it requires real costs: <span className="text-on-surface font-semibold dark:text-white">AI API access, hosting, and infrastructure</span>.
@@ -93,7 +93,7 @@ const SupportUs: React.FC = () => {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
-                className="max-w-4xl mx-auto bg-surface-container-lowest dark:bg-[#0A0F14] p-8 md:p-12 rounded-[3.5rem] border border-outline-variant/50 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] dark:shadow-emerald-900/10 flex flex-col items-center relative overflow-hidden"
+                className="max-w-4xl mx-auto bg-surface-container-lowest dark:bg-[#0A0F14] p-6 md:p-12 rounded-[2rem] md:rounded-[3.5rem] border border-outline-variant/50 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] dark:shadow-emerald-900/10 flex flex-col items-center relative overflow-hidden"
             >
                 {/* Decorative background element */}
                 <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 blur-[100px] -z-10" />
@@ -101,27 +101,27 @@ const SupportUs: React.FC = () => {
 
                 {!selectedMethod ? (
                     <div className="w-full text-center">
-                        <h2 className="text-3xl font-black tracking-tight mb-8 title-text">Choose a Giving Method</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl mx-auto">
+                        <h2 className="text-2xl md:text-3xl font-black tracking-tight mb-8 title-text">Choose a Giving Method</h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6 w-full max-w-2xl mx-auto">
                             <button
                                 onClick={() => setSelectedMethod('paypal')}
-                                className="flex flex-col items-center p-8 bg-surface-container-low dark:bg-white/5 border border-outline-variant/30 rounded-[2rem] hover:border-blue-500/50 hover:bg-blue-500/5 transition-all group"
+                                className="flex flex-col items-center p-6 md:p-8 bg-surface-container-low dark:bg-white/5 border border-outline-variant/30 rounded-[1.5rem] md:rounded-[2rem] hover:border-blue-500/50 hover:bg-blue-500/5 transition-all group"
                             >
                                 <div className="bg-[#003087]/10 dark:bg-[#003087]/20 px-6 py-3 rounded-2xl mb-4 group-hover:scale-105 transition-transform">
                                     <span className="text-2xl font-black tracking-tight text-[#003087] dark:text-[#0070ba]">Pay<span className="text-[#0070ba] dark:text-[#00a1f1]">Pal</span></span>
                                 </div>
-                                <span className="font-black text-xl mb-2 text-on-surface dark:text-white">Donate via PayPal</span>
+                                <span className="font-black text-lg md:text-xl mb-2 text-on-surface dark:text-white">Donate via PayPal</span>
                                 <span className="text-sm font-medium text-on-surface-variant dark:text-slate-400">Quick, instant, and secure gifts.</span>
                             </button>
                             
                             <button
                                 onClick={() => setSelectedMethod('bank')}
-                                className="flex flex-col items-center p-8 bg-surface-container-low dark:bg-white/5 border border-outline-variant/30 rounded-[2rem] hover:border-emerald-500/50 hover:bg-emerald-500/5 transition-all group"
+                                className="flex flex-col items-center p-6 md:p-8 bg-surface-container-low dark:bg-white/5 border border-outline-variant/30 rounded-[1.5rem] md:rounded-[2rem] hover:border-emerald-500/50 hover:bg-emerald-500/5 transition-all group"
                             >
                                 <div className="bg-emerald-500/10 dark:bg-emerald-500/20 px-6 py-3 rounded-2xl mb-4 group-hover:scale-105 transition-transform">
                                     <span className="text-2xl font-black tracking-tight text-emerald-600 dark:text-emerald-400">Wise</span>
                                 </div>
-                                <span className="font-black text-xl mb-2 text-on-surface dark:text-white">Bank Transfer (Wise)</span>
+                                <span className="font-black text-lg md:text-xl mb-2 text-on-surface dark:text-white">Bank Transfer (Wise)</span>
                                 <span className="text-sm font-medium text-on-surface-variant dark:text-slate-400">Low fees worldwide, 100% impact.</span>
                             </button>
                         </div>
@@ -183,13 +183,13 @@ const SupportUs: React.FC = () => {
                         <div className="flex-1 space-y-8">
                             <p className="text-on-surface-variant dark:text-slate-400 text-sm font-bold text-center">Select an amount or enter your own.</p>
                             
-                            {/* Quick Select */}
-                            <div className="grid grid-cols-4 gap-3">
+                             {/* Quick Select */}
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                 {suggestedAmounts.map(amt => (
                                     <button
                                         key={amt}
                                         onClick={() => { setSelectedAmount(amt); setCustomAmount(''); }}
-                                        className={`py-4 rounded-2xl font-black text-lg transition-all border ${selectedAmount === amt && !customAmount
+                                        className={`py-3 md:py-4 rounded-xl md:rounded-2xl font-black text-base md:text-lg transition-all border ${selectedAmount === amt && !customAmount
                                             ? 'bg-emerald-600 border-emerald-500 text-white shadow-lg'
                                             : 'bg-surface-container-low dark:bg-white/5 border-outline-variant/30 text-on-surface-variant hover:border-emerald-500/30 hover:text-on-surface'
                                             }`}
@@ -201,14 +201,14 @@ const SupportUs: React.FC = () => {
 
                             {/* Custom Amount */}
                             <div className="relative">
-                                <span className="absolute left-6 top-1/2 -translate-y-1/2 text-on-surface-variant font-black text-xl">$</span>
+                                <span className="absolute left-6 top-1/2 -translate-y-1/2 text-on-surface-variant font-black text-lg md:text-xl">$</span>
                                 <input
                                     type="number"
                                     min="1"
                                     placeholder="Custom amount..."
                                     value={customAmount}
                                     onChange={(e) => { setCustomAmount(e.target.value); setSelectedAmount(null); }}
-                                    className="w-full bg-surface-container-low dark:bg-white/5 border border-outline-variant/50 focus:border-emerald-500 px-12 py-5 rounded-2xl text-xl font-bold focus:outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all font-sans text-on-surface placeholder:text-on-surface-variant/50"
+                                    className="w-full bg-surface-container-low dark:bg-white/5 border border-outline-variant/50 focus:border-emerald-500 px-10 md:px-12 py-4 md:py-5 rounded-xl md:rounded-2xl text-lg md:text-xl font-bold focus:outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all font-sans text-on-surface placeholder:text-on-surface-variant/50"
                                 />
                             </div>
 

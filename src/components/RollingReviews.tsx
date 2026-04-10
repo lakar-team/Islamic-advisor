@@ -98,76 +98,61 @@ const RollingReviews: React.FC = () => {
             )}
 
             <div
-                className="relative group cursor-grab active:cursor-grabbing"
-                onClick={() => setIsPaused(!isPaused)}
+                className="relative group"
             >
                 <div
-                    className={`flex gap-6 whitespace-nowrap py-4 ${isPaused ? 'pause-animation' : 'animate-scroll'}`}
+                    className="flex gap-6 overflow-x-auto pb-8 snap-x snap-mandatory no-scrollbar"
+                    style={{ direction: 'rtl' }}
                 >
-                    {/* Multiple duplicates for seamless loop and extra room for dragging */}
-                    {[...reviews, ...reviews, ...reviews, ...reviews, ...reviews].map((review, i) => (
+                    {/* Empty Space for RTL Padding */}
+                    <div className="flex-shrink-0 w-4 md:w-8" />
+                    
+                    {reviews.map((review, i) => (
                         <motion.div
                             key={`${review.id}-${i}`}
-                            drag="x"
-                            dragConstraints={{ left: -1000, right: 1000 }}
-                            onDragStart={() => {
-                                setIsDragging(true);
-                                setIsPaused(true);
-                            }}
-                            onDragEnd={() => {
-                                setIsDragging(false);
-                            }}
-                            className="inline-block w-[350px] bg-surface-container-low dark:bg-slate-900/40 p-8 rounded-3xl border border-outline-variant/20 dark:border-emerald-900/10 hover:border-emerald-500/30 transition-all hover:bg-emerald-500/5 dark:hover:bg-emerald-950/20 whitespace-normal align-top flex-shrink-0 select-none"
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            whileInView={{ opacity: 1, scale: 1 }}
+                            viewport={{ once: true }}
+                            className="inline-block w-[300px] md:w-[380px] bg-surface-container-low dark:bg-slate-900/40 p-6 md:p-8 rounded-[2.5rem] border border-outline-variant/20 dark:border-emerald-900/10 hover:border-emerald-500/30 transition-all hover:bg-emerald-500/5 dark:hover:bg-emerald-950/20 snap-center whitespace-normal align-top flex-shrink-0 select-none"
+                            dir="ltr"
                         >
-                            <div className="flex items-center gap-3 mb-4 pointer-events-none">
+                            <div className="flex items-center gap-3 mb-4">
                                 <div className="bg-emerald-500/10 w-10 h-10 rounded-xl flex items-center justify-center">
                                     <User className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                                 </div>
-                                <div>
+                                <div className="text-left">
                                     <p className="font-black text-on-surface dark:text-white leading-tight">{review.name}</p>
                                     <p className="text-[10px] font-bold text-on-surface-variant dark:text-slate-500 uppercase">{new Date(review.timestamp).toLocaleDateString()}</p>
                                 </div>
                             </div>
-                            <p className="text-on-surface-variant dark:text-slate-400 text-sm leading-relaxed font-medium pointer-events-none">
+                            <p className="text-on-surface-variant dark:text-slate-400 text-sm leading-relaxed font-medium text-left">
                                 "{review.text}"
                             </p>
                         </motion.div>
                     ))}
+                    
                     {reviews.length === 0 && (
-                        <div className="w-full text-center py-12 text-slate-600 font-bold uppercase tracking-widest italic">
+                        <div className="w-full text-right py-12 px-6 text-slate-500 font-bold uppercase tracking-[0.2em] italic opacity-50">
                             No reflections yet. Be the first to share.
                         </div>
                     )}
+
+                    {/* Empty Space for RTL Padding */}
+                    <div className="flex-shrink-0 w-4 md:w-8" />
                 </div>
 
                 {/* Gradient Masks */}
-                <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-surface-container-lowest dark:from-[#0A0F14] to-transparent pointer-events-none"></div>
-                <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-surface-container-lowest dark:from-[#0A0F14] to-transparent pointer-events-none"></div>
-
-                {isPaused && !isDragging && (
-                    <div className="absolute top-0 right-0 m-4">
-                        <span className="text-[10px] font-black text-emerald-500 bg-emerald-500/10 px-3 py-1 rounded-full uppercase tracking-tighter animate-pulse">
-                            Paused to Read • Click again to Resume
-                        </span>
-                    </div>
-                )}
+                <div className="absolute inset-y-0 left-0 w-16 md:w-32 bg-gradient-to-r from-surface-container-lowest dark:from-[#0A0F14] to-transparent pointer-events-none z-10"></div>
+                <div className="absolute inset-y-0 right-0 w-16 md:w-32 bg-gradient-to-l from-surface-container-lowest dark:from-[#0A0F14] to-transparent pointer-events-none z-10"></div>
             </div>
 
             <style>{`
-                @keyframes scroll {
-                    0% { transform: translateX(0); }
-                    100% { transform: translateX(-20%); }
+                .no-scrollbar::-webkit-scrollbar {
+                    display: none;
                 }
-                .animate-scroll {
-                    display: flex;
-                    width: max-content;
-                    animation: scroll 15s linear infinite;
-                }
-                .pause-animation {
-                    display: flex;
-                    width: max-content;
-                    animation: scroll 15s linear infinite;
-                    animation-play-state: paused;
+                .no-scrollbar {
+                    -ms-overflow-style: none;
+                    scrollbar-width: none;
                 }
             `}</style>
         </section>

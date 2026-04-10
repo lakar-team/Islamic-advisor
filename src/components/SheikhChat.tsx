@@ -404,17 +404,18 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
             {/* Sidebar Toggle for Mobile */}
             <button 
                 onClick={() => setShowSidebar(!showSidebar)}
-                className="lg:hidden absolute -top-14 left-0 p-3 bg-white dark:bg-slate-900 rounded-2xl border border-outline-variant/30 text-[#34D399] z-20"
+                className="lg:hidden absolute -top-12 left-0 p-3 bg-white dark:bg-slate-900 rounded-xl border border-outline-variant/30 text-[#34D399] z-20 shadow-md"
             >
-                {showSidebar ? <CloseIcon /> : <Menu />}
+                {showSidebar ? <CloseIcon className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
 
             {/* Sessions Sidebar */}
             <aside className={`
-                ${showSidebar ? 'translate-x-0' : '-translate-x-full'} 
-                lg:translate-x-0 transition-transform duration-300
+                ${showSidebar ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0 pointer-events-none'} 
+                lg:translate-x-0 lg:opacity-100 lg:pointer-events-auto
+                transition-all duration-300
                 absolute lg:relative z-30 lg:z-0
-                w-72 h-full flex flex-col gap-4 shrink-0
+                w-[85%] sm:w-80 lg:w-72 h-full flex flex-col gap-4 shrink-0
             `}>
                 <button 
                     onClick={() => createNewSession()}
@@ -423,7 +424,7 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
                     <Plus className="w-5 h-5" /> New Consultation
                 </button>
                 
-                <div className="flex-1 bg-surface dark:bg-slate-900 rounded-[2.5rem] p-4 border border-outline-variant/30 overflow-hidden flex flex-col shadow-sm">
+                <div className="flex-1 bg-surface dark:bg-slate-900 rounded-[2rem] md:rounded-[2.5rem] p-4 border border-outline-variant/30 overflow-hidden flex flex-col shadow-sm">
                     <h4 className="px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant dark:text-slate-500 mb-2">Past Consultations</h4>
                     <div className="flex-1 overflow-y-auto space-y-1 custom-scrollbar pr-1">
                         {sessions.length === 0 ? (
@@ -459,7 +460,7 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
             </aside>
 
             {/* Main Chat Area */}
-            <div className="flex-1 bg-surface dark:bg-slate-900 rounded-[3rem] overflow-hidden flex flex-col shadow-2xl border border-outline-variant/30 transition-colors duration-300">
+            <div className="flex-1 bg-surface dark:bg-slate-900 rounded-[2rem] md:rounded-[3rem] overflow-hidden flex flex-col shadow-2xl border border-outline-variant/30 transition-colors duration-300">
                 {/* Header */}
                 <header className="px-8 py-6 border-b border-outline-variant/30 bg-surface-container-low/50 dark:bg-slate-950/20 flex items-center justify-between">
                     <div className="flex items-center gap-4">
@@ -467,7 +468,7 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
                             <Scroll className="text-emerald-600 dark:text-emerald-400 w-6 h-6" />
                         </div>
                         <div>
-                            <h3 className="font-bold text-lg text-on-surface dark:text-white leading-tight">Online Sheikh AI</h3>
+                            <h3 className="font-bold text-base md:text-lg text-on-surface dark:text-white leading-tight">Online Sheikh AI</h3>
                             <div className="flex items-center gap-1.5">
                                 <span className="w-1.5 h-1.5 bg-emerald-600 rounded-full animate-pulse"></span>
                                 <span className="text-[10px] text-on-surface-variant dark:text-slate-500 font-bold uppercase tracking-widest">Active Consultation</span>
@@ -513,7 +514,7 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
                 {/* Messages Body */}
                 <div 
                     ref={scrollRef}
-                    className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-fixed dark:bg-none"
+                    className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6 md:space-y-8 custom-scrollbar bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-fixed dark:bg-none"
                 >
                     <AnimatePresence>
                         {messages.map((m) => (
@@ -524,7 +525,7 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
                                 className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
                             >
                                 <div className={`
-                                    max-w-[85%] p-6 rounded-[2rem] transition-colors
+                                    max-w-[90%] md:max-w-[85%] p-4 md:p-6 rounded-[1.5rem] md:rounded-[2rem] transition-colors
                                     ${m.role === 'user'
                                         ? 'bg-emerald-600 text-white rounded-tr-none shadow-xl shadow-emerald-900/20'
                                         : 'bg-surface-container-lowest dark:bg-slate-800 text-on-surface dark:text-white rounded-tl-none shadow-sm border border-outline-variant/20'}
@@ -536,7 +537,7 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
                                         </span>
                                     </div>
 
-                                    <div className="text-[1rem] leading-relaxed font-medium">
+                                    <div className="text-sm md:text-base leading-relaxed font-medium">
                                         {m.role === 'assistant' ? renderMarkdown(m.content) : m.content}
                                     </div>
 
@@ -642,7 +643,7 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
                                 }
                             }}
                             placeholder="Ask the Sheikh..."
-                            className="w-full bg-surface-container-low dark:bg-slate-800 border-none text-on-surface dark:text-white pl-8 pr-16 py-5 rounded-[2.5rem] focus:outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all font-medium text-lg placeholder:text-on-surface-variant/40 shadow-inner resize-none overflow-y-auto min-h-[64px]"
+                            className="w-full bg-surface-container-low dark:bg-slate-800 border-none text-on-surface dark:text-white pl-6 md:pl-8 pr-16 py-4 md:py-5 rounded-[2rem] md:rounded-[2.5rem] focus:outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all font-medium text-base md:text-lg placeholder:text-on-surface-variant/40 shadow-inner resize-none overflow-y-auto min-h-[56px] md:min-h-[64px]"
                         />
                         <button
                             onClick={handleSend}

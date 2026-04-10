@@ -108,11 +108,11 @@ function App() {
         <nav className="p-6 flex items-center justify-between max-w-7xl mx-auto w-full border-b border-outline-variant/10">
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.close()}>
             <div className="bg-emerald-600 p-2 rounded-lg shadow-lg">
-              <Compass className="text-white w-6 h-6" />
+              <Compass className="text-white w-5 h-5 md:w-6 md:h-6" />
             </div>
-            <span className="text-2xl font-bold tracking-tight text-on-surface dark:gold-text font-headline">Islamic-advisor</span>
+            <span className="text-xl md:text-2xl font-bold tracking-tight text-on-surface dark:gold-text font-headline">Islamic-advisor</span>
           </div>
-          <span className="text-sm text-on-surface-variant dark:text-slate-500 font-bold">Knowledge Library</span>
+          <span className="text-[10px] md:text-sm text-on-surface-variant dark:text-slate-500 font-bold">Knowledge Library</span>
         </nav>
         <main className="px-6 flex-1">
           <KnowledgeLibrary
@@ -135,10 +135,10 @@ function App() {
               className="flex items-center gap-2 cursor-pointer group" 
               onClick={() => setActiveTab('landing')}
             >
-              <div className="bg-emerald-600 p-2 rounded-lg group-hover:rotate-12 transition-transform shadow-lg shadow-emerald-900/10">
-                <Compass className="text-white w-6 h-6" />
+              <div className="bg-emerald-600 p-2 rounded-lg group-hover:rotate-12 transition-transform shadow-lg shadow-emerald-900/10 shrink-0">
+                <Compass className="text-white w-5 h-5 md:w-6 md:h-6" />
               </div>
-              <span className="text-2xl font-bold text-on-surface dark:text-white tracking-tighter font-headline">Islamic-advisor</span>
+              <span className="text-xl md:text-2xl font-bold text-on-surface dark:text-white tracking-tighter font-headline">Islamic-advisor</span>
             </div>
             
             <div className="hidden md:flex gap-6 items-center">
@@ -199,7 +199,7 @@ function App() {
         </div>
       </nav>
 
-      <main className="pt-20 flex-1 flex flex-col">
+      <main className="pt-16 md:pt-20 flex-1 flex flex-col">
         <AnimatePresence mode="wait">
           {activeTab === 'landing' ? (
             <motion.div
@@ -227,13 +227,13 @@ function App() {
               className="flex-1 flex flex-col"
             >
               {activeTab === 'chat' ? (
-                <div className="flex-1 px-6">
-                  <header className="py-12 text-center max-w-5xl mx-auto">
+                <div className="flex-1 px-4 md:px-6">
+                  <header className="py-8 md:py-12 text-center max-w-5xl mx-auto">
                     <div className="inline-flex items-center gap-2 bg-emerald-500/10 dark:bg-emerald-950/40 border border-emerald-500/20 px-5 py-2.5 rounded-full mb-8 shadow-inner animate-float">
                       <Shield className="w-4 h-4 text-emerald-500" />
                       <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-[0.2em]">Authenticated Scholarly Logic</span>
                     </div>
-                    <h1 className="text-5xl md:text-7xl font-black mb-6 leading-tight tracking-tighter text-on-surface dark:text-white">
+                    <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-black mb-6 leading-tight tracking-tighter text-on-surface dark:text-white">
                       Seeking <span className="gold-text">Clarity</span><br className="sm:hidden" /> in Tradition.
                     </h1>
                   </header>
@@ -260,8 +260,8 @@ function App() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-white dark:bg-slate-950 w-full border-t border-outline-variant/30 pt-16 pb-12 transition-colors duration-300">
-        <div className="max-w-screen-2xl mx-auto px-8">
+      <footer className="bg-white dark:bg-slate-950 w-full border-t border-outline-variant/30 pt-12 md:pt-16 pb-12 transition-colors duration-300">
+        <div className="max-w-screen-2xl mx-auto px-6 md:px-8">
           
           <div className="max-w-4xl mx-auto mb-16">
             <div

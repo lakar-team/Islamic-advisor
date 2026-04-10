@@ -829,7 +829,7 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                             placeholder="Search across all Quran & Hadith — e.g. 'patience', 'charity', 'prayer'..."
                             value={searchQuery}
                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
-                            className="w-full bg-surface-container-low dark:bg-black/40 border border-outline-variant/50 focus:border-emerald-500/40 px-16 py-6 rounded-[2rem] text-xl focus:outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all font-medium text-on-surface dark:text-white dark:placeholder:text-slate-500"
+                            className="w-full bg-surface-container-low dark:bg-black/40 border border-outline-variant/50 focus:border-emerald-500/40 px-12 md:px-16 py-5 md:py-6 rounded-[1.5cm] md:rounded-[2rem] text-base md:text-xl focus:outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all font-medium text-on-surface dark:text-white dark:placeholder:text-slate-500"
                         />
                         {searchQuery && (
                             <button onClick={() => { setSearchQuery(''); setResults([]); }} className="absolute right-6 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface transition-colors">
@@ -1025,7 +1025,7 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             transition={{ delay: idx * 0.02 }}
-                                            className={`glass p-8 rounded-[2.5rem] border transition-all group ${highlightedAyah === ayahKey || (subTab === 'hadith' && jumpToNum === res.hadithNumber)
+                                            className={`glass p-4 sm:p-6 md:p-8 rounded-[1.5rem] md:rounded-[2.5rem] border transition-all group ${highlightedAyah === ayahKey || (subTab === 'hadith' && jumpToNum === res.hadithNumber)
                                                 ? 'border-amber-400/60 bg-amber-500/10 shadow-xl shadow-amber-900/30 ring-2 ring-amber-400/30'
                                                 : isThisPlaying
                                                     ? 'border-amber-500/40 bg-amber-500/5 shadow-lg shadow-amber-900/20'
@@ -1033,7 +1033,7 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                                                 }`}
                                         >
                                             {/* Card header */}
-                                            <div className="flex flex-wrap items-center justify-between gap-4 mb-6 pb-4 border-b border-white/5">
+                                            <div className="flex flex-wrap items-center justify-between gap-4 mb-4 pb-3 border-b border-white/5">
                                                 <div className="flex items-center gap-3 font-bold">
                                                     <span className={`text-[10px] font-black uppercase tracking-[0.2em] px-4 py-1.5 rounded-full ${res.type === 'Quran' ? 'bg-amber-500/10 text-amber-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
                                                         {res.type}
@@ -1122,7 +1122,7 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                                                         <div className="flex flex-row-reverse flex-wrap gap-x-6 gap-y-10 justify-start">
                                                             {wbwWords.map((w: any, wi: number) => (
                                                                 <div key={wi} className="flex flex-col items-center gap-2 group/word">
-                                                                    <span className="text-4xl md:text-5xl font-arabic text-emerald-900 dark:text-amber-100/90 leading-relaxed group-hover/word:text-emerald-700 dark:group-hover/word:text-white transition-colors">{w.text}</span>
+                                                                    <span className="text-3xl sm:text-4xl md:text-5xl font-arabic text-emerald-900 dark:text-amber-100/90 leading-relaxed group-hover/word:text-emerald-700 dark:group-hover/word:text-white transition-colors">{w.text}</span>
                                                                     <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-md border border-emerald-500/20 text-center max-w-[130px] leading-snug">{w.translation}</span>
                                                                 </div>
                                                             ))}
@@ -1143,7 +1143,7 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                                                             className="w-full text-right group/arabic"
                                                             title="Tap to see word-by-word translation"
                                                         >
-                                                            <p className="text-4xl md:text-5xl font-arabic text-right leading-[2] text-emerald-950 dark:text-amber-100/90 selection:bg-amber-500/30 group-hover/arabic:text-emerald-800 dark:group-hover/arabic:text-amber-100 transition-colors">
+                                                            <p className="text-3xl sm:text-4xl md:text-5xl font-arabic text-right leading-[2] text-emerald-950 dark:text-amber-100/90 selection:bg-amber-500/30 group-hover/arabic:text-emerald-800 dark:group-hover/arabic:text-amber-100 transition-colors">
                                                                 {res.arabic} {res.type === 'Quran' && <span className="text-emerald-700/60 dark:text-amber-500/60 text-2xl ml-2">({res.ayahNumber})</span>}
                                                             </p>
                                                         </button>
@@ -1152,7 +1152,7 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                                             )}
 
                                             {/* Translation */}
-                                            <p className={`text-xl text-slate-800 dark:text-slate-200 selection:bg-emerald-500/30 font-medium leading-relaxed ${res.type === 'Quran' ? 'font-serif' : 'font-sans'}`}>
+                                            <p className={`text-base sm:text-lg md:text-xl text-slate-800 dark:text-slate-200 selection:bg-emerald-500/30 font-medium leading-relaxed ${res.type === 'Quran' ? 'font-serif' : 'font-sans'}`}>
                                                 {subTab === 'search' ? highlightText(res.text, searchQuery) : res.text}
                                             </p>
                                         </motion.div>
@@ -1200,7 +1200,7 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                                                 fetchHadithRange(selectedCollection, newOffset, BROWSE_PAGE);
                                                 window.scrollTo({ top: 0, behavior: 'smooth' });
                                             }}
-                                            className="flex items-center gap-2 px-8 py-3 bg-slate-900 border border-white/10 rounded-2xl font-black text-xs uppercase tracking-widest disabled:opacity-20 transition-all hover:bg-slate-800"
+                                            className="flex items-center gap-2 px-6 md:px-8 py-2.5 md:py-3 bg-slate-900 border border-white/10 rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-widest disabled:opacity-20 transition-all hover:bg-slate-800"
                                         >
                                             <SkipBack className="w-3.5 h-3.5" /> Previous
                                         </button>
@@ -1212,7 +1212,7 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                                                 fetchHadithRange(selectedCollection, newOffset, BROWSE_PAGE);
                                                 window.scrollTo({ top: 0, behavior: 'smooth' });
                                             }}
-                                            className="flex items-center gap-2 px-8 py-3 bg-emerald-600 shadow-lg shadow-emerald-500/20 rounded-2xl font-black text-xs uppercase tracking-widest transition-all hover:scale-105 active:scale-95 text-white disabled:opacity-30"
+                                            className="flex items-center gap-2 px-6 md:px-8 py-2.5 md:py-3 bg-emerald-600 shadow-lg shadow-emerald-500/20 rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-widest transition-all hover:scale-105 active:scale-95 text-white disabled:opacity-30"
                                         >
                                             Next <SkipForward className="w-3.5 h-3.5" />
                                         </button>
