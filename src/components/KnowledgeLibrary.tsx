@@ -892,8 +892,8 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                 )}
 
                 {/* Quran toolbar: play surah button + WBW Toggle */}
+                {subTab === 'quran' && results.length > 0 && currentSurah && (
                     <div className="flex flex-wrap gap-4 items-center justify-end bg-emerald-600/5 p-5 rounded-3xl border border-emerald-500/10 shadow-sm">
-
                         <div className="flex items-center gap-4">
                             <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Recitation:</span>
                             <button
