@@ -578,6 +578,10 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
                                                                         if (srcLower.includes(key)) { collId = val; break; }
                                                                     }
                                                                     onOpenLibrary('hadith', `${collId}:${num}`);
+                                                                } else if (ref.type === 'quran') {
+                                                                    const qMatch = (ref.source || '').match(/(\d+:\d+)/);
+                                                                    const cleanQuery = qMatch ? qMatch[1] : ref.source;
+                                                                    onOpenLibrary(ref.type, cleanQuery);
                                                                 } else {
                                                                     onOpenLibrary(ref.type, ref.source);
                                                                 }
