@@ -36,13 +36,13 @@ const RollingReviews: React.FC = () => {
     };
 
     return (
-        <section className="py-24 px-6 bg-slate-950 border-t border-emerald-900/10 overflow-hidden">
+        <section className="py-24 px-6 bg-surface-container-lowest dark:bg-[#0A0F14] border-t border-outline-variant/30 transition-colors duration-300 overflow-hidden">
             <div className="max-w-7xl mx-auto mb-12 flex flex-col md:flex-row justify-between items-end gap-6">
                 <div>
-                    <h2 className="text-4xl md:text-5xl font-black mb-4 tracking-tighter">
-                        Community <span className="text-emerald-500">Voices</span>
+                    <h2 className="text-4xl md:text-5xl font-black mb-4 tracking-tighter text-on-surface dark:text-white">
+                        Community <span className="text-emerald-600 dark:text-emerald-500">Voices</span>
                     </h2>
-                    <p className="text-slate-400 font-medium max-w-xl">
+                    <p className="text-on-surface-variant dark:text-slate-400 font-medium max-w-xl">
                         Real reflections from users across the Ummah finding guidance through Islamic-advisor.
                     </p>
                 </div>
@@ -58,27 +58,27 @@ const RollingReviews: React.FC = () => {
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="max-w-2xl mx-auto mb-16 glass p-8 rounded-[2.5rem] border border-emerald-500/20 shadow-2xl"
+                    className="max-w-2xl mx-auto mb-16 bg-surface-container-low dark:bg-white/5 p-8 rounded-[2.5rem] border border-outline-variant/30 dark:border-emerald-500/20 shadow-2xl backdrop-blur-md"
                 >
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div className="space-y-2">
-                            <label className="text-xs font-black text-emerald-400 uppercase tracking-widest ml-1">Your Name</label>
+                            <label className="text-xs font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest ml-1">Your Name</label>
                             <input
                                 type="text"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
                                 placeholder="Abu Abdullah"
-                                className="w-full bg-black/40 border border-white/10 focus:border-emerald-500 px-6 py-4 rounded-2xl text-white font-bold transition-all"
+                                className="w-full bg-surface-container-highest dark:bg-black/40 border border-outline-variant/30 dark:border-white/10 focus:border-emerald-500 px-6 py-4 rounded-2xl text-on-surface dark:text-white font-bold transition-all placeholder:text-on-surface-variant/40 dark:placeholder:text-white/40"
                                 required
                             />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-xs font-black text-emerald-400 uppercase tracking-widest ml-1">Your Reflection</label>
+                            <label className="text-xs font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest ml-1">Your Reflection</label>
                             <textarea
                                 value={text}
                                 onChange={(e) => setText(e.target.value)}
                                 placeholder="How has this helped you?"
-                                className="w-full bg-black/40 border border-white/10 focus:border-emerald-500 px-6 py-4 rounded-2xl text-white font-bold transition-all min-h-[120px] resize-none"
+                                className="w-full bg-surface-container-highest dark:bg-black/40 border border-outline-variant/30 dark:border-white/10 focus:border-emerald-500 px-6 py-4 rounded-2xl text-on-surface dark:text-white font-bold transition-all min-h-[120px] resize-none placeholder:text-on-surface-variant/40 dark:placeholder:text-white/40"
                                 required
                             />
                         </div>
@@ -117,18 +117,18 @@ const RollingReviews: React.FC = () => {
                             onDragEnd={() => {
                                 setIsDragging(false);
                             }}
-                            className="inline-block w-[350px] bg-slate-900/40 p-8 rounded-3xl border border-emerald-900/10 hover:border-emerald-500/30 transition-all hover:bg-emerald-950/20 whitespace-normal align-top flex-shrink-0 select-none"
+                            className="inline-block w-[350px] bg-surface-container-low dark:bg-slate-900/40 p-8 rounded-3xl border border-outline-variant/20 dark:border-emerald-900/10 hover:border-emerald-500/30 transition-all hover:bg-emerald-500/5 dark:hover:bg-emerald-950/20 whitespace-normal align-top flex-shrink-0 select-none"
                         >
                             <div className="flex items-center gap-3 mb-4 pointer-events-none">
                                 <div className="bg-emerald-500/10 w-10 h-10 rounded-xl flex items-center justify-center">
-                                    <User className="w-5 h-5 text-emerald-400" />
+                                    <User className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                                 </div>
                                 <div>
-                                    <p className="font-black text-white leading-tight">{review.name}</p>
-                                    <p className="text-[10px] font-bold text-slate-500 uppercase">{new Date(review.timestamp).toLocaleDateString()}</p>
+                                    <p className="font-black text-on-surface dark:text-white leading-tight">{review.name}</p>
+                                    <p className="text-[10px] font-bold text-on-surface-variant dark:text-slate-500 uppercase">{new Date(review.timestamp).toLocaleDateString()}</p>
                                 </div>
                             </div>
-                            <p className="text-slate-400 text-sm leading-relaxed font-medium pointer-events-none">
+                            <p className="text-on-surface-variant dark:text-slate-400 text-sm leading-relaxed font-medium pointer-events-none">
                                 "{review.text}"
                             </p>
                         </motion.div>
@@ -141,8 +141,8 @@ const RollingReviews: React.FC = () => {
                 </div>
 
                 {/* Gradient Masks */}
-                <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-slate-950 to-transparent pointer-events-none"></div>
-                <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-slate-950 to-transparent pointer-events-none"></div>
+                <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-surface-container-lowest dark:from-[#0A0F14] to-transparent pointer-events-none"></div>
+                <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-surface-container-lowest dark:from-[#0A0F14] to-transparent pointer-events-none"></div>
 
                 {isPaused && !isDragging && (
                     <div className="absolute top-0 right-0 m-4">
