@@ -313,6 +313,33 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
             .replace(/```(?:json|javascript)?\s*[\s\S]*?```/gi, '')
             .trim();
 
+        // 4. Inline fallback: scan text for Quran/Hadith references when no structured citations found
+        if (references.length === 0) {
+            const seen = new Set<string>();
+
+            // Match patterns like: (Surah Al-Baqarah, 2:255) or Al-Imran 3:185 or (5:4)
+            const quranPattern = /\(?(?:Surah\s+)?([a-zA-Z\s'-]+),?\s*(\d+):(\d+)\)?/g;
+            let q;
+            while ((q = quranPattern.exec(cleanedContent)) !== null) {
+                const source = `${q[1].trim()} ${q[2]}:${q[3]}`;
+                if (!seen.has(source)) {
+                    seen.add(source);
+                    references.push({ type: 'quran', text: '', source });
+                }
+            }
+
+            // Match patterns like: Sahih Bukhari #1234 or Muslim (Book 042, Hadith 7139) or Tirmidhi - Hadith 50
+            const hadithPattern = /\b(?:Sahih\s+)?(Bukhari|Muslim|Tirmidhi|Abu\s*Da[vw]ud|Nasa[''\u2019]?i|Ibn\s*Majah|Riyad[h\s]us\s+Salihin|Adab\s+Al-Mufrad|Nawawi|Sunan\s+Ibn\s+Majah)(?:[^\d()#]*(?:Book\s*\d+,?\s*)?(?:Hadith\s*|#\s*)?(\d+))?\b/gi;
+            let h;
+            while ((h = hadithPattern.exec(cleanedContent)) !== null) {
+                const source = h[2] ? `${h[1]} \u2013 Hadith ${h[2]}` : h[1];
+                if (!seen.has(source)) {
+                    seen.add(source);
+                    references.push({ type: 'hadith', text: '', source });
+                }
+            }
+        }
+
         return { cleanedContent, references };
     };
 

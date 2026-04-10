@@ -8,7 +8,15 @@ const StatsDisplay: React.FC = () => {
 
     useEffect(() => {
         const loadStats = async () => {
-            const data = await statsService.fetchStats();
+            // Try local API first
+            let data = await statsService.fetchStats();
+            // Fallback: fetch from production if local fails (e.g. stable subdomain without KV bindings)
+            if (!data) {
+                try {
+                    const res = await fetch('https://islamic-advisor.pages.dev/api/stats');
+                    if (res.ok) data = await res.json();
+                } catch { /* ignore */ }
+            }
             if (data) setStats(data);
         };
         loadStats();
