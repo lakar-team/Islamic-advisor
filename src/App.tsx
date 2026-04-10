@@ -145,8 +145,7 @@ function App() {
             <div className="hidden md:flex gap-6 items-center">
               {[
                 { id: 'chat', label: 'Sheikh AI' },
-                { id: 'library', label: 'Library' },
-                { id: 'support', label: 'Support' }
+                { id: 'library', label: 'Library' }
               ].map(item => (
                 <button
                   key={item.id}

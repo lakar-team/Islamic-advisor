@@ -1091,7 +1091,7 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                                                                 title="Toggle word by word translation"
                                                                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${showWbw ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10' : 'border-white/10 text-slate-500 hover:border-emerald-500/30 hover:text-emerald-400 hover:bg-emerald-500/5'}`}
                                                             >
-                                                                <span className={showWbw ? 'text-emerald-400' : 'text-slate-400'}>W</span> WBW
+                                                                WBW
                                                             </button>
                                                             <button
                                                                 onClick={() => playAudio(res.surahNumber, res.ayahNumber)}
@@ -1122,8 +1122,8 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                                                         <div className="flex flex-row-reverse flex-wrap gap-x-6 gap-y-10 justify-start">
                                                             {wbwWords.map((w: any, wi: number) => (
                                                                 <div key={wi} className="flex flex-col items-center gap-2 group/word">
-                                                                    <span className="text-4xl md:text-5xl font-arabic text-amber-100/90 leading-relaxed group-hover/word:text-white transition-colors">{w.text}</span>
-                                                                    <span className="text-[11px] font-black uppercase tracking-tighter text-emerald-400 bg-emerald-500/5 px-2 py-0.5 rounded-md border border-emerald-500/10 text-center max-w-[100px] leading-tight">{w.translation}</span>
+                                                                    <span className="text-4xl md:text-5xl font-arabic text-emerald-900 dark:text-amber-100/90 leading-relaxed group-hover/word:text-emerald-700 dark:group-hover/word:text-white transition-colors">{w.text}</span>
+                                                                    <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-md border border-emerald-500/20 text-center max-w-[130px] leading-snug">{w.translation}</span>
                                                                 </div>
                                                             ))}
                                                             {res.type === 'Quran' && (
@@ -1143,8 +1143,8 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                                                             className="w-full text-right group/arabic"
                                                             title="Tap to see word-by-word translation"
                                                         >
-                                                            <p className="text-4xl md:text-5xl font-arabic text-right leading-[2] text-amber-100/90 selection:bg-amber-500/30 group-hover/arabic:text-amber-100 transition-colors">
-                                                                {res.arabic} {res.type === 'Quran' && <span className="text-amber-500/60 text-2xl ml-2">({res.ayahNumber})</span>}
+                                                            <p className="text-4xl md:text-5xl font-arabic text-right leading-[2] text-emerald-950 dark:text-amber-100/90 selection:bg-amber-500/30 group-hover/arabic:text-emerald-800 dark:group-hover/arabic:text-amber-100 transition-colors">
+                                                                {res.arabic} {res.type === 'Quran' && <span className="text-emerald-700/60 dark:text-amber-500/60 text-2xl ml-2">({res.ayahNumber})</span>}
                                                             </p>
                                                             <div className="flex justify-end mt-2">
                                                                 <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-600 group-hover/arabic:text-emerald-500/50 transition-colors">
@@ -1157,7 +1157,7 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                                             )}
 
                                             {/* Translation */}
-                                            <p className={`text-xl text-slate-200 selection:bg-emerald-500/30 font-medium leading-relaxed ${res.type === 'Quran' ? 'font-serif' : 'font-sans'}`}>
+                                            <p className={`text-xl text-slate-800 dark:text-slate-200 selection:bg-emerald-500/30 font-medium leading-relaxed ${res.type === 'Quran' ? 'font-serif' : 'font-sans'}`}>
                                                 {subTab === 'search' ? highlightText(res.text, searchQuery) : res.text}
                                             </p>
                                         </motion.div>
