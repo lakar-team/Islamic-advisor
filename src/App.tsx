@@ -7,7 +7,6 @@ import { statsService } from './lib/stats-service';
 import RollingReviews from './components/RollingReviews';
 import LandingPage from './components/LandingPage';
 import { MaterialSymbol } from './components/MaterialSymbol';
-import { statsService } from './lib/stats-service';
 import { motion, AnimatePresence } from 'framer-motion';
 
 type ActiveTab = 'landing' | 'chat' | 'library' | 'support';
