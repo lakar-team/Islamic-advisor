@@ -237,7 +237,6 @@ function App() {
                     <h1 className="text-5xl md:text-7xl font-black mb-6 leading-tight tracking-tighter text-on-surface dark:text-white">
                       Seeking <span className="gold-text">Clarity</span><br className="sm:hidden" /> in Tradition.
                     </h1>
-                    <StatsDisplay />
                   </header>
                   <SheikhChat onOpenLibrary={handleOpenLibrary} />
                   

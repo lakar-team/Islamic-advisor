@@ -12,21 +12,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onExploreLibrary }) 
   return (
     <main className="min-h-screen bg-surface-container-lowest dark:bg-[#0A0F14] selection:bg-emerald-500/30">
       {/* Hero & Sheikh AI Interface */}
-      <section className="relative px-8 py-24 md:py-32 max-w-screen-2xl mx-auto overflow-hidden">
+      <section className="relative px-8 py-12 md:py-16 max-w-screen-2xl mx-auto overflow-hidden">
         {/* Decorative background gradients */}
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-500/5 blur-[120px] -z-10 rounded-full animate-pulse" />
         <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-amber-500/5 blur-[120px] -z-10 rounded-full animate-pulse" style={{ animationDelay: '2s' }} />
 
         <div className="grid lg:grid-cols-2 gap-20 items-center relative z-10">
-          <div className="space-y-10">
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="inline-flex items-center gap-3 px-5 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-black tracking-[0.2em] uppercase"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              Digital Sacred Knowledge
-            </motion.div>
+          <div className="space-y-6">
             
             <motion.div
               initial={{ opacity: 0, y: 30 }}
@@ -76,7 +68,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onExploreLibrary }) 
           >
             <div className="absolute inset-0 bg-emerald-600/20 blur-[100px] -z-10 rounded-full scale-75" />
             <div className="bg-white dark:bg-[#0D1219] rounded-[3.5rem] p-3 border border-outline-variant/50 overflow-hidden shadow-[0_48px_80px_-16px_rgba(0,0,0,0.15)] dark:shadow-emerald-900/10">
-              <div className="bg-surface-container-low dark:bg-slate-950/50 rounded-[2.75rem] p-8 flex flex-col h-[600px] border border-outline-variant/20">
+              <div className="bg-surface-container-low dark:bg-slate-950/50 rounded-[2.75rem] p-8 flex flex-col h-[780px] border border-outline-variant/20">
                 <div className="flex items-center justify-between border-b border-outline-variant/20 pb-6 mb-6">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-[1.25rem] bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
