@@ -391,12 +391,16 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
         try {
             // Try hadith 1 first to check existence and get metadata
             const r = await fetch(`https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/${collectionId}/1.json`);
-            if (!r.ok) {
-                // Fallback for collections that might only exist as a jumbo file
-                if (!skipResults) fetchHadithRange(collectionId, 1, BROWSE_PAGE);
-                return;
+            let data;
+            if (r.ok) {
+                data = await r.json();
+            } else {
+                console.warn(`[KnowledgeLibrary] 1.json not found for ${collectionId}, trying jumbo file...`);
+                const jumboR = await fetch(`https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/${collectionId}.json`);
+                if (!jumboR.ok) throw new Error("Collection not found");
+                data = await jumboR.json();
             }
-            const data = await r.json();
+
             const sections: Record<string, string> = data.metadata?.section || {};
             const details: Record<string, any> = data.metadata?.section_detail || {};
             const bookList = Object.entries(sections).map(([num, name]) => ({
@@ -447,9 +451,32 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                 collectionId: targetColl,
             })));
         } catch (err) {
-            console.error(`[KnowledgeLibrary] Hadith jump failed (#${num} in ${targetColl}):`, err);
-            setError(`Hadith #${num} not found in this collection.`);
-            setResults([]);
+            console.warn(`[KnowledgeLibrary] Multi-file fetch failed, trying jumbo file for ${targetColl}...`);
+            try {
+                // Fallback: Fetch the entire book as a single JSON file
+                const r = await fetch(`https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/${targetColl}.json`);
+                if (!r.ok) throw new Error('Jumbo file not found');
+                const data = await r.json();
+                const collName = collections.find(c => c.id === targetColl)?.name || targetColl;
+                
+                // Filter hadiths by range
+                const start = n;
+                const end = n + count;
+                const filtered = (data.hadiths || []).filter((h: any) => h.hadithnumber >= start && h.hadithnumber < end);
+                
+                setResults(filtered.map((h: any) => ({
+                    text: h.text,
+                    reference: `${collName} — Hadith ${h.hadithnumber}`,
+                    type: 'Hadith',
+                    grades: h.grades?.length ? h.grades : [],
+                    hadithNumber: h.hadithnumber,
+                    collectionId: targetColl,
+                })));
+            } catch (fallbackErr) {
+                console.error(`[KnowledgeLibrary] Both fetch methods failed for ${targetColl}:`, fallbackErr);
+                setError(`Hadith #${num} not found in this collection.`);
+                setResults([]);
+            }
         } finally {
             setIsLoading(false);
         }
@@ -637,7 +664,8 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                             >
                                 <button
                                     onClick={() => setShowGlossary(false)}
-                                    className="absolute top-6 right-6 md:top-8 md:right-8 text-on-surface-variant hover:text-on-surface transition-colors"
+                                    className="absolute top-4 right-4 md:top-8 md:right-8 text-on-surface-variant hover:text-on-surface transition-colors p-4 -m-4 z-10"
+                                    aria-label="Close glossary"
                                 >
                                     <X className="w-8 h-8" />
                                 </button>
@@ -826,7 +854,7 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                         <select 
                             value={currentSurah || ''} 
                             onChange={(e) => fetchQuran(Number(e.target.value))}
-                            className="w-full bg-surface-container-low dark:bg-slate-900 border border-outline-variant/30 rounded-2xl px-6 py-4 text-sm font-bold appearance-none focus:outline-none focus:ring-2 focus:ring-[#34D399]/30 transition-all text-on-surface dark:text-white"
+                            className="w-full bg-surface-container-low dark:bg-slate-900 border border-outline-variant/30 rounded-2xl px-6 py-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[#34D399]/30 transition-all text-on-surface dark:text-white"
                         >
                             <option value="">Choose a Surah...</option>
                             {surahs.map(s => (
@@ -835,9 +863,6 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                                 </option>
                             ))}
                         </select>
-                        <div className="absolute right-6 bottom-4 pointer-events-none text-[#34D399]">
-                            <ChevronDown className="w-5 h-5" />
-                        </div>
                     </div>
                 )}
 
@@ -855,15 +880,12 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                                     setBooks([]);
                                     loadBooks(e.target.value);
                                 }}
-                                className="w-full bg-surface-container-low dark:bg-slate-900 border border-outline-variant/30 rounded-2xl px-6 py-4 text-sm font-bold appearance-none focus:outline-none focus:ring-2 focus:ring-[#34D399]/30 transition-all text-on-surface dark:text-white"
+                                className="w-full bg-surface-container-low dark:bg-slate-900 border border-outline-variant/30 rounded-2xl px-6 py-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[#34D399]/30 transition-all text-on-surface dark:text-white"
                             >
                                 {collections.map(c => (
                                     <option key={c.id} value={c.id}>{c.name}</option>
                                 ))}
                             </select>
-                            <div className="absolute right-6 bottom-4 pointer-events-none text-[#34D399]">
-                                <ChevronDown className="w-5 h-5" />
-                            </div>
                         </div>
 
                         {books.length > 0 && (
@@ -881,16 +903,13 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                                             fetchHadithRange(selectedCollection, b.first, BROWSE_PAGE);
                                         }
                                     }}
-                                    className="w-full bg-surface-container-low dark:bg-slate-900 border border-outline-variant/30 rounded-2xl px-6 py-4 text-sm font-bold appearance-none focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all text-on-surface-variant dark:text-slate-200"
+                                    className="w-full bg-surface-container-low dark:bg-slate-900 border border-outline-variant/30 rounded-2xl px-6 py-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all text-on-surface-variant dark:text-slate-200"
                                 >
                                     <option value="">Choose a Book...</option>
                                     {books.map(b => (
                                         <option key={b.num} value={b.num}>Book {b.num}: {b.name}</option>
                                     ))}
                                 </select>
-                                <div className="absolute right-6 bottom-4 pointer-events-none text-slate-500">
-                                    <ChevronDown className="w-5 h-5" />
-                                </div>
                             </div>
                         )}
                     </div>

@@ -36,12 +36,12 @@ const RollingReviews: React.FC = () => {
 
     return (
         <section className="py-24 px-6 bg-surface-container-lowest dark:bg-[#0A0F14] border-t border-outline-variant/30 transition-colors duration-300 overflow-hidden">
-            <div className="max-w-7xl mx-auto mb-12 flex flex-col md:flex-row justify-between items-end gap-6">
+            <div className="max-w-7xl mx-auto mb-12 flex flex-col md:flex-row justify-between items-center lg:items-end text-center lg:text-left gap-6">
                 <div>
                     <h2 className="text-4xl md:text-5xl font-black mb-4 tracking-tighter text-on-surface dark:text-white">
                         Community <span className="text-emerald-600 dark:text-emerald-500">Voices</span>
                     </h2>
-                    <p className="text-on-surface-variant dark:text-slate-400 font-medium max-w-xl">
+                    <p className="text-on-surface-variant dark:text-slate-400 font-medium max-w-xl mx-auto lg:mx-0">
                         Real reflections from users across the Ummah finding guidance through Islamic-advisor.
                     </p>
                 </div>
