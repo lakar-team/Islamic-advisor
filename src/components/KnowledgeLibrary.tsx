@@ -376,6 +376,36 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                     });
                 }
             });
+            // If no hadiths were found via individual files, try the jumbo file fallback
+            if (loaded.length === 0) {
+                console.warn(`[KnowledgeLibrary] No multi-file hadiths found for ${collectionId}, trying jumbo fallback...`);
+                try {
+                    const r = await fetch(`https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/${collectionId}.json`);
+                    if (r.ok) {
+                        const data = await r.json();
+                        const allHadiths = data.hadiths || [];
+                        const filtered = allHadiths.filter((h: any) => h.hadithnumber >= from && h.hadithnumber < from + count);
+                        
+                        filtered.forEach((h: any) => {
+                            if (h.text?.trim()) {
+                                let hGrades = h.grades || [];
+                                if (hGrades.length === 0 && (collectionId === 'eng-bukhari' || collectionId === 'eng-muslim'))
+                                    hGrades = [{ grade: 'Sahih', name: 'Al-Bukhari & Muslim' }];
+                                loaded.push({
+                                    text: h.text,
+                                    reference: `${collName} — Hadith ${h.hadithnumber}`,
+                                    type: 'Hadith',
+                                    grades: hGrades,
+                                    hadithNumber: h.hadithnumber,
+                                    collectionId,
+                                });
+                            }
+                        });
+                    }
+                } catch (fallbackErr) {
+                    console.error(`[KnowledgeLibrary] Jumbo fallback failed for range fetch:`, fallbackErr);
+                }
+            }
             setResults(loaded);
         } finally {
             setIsLoading(false);
@@ -461,8 +491,7 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                 
                 // Filter hadiths by range
                 const start = n;
-                const end = n + count;
-                const filtered = (data.hadiths || []).filter((h: any) => h.hadithnumber >= start && h.hadithnumber < end);
+                const filtered = (data.hadiths || []).filter((h: any) => h.hadithnumber === start);
                 
                 setResults(filtered.map((h: any) => ({
                     text: h.text,
