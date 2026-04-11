@@ -141,7 +141,7 @@ function App() {
               <span className="text-xl md:text-2xl font-bold text-on-surface dark:text-white tracking-tighter font-headline">Islamic-advisor</span>
             </div>
             
-            <div className="hidden md:flex gap-6 items-center">
+            <div className="flex gap-4 md:gap-6 items-center">
               {[
                 { id: 'chat', label: 'Sheikh AI' },
                 { id: 'library', label: 'Library' }
@@ -149,7 +149,7 @@ function App() {
                 <button
                   key={item.id}
                   onClick={() => { setActiveTab(item.id as ActiveTab); window.scrollTo({ top: 0, behavior: 'instant' }); }}
-                  className={`font-black font-headline tracking-widest text-[10px] uppercase transition-all duration-300 px-4 py-2 rounded-xl ${
+                  className={`font-black font-headline tracking-widest text-[8px] md:text-[10px] uppercase transition-all duration-300 px-3 md:px-4 py-2 rounded-xl ${
                     activeTab === item.id 
                     ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shadow-sm border border-emerald-500/20' 
                     : 'text-on-surface-variant dark:text-slate-400 border border-transparent hover:bg-surface-container-highest dark:hover:bg-white/5 hover:text-emerald-600'
@@ -182,10 +182,10 @@ function App() {
                   window.location.href = '/api/oauth/login';
                 }
               }}
-              className={`p-2 transition-colors hidden sm:block ${localStorage.getItem('quran_access_token') ? 'text-emerald-500 hover:text-emerald-400' : 'text-on-surface-variant dark:text-slate-400 hover:text-emerald-600'}`}
+              className={`p-2 transition-colors ${localStorage.getItem('quran_access_token') ? 'text-emerald-500 hover:text-emerald-400' : 'text-on-surface-variant dark:text-slate-400 hover:text-emerald-600'}`}
               title={localStorage.getItem('quran_access_token') ? 'Connected to Quran.com — click to disconnect' : 'Sign in with Quran.com'}
             >
-              <User className="w-6 h-6" />
+              <User className="w-5 h-5 md:w-6 md:h-6" />
             </button>
             {activeTab === 'landing' && (
               <button 

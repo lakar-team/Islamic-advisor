@@ -818,6 +818,85 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                 </div>
             </div>
 
+            {/* Mobile Selection Dropdowns */}
+            <div className="lg:hidden mb-8 space-y-4">
+                {subTab === 'quran' && (
+                    <div className="relative group">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-[#34D399] mb-2 block ml-2">Select Surah</label>
+                        <select 
+                            value={currentSurah || ''} 
+                            onChange={(e) => fetchQuran(Number(e.target.value))}
+                            className="w-full bg-surface-container-low dark:bg-slate-900 border border-outline-variant/30 rounded-2xl px-6 py-4 text-sm font-bold appearance-none focus:outline-none focus:ring-2 focus:ring-[#34D399]/30 transition-all text-on-surface dark:text-white"
+                        >
+                            <option value="">Choose a Surah...</option>
+                            {surahs.map(s => (
+                                <option key={s.number} value={s.number}>
+                                    {s.number}. {s.name} ({s.englishName})
+                                </option>
+                            ))}
+                        </select>
+                        <div className="absolute right-6 bottom-4 pointer-events-none text-[#34D399]">
+                            <ChevronDown className="w-5 h-5" />
+                        </div>
+                    </div>
+                )}
+
+                {subTab === 'hadith' && (
+                    <div className="space-y-4">
+                        <div className="relative group">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-[#34D399] mb-2 block ml-2">Select Collection</label>
+                            <select 
+                                value={selectedCollection} 
+                                onChange={(e) => {
+                                    setSelectedCollection(e.target.value);
+                                    setSearchQuery('');
+                                    setJumpToNum('');
+                                    setResults([]);
+                                    setBooks([]);
+                                    loadBooks(e.target.value);
+                                }}
+                                className="w-full bg-surface-container-low dark:bg-slate-900 border border-outline-variant/30 rounded-2xl px-6 py-4 text-sm font-bold appearance-none focus:outline-none focus:ring-2 focus:ring-[#34D399]/30 transition-all text-on-surface dark:text-white"
+                            >
+                                {collections.map(c => (
+                                    <option key={c.id} value={c.id}>{c.name}</option>
+                                ))}
+                            </select>
+                            <div className="absolute right-6 bottom-4 pointer-events-none text-[#34D399]">
+                                <ChevronDown className="w-5 h-5" />
+                            </div>
+                        </div>
+
+                        {books.length > 0 && (
+                            <div className="relative group">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2 block ml-2">Select Book</label>
+                                <select 
+                                    value={selectedBook?.num || ''} 
+                                    onChange={(e) => {
+                                        const b = books.find(book => book.num === Number(e.target.value));
+                                        if (b) {
+                                            setSelectedBook(b);
+                                            setJumpToNum('');
+                                            setSearchQuery('');
+                                            setBrowseOffset(b.first);
+                                            fetchHadithRange(selectedCollection, b.first, BROWSE_PAGE);
+                                        }
+                                    }}
+                                    className="w-full bg-surface-container-low dark:bg-slate-900 border border-outline-variant/30 rounded-2xl px-6 py-4 text-sm font-bold appearance-none focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all text-on-surface-variant dark:text-slate-200"
+                                >
+                                    <option value="">Choose a Book...</option>
+                                    {books.map(b => (
+                                        <option key={b.num} value={b.num}>Book {b.num}: {b.name}</option>
+                                    ))}
+                                </select>
+                                <div className="absolute right-6 bottom-4 pointer-events-none text-slate-500">
+                                    <ChevronDown className="w-5 h-5" />
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+
             {/* Search Tab — unified search UI */}
             {subTab === 'search' && (
                 <div className="mb-10 space-y-5">
@@ -914,8 +993,8 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
             </div>
 
             <div className={`grid gap-12 ${subTab === 'search' ? '' : 'lg:grid-cols-[320px_1fr]'}`}>
-                {/* Sidebar Navigation */}
-                <div className="space-y-8 order-2 lg:order-1">
+                {/* Sidebar Navigation - Hidden on Mobile */}
+                <div className="space-y-8 order-2 lg:order-1 hidden lg:block">
                     {subTab === 'search' ? null : subTab === 'hadith' ? (
                         /* Hadith sidebar: collections list and books list */
                         <div className="glass p-6 rounded-[2rem] border border-white/5 shadow-sm">

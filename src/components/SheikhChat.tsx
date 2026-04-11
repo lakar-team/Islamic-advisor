@@ -400,7 +400,7 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
     };
 
     return (
-        <div className="flex gap-6 max-w-6xl mx-auto my-8 h-[750px] relative">
+        <div className="flex flex-col lg:flex-row gap-6 max-w-6xl mx-auto my-4 lg:my-8 h-[75vh] md:h-[80vh] lg:h-[750px] relative">
             {/* Sidebar Toggle for Mobile */}
             <button 
                 onClick={() => setShowSidebar(!showSidebar)}
@@ -629,7 +629,7 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
                 </div>
 
                 {/* Input Footer */}
-                <footer className="p-6 bg-surface dark:bg-slate-900 border-t border-outline-variant/30 transition-colors duration-300">
+                <footer className="p-4 md:p-6 bg-surface dark:bg-slate-900 border-t border-outline-variant/30 transition-colors duration-300">
                     <div className="relative flex items-end max-w-3xl mx-auto">
                         <textarea
                             ref={textareaRef}
