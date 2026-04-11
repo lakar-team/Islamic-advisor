@@ -16,19 +16,19 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onExploreLibrary }) 
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-500/5 blur-[120px] -z-10 rounded-full animate-pulse" />
         <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-amber-500/5 blur-[120px] -z-10 rounded-full animate-pulse" style={{ animationDelay: '2s' }} />
 
-        <div className="grid lg:grid-cols-2 gap-20 items-center relative z-10">
-          <div className="space-y-6">
+        <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center relative z-10">
+          <div className="space-y-8 md:space-y-6 text-center lg:text-left">
             
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
             >
-              <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-black leading-[0.9] tracking-tighter text-on-surface dark:text-white mb-8">
+              <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black leading-[0.9] tracking-tighter text-on-surface dark:text-white mb-8">
                 Your <span className="gold-text">Personal</span><br />
                 <span className="text-emerald-600 dark:text-emerald-400">Sheikh.</span>
               </h1>
-              <p className="text-base md:text-2xl text-on-surface-variant dark:text-slate-400 leading-relaxed max-w-xl font-medium font-serif italic">
+              <p className="text-lg md:text-2xl text-on-surface-variant dark:text-slate-400 leading-relaxed max-w-xl mx-auto lg:mx-0 font-medium font-serif italic">
                 Direct access to verified scholarly guidance, the Holy Quran and Sahih Hadith. 
                 Bridging classical wisdom with modern clarity.
               </p>
@@ -38,7 +38,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onExploreLibrary }) 
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="flex flex-wrap gap-5"
+              className="flex flex-wrap justify-center lg:justify-start gap-4 md:gap-5"
             >
               <button 
                 onClick={onStart}

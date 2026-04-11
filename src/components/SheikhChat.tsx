@@ -400,7 +400,7 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
     };
 
     return (
-        <div className="flex flex-col lg:flex-row gap-6 max-w-6xl mx-auto my-4 lg:my-8 h-[75vh] md:h-[80vh] lg:h-[750px] relative">
+        <div className="flex flex-col lg:flex-row gap-6 max-w-6xl mx-auto my-4 lg:my-8 h-auto lg:h-[750px] relative">
             {/* Sidebar Toggle for Mobile */}
             <button 
                 onClick={() => setShowSidebar(!showSidebar)}
@@ -460,9 +460,9 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
             </aside>
 
             {/* Main Chat Area */}
-            <div className="flex-1 bg-surface dark:bg-slate-900 rounded-[2rem] md:rounded-[3rem] overflow-hidden flex flex-col shadow-2xl border border-outline-variant/30 transition-colors duration-300">
+            <div className="flex-1 flex flex-col bg-transparent lg:bg-surface dark:bg-transparent lg:dark:bg-slate-900 rounded-none lg:rounded-[3rem] shadow-none lg:shadow-2xl border-none lg:border lg:border-outline-variant/30 overflow-visible lg:overflow-hidden transition-colors duration-300 relative">
                 {/* Header */}
-                <header className="px-8 py-6 border-b border-outline-variant/30 bg-surface-container-low/50 dark:bg-slate-950/20 flex items-center justify-between">
+                <header className="px-8 py-6 border-b border-outline-variant/30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md lg:bg-surface-container-low/50 lg:dark:bg-slate-950/20 flex items-center justify-between sticky top-16 lg:relative z-30">
                     <div className="flex items-center gap-4">
                         <div className="bg-emerald-500/10 p-2.5 rounded-2xl">
                             <Scroll className="text-emerald-600 dark:text-emerald-400 w-6 h-6" />
@@ -514,7 +514,8 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
                 {/* Messages Body */}
                 <div 
                     ref={scrollRef}
-                    className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6 md:space-y-8 custom-scrollbar bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-fixed dark:bg-none"
+                    className="flex-1 overflow-y-visible lg:overflow-y-auto p-4 md:p-8 space-y-6 md:space-y-8 custom-scrollbar bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-fixed dark:bg-none"
+                    style={{ minHeight: '300px' }}
                 >
                     <AnimatePresence>
                         {messages.map((m) => (
@@ -629,7 +630,7 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
                 </div>
 
                 {/* Input Footer */}
-                <footer className="p-4 md:p-6 bg-surface dark:bg-slate-900 border-t border-outline-variant/30 transition-colors duration-300">
+                <footer className="p-4 md:p-6 bg-surface dark:bg-slate-900 border-t border-outline-variant/30 transition-colors duration-300 sticky bottom-0 lg:relative z-20">
                     <div className="relative flex items-end max-w-3xl mx-auto">
                         <textarea
                             ref={textareaRef}
