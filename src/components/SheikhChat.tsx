@@ -514,7 +514,7 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
                 {/* Messages Body */}
                 <div 
                     ref={scrollRef}
-                    className="flex-1 overflow-y-visible lg:overflow-y-auto p-4 md:p-8 space-y-6 md:space-y-8 custom-scrollbar bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-fixed dark:bg-none"
+                    className="flex-1 overflow-y-visible lg:overflow-y-auto p-4 md:p-8 pt-20 md:pt-8 space-y-6 md:space-y-8 custom-scrollbar bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-fixed dark:bg-none"
                     style={{ minHeight: '300px' }}
                 >
                     <AnimatePresence>
@@ -534,7 +534,7 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
                                     <div className="flex items-center gap-2 mb-3 opacity-60">
                                         {m.role === 'assistant' ? <Sparkles className="w-3.5 h-3.5" /> : <MessageSquare className="w-3.5 h-3.5" />}
                                         <span className="text-[9px] font-black uppercase tracking-[0.2em]">
-                                            {m.role === 'assistant' ? 'Verified Scholarly AI' : 'Your Query'}
+                                            {m.role === 'assistant' ? 'Sheikh AI' : 'Your Query'}
                                         </span>
                                     </div>
 

@@ -28,7 +28,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onExploreLibrary }) 
                 Your <span className="gold-text">Personal</span><br />
                 <span className="text-emerald-600 dark:text-emerald-400">Sheikh.</span>
               </h1>
-              <p className="text-lg md:text-2xl text-on-surface-variant dark:text-slate-400 leading-relaxed max-w-xl mx-auto lg:mx-0 font-medium font-serif italic">
+              <p className="text-lg md:text-2xl text-on-surface-variant dark:text-slate-400 leading-relaxed max-w-xl font-medium font-serif italic">
                 Direct access to verified scholarly guidance, the Holy Quran and Sahih Hadith. 
                 Bridging classical wisdom with modern clarity.
               </p>
@@ -38,7 +38,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onExploreLibrary }) 
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="flex flex-wrap justify-center lg:justify-start gap-4 md:gap-5"
+              className="flex flex-wrap justify-start gap-4 md:gap-5"
             >
               <button 
                 onClick={onStart}
