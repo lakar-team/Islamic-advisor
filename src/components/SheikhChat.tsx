@@ -404,7 +404,7 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
             {/* Sidebar Toggle for Mobile */}
             <button 
                 onClick={() => setShowSidebar(!showSidebar)}
-                className="lg:hidden absolute -top-12 left-0 p-3 bg-white dark:bg-slate-900 rounded-xl border border-outline-variant/30 text-[#34D399] z-20 shadow-md"
+                className="lg:hidden absolute -top-12 left-0 p-3 bg-white dark:bg-slate-900 rounded-xl border border-outline-variant/30 text-[#34D399] z-50 shadow-md"
             >
                 {showSidebar ? <CloseIcon className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -414,7 +414,7 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
                 ${showSidebar ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0 pointer-events-none'} 
                 lg:translate-x-0 lg:opacity-100 lg:pointer-events-auto
                 transition-all duration-300
-                absolute lg:relative z-30 lg:z-0
+                absolute top-0 lg:relative z-50 lg:z-0
                 w-[85%] sm:w-80 lg:w-72 h-full flex flex-col gap-4 shrink-0
             `}>
                 <button 
