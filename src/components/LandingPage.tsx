@@ -38,7 +38,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onExploreLibrary }) 
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="flex flex-wrap justify-start gap-4 md:gap-5"
+              className="flex flex-wrap justify-center lg:justify-start gap-4 md:gap-5"
             >
               <button 
                 onClick={onStart}
