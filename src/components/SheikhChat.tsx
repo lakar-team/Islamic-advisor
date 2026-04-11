@@ -468,7 +468,7 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
                             <Scroll className="text-emerald-600 dark:text-emerald-400 w-6 h-6" />
                         </div>
                         <div>
-                            <h3 className="font-bold text-base md:text-lg text-on-surface dark:text-white leading-tight">Online Sheikh AI</h3>
+                            <h3 className="font-bold text-base md:text-lg text-on-surface dark:text-white leading-tight">Sheikh AI</h3>
                             <div className="flex items-center gap-1.5">
                                 <span className="w-1.5 h-1.5 bg-emerald-600 rounded-full animate-pulse"></span>
                                 <span className="text-[10px] text-on-surface-variant dark:text-slate-500 font-bold uppercase tracking-widest">Active Consultation</span>
@@ -514,7 +514,7 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
                 {/* Messages Body */}
                 <div 
                     ref={scrollRef}
-                    className="flex-1 overflow-y-visible lg:overflow-y-auto p-4 md:p-8 pt-20 md:pt-8 space-y-6 md:space-y-8 custom-scrollbar bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-fixed dark:bg-none"
+                    className="flex-1 overflow-y-visible lg:overflow-y-auto p-4 md:p-8 pt-28 lg:pt-32 space-y-6 md:space-y-8 custom-scrollbar bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-fixed dark:bg-none"
                     style={{ minHeight: '300px' }}
                 >
                     <AnimatePresence>
