@@ -9,8 +9,7 @@ const RollingReviews: React.FC = () => {
     const [text, setText] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showForm, setShowForm] = useState(false);
-    const [isPaused, setIsPaused] = useState(false);
-    const [isDragging, setIsDragging] = useState(false);
+
 
     useEffect(() => {
         const loadReviews = async () => {
