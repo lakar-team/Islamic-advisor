@@ -221,12 +221,12 @@ function App() {
             >
               {activeTab === 'chat' ? (
                 <div className="flex-1 px-4 md:px-6">
-                  <header className="py-8 md:py-12 text-center max-w-5xl mx-auto">
-                    <div className="inline-flex items-center gap-2 bg-emerald-500/10 dark:bg-emerald-950/40 border border-emerald-500/20 px-5 py-2.5 rounded-full mb-8 shadow-inner animate-float">
+                  <header className="py-8 md:py-12 text-center lg:text-left max-w-5xl mx-auto">
+                    <div className="inline-flex items-center gap-2 bg-emerald-500/10 dark:bg-emerald-950/40 border border-emerald-500/20 px-5 py-2.5 rounded-full mb-8 shadow-inner animate-float mx-auto lg:mx-0">
                       <Shield className="w-4 h-4 text-emerald-500" />
                       <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-[0.2em]">Authenticated Scholarly Logic</span>
                     </div>
-                    <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-black mb-6 leading-tight tracking-tighter text-on-surface dark:text-white">
+                    <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-black mb-6 leading-tight tracking-tighter text-on-surface dark:text-white lg:max-w-3xl">
                       Seeking <span className="gold-text">Clarity</span><br className="sm:hidden" /> in Tradition.
                     </h1>
                   </header>

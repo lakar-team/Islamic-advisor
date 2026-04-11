@@ -787,10 +787,10 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
             <div className="max-w-7xl mx-auto py-12 px-6 animate-fade-in relative">
                 {/* Header */}
             {/* Header */}
-            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8 mb-12">
-                <div>
-                    <h2 className="text-5xl font-black mb-3 title-text tracking-tighter">Knowledge Library</h2>
-                    <p className="text-on-surface-variant dark:text-slate-400 text-lg font-medium">Browse the Quran & Hadith, or search across both at once.</p>
+            <div className="flex flex-col lg:flex-row items-center lg:items-center justify-between text-center lg:text-left gap-8 mb-12">
+                <div className="mx-auto lg:mx-0">
+                    <h2 className="text-4xl md:text-5xl font-black mb-3 title-text tracking-tighter">Knowledge Library</h2>
+                    <p className="text-on-surface-variant dark:text-slate-400 text-base md:text-lg font-medium">Browse the Quran & Hadith, or search across both at once.</p>
                 </div>
 
                 <div className="flex gap-2 p-1.5 bg-surface-container-low dark:bg-slate-900/50 rounded-2xl border border-outline-variant/30 backdrop-blur-xl shrink-0">
