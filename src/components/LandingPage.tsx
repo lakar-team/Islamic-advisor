@@ -17,18 +17,18 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onExploreLibrary }) 
         <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-amber-500/5 blur-[120px] -z-10 rounded-full animate-pulse" style={{ animationDelay: '2s' }} />
 
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center relative z-10">
-          <div className="space-y-8 md:space-y-6 text-center lg:text-left">
+          <div className="space-y-8 md:space-y-6 text-left">
             
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
             >
-              <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black leading-[0.9] tracking-tighter text-on-surface dark:text-white mb-8">
+              <h1 className="text-6xl sm:text-7xl md:text-8xl font-black leading-[0.9] tracking-tighter text-on-surface dark:text-white mb-8">
                 Your <span className="gold-text">Personal</span><br />
                 <span className="text-emerald-600 dark:text-emerald-400">Sheikh.</span>
               </h1>
-              <p className="text-lg md:text-2xl text-on-surface-variant dark:text-slate-400 leading-relaxed max-w-xl mx-auto lg:mx-0 font-medium font-serif italic">
+              <p className="text-lg md:text-2xl text-on-surface-variant dark:text-slate-400 leading-relaxed max-w-xl mx-0 font-medium font-serif italic">
                 Direct access to verified scholarly guidance, the Holy Quran and Sahih Hadith. 
                 Bridging classical wisdom with modern clarity.
               </p>
@@ -38,7 +38,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onExploreLibrary }) 
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="flex flex-wrap justify-center lg:justify-start gap-4 md:gap-5"
+              className="flex flex-wrap justify-start gap-4 md:gap-5"
             >
               <button 
                 onClick={onStart}
@@ -148,7 +148,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onExploreLibrary }) 
       <section className="px-8 py-16 md:py-32 max-w-screen-2xl mx-auto border-t border-outline-variant/10">
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-20 gap-8">
           <div className="max-w-2xl">
-            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black mb-6 leading-[1.1] tracking-tighter text-on-surface dark:text-white">
+            <h2 className="text-5xl sm:text-6xl md:text-6xl lg:text-6xl font-black mb-6 leading-[1.1] tracking-tighter text-on-surface dark:text-white">
               <span className="gold-text">Original</span><br className="sm:hidden" />
               <span className="text-emerald-600 dark:text-emerald-400"> Islamic</span> Sources.
             </h2>
