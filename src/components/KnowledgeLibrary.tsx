@@ -257,7 +257,7 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
 
         if (source === 'both' || source === 'quran') {
             phase1.push(
-                fetch(`https://api.alquran.cloud/v1/search/${encodeURIComponent(query)}/all/en.asad`)
+                fetch(`https://api.alquran.cloud/v1/search/${encodeURIComponent(query)}/all/en.sahih`)
                     .then(r => r.ok ? r.json() : null)
                     .catch(() => null)
                     .then(async (enData) => {
