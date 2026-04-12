@@ -663,7 +663,7 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
             }, 600);
             return () => clearTimeout(timer);
         }
-    }, [results, isLoading, targetAyah, jumpToNum, subTab, selectedCollection]);
+    }, [results, isLoading, targetAyah, jumpToNum, subTab, selectedCollection, showWbw, wbwActive]);
 
     const highlightText = (text: string, highlight: string) => {
         if (!highlight.trim()) return <span>{text}</span>;
@@ -1232,7 +1232,11 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                                                     {res.type === 'Quran' && res.surahNumber && res.ayahNumber && (
                                                         <div className="flex items-center gap-2">
                                                             <button
-                                                                onClick={() => setShowWbw(!showWbw)}
+                                                                onClick={() => {
+                                                                    const key = `${res.surahNumber}:${res.ayahNumber}`;
+                                                                    setTargetAyah(key);
+                                                                    setShowWbw(!showWbw);
+                                                                }}
                                                                 title="Toggle word by word translation"
                                                                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${showWbw ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10' : 'border-white/10 text-slate-500 hover:border-emerald-500/30 hover:text-emerald-400 hover:bg-emerald-500/5'}`}
                                                             >
@@ -1284,7 +1288,12 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                                                         </div>
                                                     ) : (
                                                         <button
-                                                            onClick={() => res.surahNumber && res.ayahNumber && fetchWbwAyah(res.surahNumber, res.ayahNumber).then(() => setWbwActive(ayahKey))}
+                                                            onClick={() => {
+                                                                if (res.surahNumber && res.ayahNumber) {
+                                                                    setTargetAyah(ayahKey);
+                                                                    fetchWbwAyah(res.surahNumber, res.ayahNumber).then(() => setWbwActive(ayahKey));
+                                                                }
+                                                            }}
                                                             className="w-full text-right group/arabic"
                                                             title="Tap to see word-by-word translation"
                                                         >
