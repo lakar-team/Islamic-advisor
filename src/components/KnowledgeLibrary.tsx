@@ -257,16 +257,15 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
 
         if (source === 'both' || source === 'quran') {
             phase1.push(
-                fetch(`https://api.alquran.cloud/v1/search/${encodeURIComponent(query)}/all/en.sahih`)
+                fetch(`https://api.quran.com/api/v4/search?q=${encodeURIComponent(query)}&language=en`)
                     .then(r => r.ok ? r.json() : null)
                     .catch(() => null)
-                    .then(async (enData) => {
-                        if (!enData?.data?.matches) return [];
-                        const matches = enData.data.matches.slice(0, 15);
+                    .then(async (data) => {
+                        if (!data?.search?.results) return [];
+                        const searchResults = data.search.results.slice(0, 15);
 
-                        // Dedupe into unique surahs — typically 4-8 per search,
-                        // vs 15 individual ayah requests which hit rate limits
-                        const uniqueSurahs: number[] = [...new Set<number>(matches.map((m: any) => m.surah.number as number))];
+                        // Dedupe into unique surahs to fetch Arabic text efficiently
+                        const uniqueSurahs: number[] = [...new Set<number>(searchResults.map((r: any) => parseInt(r.verse_key.split(':')[0])))];
                         const surahResponses = await Promise.allSettled(
                             uniqueSurahs.map((surahNum: number) =>
                                 fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/quran-uthmani`)
@@ -286,15 +285,25 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                             }
                         });
 
-                        return matches.map((r: any) => ({
-                            text: r.text,
-                            arabic: arMap[`${r.surah.number}:${r.numberInSurah}`] || '',
-                            reference: `${r.surah.englishName} ${r.surah.number}:${r.numberInSurah}`,
-                            type: 'Quran',
-                            surahNumber: r.surah.number,
-                            ayahNumber: r.numberInSurah,
-                            score: 20,
-                        }));
+                        return searchResults.map((r: any) => {
+                            const [sNum, aNum] = r.verse_key.split(':').map(Number);
+                            // Quran.com search returns multiple translations if they match
+                            // We use the first one as primary, but keep others in metadata
+                            const primaryMatch = r.translations?.[0] || { text: r.text };
+                            
+                            return {
+                                text: primaryMatch.text,
+                                arabic: arMap[r.verse_key] || r.text_uthmani || '',
+                                reference: `Surah ${r.verse_key}`,
+                                type: 'Quran',
+                                surahNumber: sNum,
+                                ayahNumber: aNum,
+                                score: 20,
+                                translationName: primaryMatch.name,
+                                otherTranslations: r.translations?.slice(1, 4) || [], // Keep a few extras for discovery
+                                hasHighlights: primaryMatch.text.includes('<em>')
+                            };
+                        });
                     })
             );
         }
@@ -658,6 +667,15 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
 
     const highlightText = (text: string, highlight: string) => {
         if (!highlight.trim()) return <span>{text}</span>;
+        
+        // If the text already contains <em> tags from Quran.com API, render it safely
+        if (text.includes('<em>')) {
+            return <span dangerouslySetInnerHTML={{ 
+                __html: text.replace(/<em>/g, '<span class="text-amber-300 font-bold bg-amber-500/10 px-0.5 rounded">')
+                           .replace(/<\/em>/g, '</span>') 
+            }} />;
+        }
+
         const regex = new RegExp(`(${highlight.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
         const parts = text.split(regex);
         return (
@@ -1279,9 +1297,61 @@ const KnowledgeLibrary: React.FC<KnowledgeLibraryProps> = ({ initialTab, initial
                                             )}
 
                                             {/* Translation */}
-                                            <p className={`text-base sm:text-lg md:text-xl text-slate-800 dark:text-slate-200 selection:bg-emerald-500/30 font-medium leading-relaxed ${res.type === 'Quran' ? 'font-serif' : 'font-sans'}`}>
-                                                {subTab === 'search' ? highlightText(res.text, searchQuery) : res.text}
-                                            </p>
+                                            <div className="space-y-4">
+                                                <p className={`text-base sm:text-lg md:text-xl text-slate-800 dark:text-slate-200 selection:bg-emerald-500/30 font-medium leading-relaxed ${res.type === 'Quran' ? 'font-serif' : 'font-sans'}`}>
+                                                    {subTab === 'search' ? highlightText(res.text, searchQuery) : res.text}
+                                                </p>
+                                                
+                                                {res.type === 'Quran' && res.translationName && subTab === 'search' && (
+                                                    <div className="flex flex-wrap items-center gap-3 mt-2">
+                                                        <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Source: {res.translationName}</span>
+                                                        {res.otherTranslations?.length > 0 && (
+                                                            <div className="flex gap-2">
+                                                                {res.otherTranslations.map((ot: any, oi: number) => (
+                                                                    <div key={oi} className="group/ot relative">
+                                                                        <span className="text-[9px] font-black uppercase tracking-widest text-emerald-500/50 hover:text-emerald-500 cursor-help underline decoration-dotted">
+                                                                            + Also in {ot.name}
+                                                                        </span>
+                                                                        <div className="absolute bottom-full left-0 mb-2 w-64 p-3 bg-slate-900 border border-emerald-500/20 rounded-xl shadow-2xl opacity-0 group-hover/ot:opacity-100 transition-opacity pointer-events-none z-10 text-[10px] text-slate-300 font-medium leading-relaxed">
+                                                                            <span className="block mb-1 font-black text-emerald-400 uppercase tracking-[0.2em]">{ot.name}</span>
+                                                                            <div dangerouslySetInnerHTML={{ __html: ot.text }} />
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+
+                                                {/* Deep Links for Search Results */}
+                                                {subTab === 'search' && res.type === 'Quran' && (
+                                                    <div className="flex gap-3 mt-6 pt-6 border-t border-white/5">
+                                                        <button 
+                                                            onClick={() => {
+                                                                setSubTab('quran');
+                                                                fetchQuran(res.surahNumber).then(() => {
+                                                                    setTargetAyah(`${res.surahNumber}:${res.ayahNumber}`);
+                                                                });
+                                                            }}
+                                                            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-[10px] font-black uppercase tracking-widest text-amber-500 hover:bg-amber-500/20 transition-all"
+                                                        >
+                                                            <BookOpen className="w-3 h-3" /> View Full Surah
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => {
+                                                                setSubTab('quran');
+                                                                fetchQuran(res.surahNumber).then(() => {
+                                                                    setTargetAyah(`${res.surahNumber}:${res.ayahNumber}`);
+                                                                    fetchTafsir(res);
+                                                                });
+                                                            }}
+                                                            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-black uppercase tracking-widest text-emerald-500 hover:bg-emerald-500/20 transition-all"
+                                                        >
+                                                            <Sparkles className="w-3 h-3" /> Search Tafsir
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </motion.div>
                                     );
                                 })
