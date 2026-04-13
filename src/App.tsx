@@ -63,6 +63,7 @@ function App() {
   });
 
   const [modal, setModal] = useState<'privacy' | 'terms' | 'contact' | 'commerce' | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('quran_access_token'));
   const [donationStatus, setDonationStatus] = useState<'success' | 'cancel' | null>(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get('donation') as 'success' | 'cancel' | null;
@@ -83,6 +84,26 @@ function App() {
     }
     localStorage.setItem('theme', theme);
   }, [theme]);
+
+  // Handle Reactive Login State & Hash Changes
+  useEffect(() => {
+    const handleSync = () => {
+      setIsLoggedIn(!!localStorage.getItem('quran_access_token'));
+      
+      const hash = window.location.hash.replace('#', '');
+      if (hash.startsWith('chat')) setActiveTab('chat');
+      if (hash.startsWith('library?')) setActiveTab('library');
+    };
+
+    window.addEventListener('hashchange', handleSync);
+    // Periodically check for token in case of cross-tab login or same-page updates
+    const interval = setInterval(handleSync, 1000);
+    
+    return () => {
+      window.removeEventListener('hashchange', handleSync);
+      clearInterval(interval);
+    };
+  }, []);
 
   const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
 
@@ -172,23 +193,22 @@ function App() {
             </button>
             <button 
               onClick={() => {
-                const token = localStorage.getItem('quran_access_token');
-                if (token) {
+                if (isLoggedIn) {
                   if (confirm('You are connected to Quran.com. Disconnect and logout?')) {
                     localStorage.removeItem('quran_access_token');
                     localStorage.removeItem('quran_refresh_token');
-                    setActiveTab('landing'); // Smooth exit to landing
-                    window.location.hash = ''; // Clear hash
-                    window.location.reload();
+                    setIsLoggedIn(false);
+                    setActiveTab('landing');
+                    window.location.hash = '';
                   }
                 } else {
                   window.location.href = '/api/oauth/login';
                 }
               }}
-              className={`p-2 transition-all hover:scale-110 ${localStorage.getItem('quran_access_token') ? 'text-amber-500 hover:text-amber-400' : 'text-on-surface-variant dark:text-slate-400 hover:text-emerald-600'}`}
-              title={localStorage.getItem('quran_access_token') ? 'Account Connected — Click to Logout' : 'Sign in with Quran.com'}
+              className={`p-2 transition-all hover:scale-110 ${isLoggedIn ? 'text-amber-500 hover:text-amber-400' : 'text-on-surface-variant dark:text-slate-400 hover:text-emerald-600'}`}
+              title={isLoggedIn ? 'Account Connected — Click to Logout' : 'Sign in with Quran.com'}
             >
-              {localStorage.getItem('quran_access_token') ? (
+              {isLoggedIn ? (
                 <LogOut className="w-5 h-5 md:w-6 md:h-6" />
               ) : (
                 <User className="w-5 h-5 md:w-6 md:h-6" />

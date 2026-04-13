@@ -126,15 +126,15 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
 
                 if (bookRes.ok) {
                     const data = await bookRes.json();
-                    setStudyHistory(data.bookmarks || []);
+                    setStudyHistory(data.data || []);
                 }
                 if (noteRes.ok) {
                     const data = await noteRes.json();
-                    setUserNotes(data.notes || []);
+                    setUserNotes(data.data || []);
                 }
                 if (sessionRes.ok) {
                     const data = await sessionRes.json();
-                    setReadingSessions(data.reading_sessions || []);
+                    setReadingSessions(data.data || []);
                 }
             } catch (e) {
                 console.error('Failed to fetch user activity', e);
