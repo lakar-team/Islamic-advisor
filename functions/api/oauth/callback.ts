@@ -19,12 +19,16 @@ export const onRequestGet = async (context: any) => {
 
     try {
         // Exchange authorization code for tokens using the correct environment endpoint
+        // Use client_secret_basic as required by the Quran Foundation OAuth server
+        const credentials = btoa(`${env.QURAN_CLIENT_ID}:${env.QURAN_CLIENT_SECRET}`);
+        
         const tokenResponse = await fetch(`${oauthBase}/oauth2/token`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            headers: { 
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Authorization': `Basic ${credentials}`
+            },
             body: new URLSearchParams({
-                client_id: env.QURAN_CLIENT_ID,
-                client_secret: env.QURAN_CLIENT_SECRET,
                 code,
                 grant_type: 'authorization_code',
                 redirect_uri: env.QURAN_REDIRECT_URI,
