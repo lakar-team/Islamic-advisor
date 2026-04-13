@@ -1,4 +1,4 @@
-import { Compass, Shield, Heart, X, User } from 'lucide-react';
+import { Compass, Shield, Heart, X, User, LogOut } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import SheikhChat from './components/SheikhChat';
 import KnowledgeLibrary from './components/KnowledgeLibrary';
@@ -53,6 +53,7 @@ function App() {
     // Check if we have a deep link or previous state
     const hash = window.location.hash.replace('#', '');
     if (hash.startsWith('library?')) return 'library';
+    if (hash.startsWith('chat')) return 'chat';
     return 'landing';
   });
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -173,19 +174,25 @@ function App() {
               onClick={() => {
                 const token = localStorage.getItem('quran_access_token');
                 if (token) {
-                  if (confirm('You are connected to Quran.com. Disconnect?')) {
+                  if (confirm('You are connected to Quran.com. Disconnect and logout?')) {
                     localStorage.removeItem('quran_access_token');
                     localStorage.removeItem('quran_refresh_token');
+                    setActiveTab('landing'); // Smooth exit to landing
+                    window.location.hash = ''; // Clear hash
                     window.location.reload();
                   }
                 } else {
                   window.location.href = '/api/oauth/login';
                 }
               }}
-              className={`p-2 transition-colors ${localStorage.getItem('quran_access_token') ? 'text-emerald-500 hover:text-emerald-400' : 'text-on-surface-variant dark:text-slate-400 hover:text-emerald-600'}`}
-              title={localStorage.getItem('quran_access_token') ? 'Connected to Quran.com — click to disconnect' : 'Sign in with Quran.com'}
+              className={`p-2 transition-all hover:scale-110 ${localStorage.getItem('quran_access_token') ? 'text-amber-500 hover:text-amber-400' : 'text-on-surface-variant dark:text-slate-400 hover:text-emerald-600'}`}
+              title={localStorage.getItem('quran_access_token') ? 'Account Connected — Click to Logout' : 'Sign in with Quran.com'}
             >
-              <User className="w-5 h-5 md:w-6 md:h-6" />
+              {localStorage.getItem('quran_access_token') ? (
+                <LogOut className="w-5 h-5 md:w-6 md:h-6" />
+              ) : (
+                <User className="w-5 h-5 md:w-6 md:h-6" />
+              )}
             </button>
 
           </div>
