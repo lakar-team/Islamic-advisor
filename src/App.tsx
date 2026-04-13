@@ -139,7 +139,7 @@ function App() {
               <div className="bg-emerald-600 p-2 rounded-lg group-hover:rotate-12 transition-transform shadow-lg shadow-emerald-900/10 shrink-0">
                 <Compass className="text-white w-5 h-5 md:w-6 md:h-6" />
               </div>
-              <span className="text-xl md:text-2xl font-bold text-on-surface dark:text-white tracking-tighter font-headline">Islamic-advisor</span>
+              <span className="text-xl md:text-2xl font-bold text-on-surface dark:text-white tracking-tighter font-headline">Islamic-Advisor</span>
             </div>
             
             <div className="flex gap-4 md:gap-6 items-center">
@@ -284,7 +284,7 @@ function App() {
           </div>
           <div className="flex flex-col md:flex-row justify-between items-center gap-8">
             <div className="text-center md:text-left">
-              <span className="text-[#34D399] font-black text-2xl tracking-tighter font-headline">Islamic-advisor</span>
+              <span className="text-[#34D399] font-black text-2xl tracking-tighter font-headline">Islamic-Advisor</span>
               <p className="text-on-surface-variant dark:text-slate-500 font-body text-[10px] tracking-[0.2em] uppercase mt-2 font-bold">Sacred Knowledge, Digitally Preserved.</p>
             </div>
             
