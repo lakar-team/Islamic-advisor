@@ -8,7 +8,7 @@ export const onRequestGet = async (context: any) => {
     const oauthBase = env.QURAN_OAUTH_BASE_URL || 'https://oauth2.quran.foundation';
     const clientId = env.QURAN_CLIENT_ID || '';
     const redirectUri = env.QURAN_REDIRECT_URI || 'https://islamic-advisor.pages.dev/api/oauth/callback';
-    const scope = 'openid profile offline_access';
+    const scope = 'openid profile offline_access bookmarks notes reading_history reading_sessions collections';
 
     if (!clientId) {
         return new Response('OAuth not configured: missing QURAN_CLIENT_ID', { status: 500 });

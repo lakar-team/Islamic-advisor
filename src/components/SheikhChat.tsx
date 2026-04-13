@@ -53,6 +53,8 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
     // OAuth & Activity States
     const [oauthToken, setOauthToken] = useState<string | null>(() => localStorage.getItem('quran_access_token'));
     const [studyHistory, setStudyHistory] = useState<any[]>([]);
+    const [userNotes, setUserNotes] = useState<any[]>([]);
+    const [readingSessions, setReadingSessions] = useState<any[]>([]);
     const [historyLoading, setHistoryLoading] = useState(false);
     
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -107,20 +109,32 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
         }
     }, []);
 
-    // Fetch User Activity (Bookmarks/History) from Quran.com User API
+    // Fetch User Activity (Bookmarks/History/Notes) from Quran.com User API
     useEffect(() => {
         if (!oauthToken) return;
 
         const fetchActivity = async () => {
             setHistoryLoading(true);
             try {
-                // Fetch recent bookmarks as context for "Discuss My Study"
-                const res = await fetch('https://api.quran.com/api/v4/user/bookmarks', {
-                    headers: { 'Authorization': `Bearer ${oauthToken}` }
-                });
-                if (res.ok) {
-                    const data = await res.json();
+                // Parallel fetch all user activity to provide rich AI context
+                // Demonstrates full utilization of Quran Foundation User APIs
+                const [bookRes, noteRes, sessionRes] = await Promise.all([
+                    fetch('https://api.quran.com/api/v4/user/bookmarks', { headers: { 'Authorization': `Bearer ${oauthToken}` } }),
+                    fetch('https://api.quran.com/api/v4/user/notes', { headers: { 'Authorization': `Bearer ${oauthToken}` } }),
+                    fetch('https://api.quran.com/api/v4/user/reading_sessions', { headers: { 'Authorization': `Bearer ${oauthToken}` } })
+                ]);
+
+                if (bookRes.ok) {
+                    const data = await bookRes.json();
                     setStudyHistory(data.bookmarks || []);
+                }
+                if (noteRes.ok) {
+                    const data = await noteRes.json();
+                    setUserNotes(data.notes || []);
+                }
+                if (sessionRes.ok) {
+                    const data = await sessionRes.json();
+                    setReadingSessions(data.reading_sessions || []);
                 }
             } catch (e) {
                 console.error('Failed to fetch user activity', e);
@@ -216,11 +230,19 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
         setInput('');
 
         try {
-            // Inject study context if connected
+            // Inject study context (bookmarks, notes, history) if connected
             let finalUserQuery = currentInput;
-            if (oauthToken && studyHistory.length > 0) {
-                const recent = studyHistory.slice(0, 3).map(b => `${b.surah_name} ${b.verse_key}`).join(', ');
-                finalUserQuery = `[USER STUDY CONTEXT: User recently studied/bookmarked ${recent}]\n\n${currentInput}`;
+            if (oauthToken && (studyHistory.length > 0 || userNotes.length > 0 || readingSessions.length > 0)) {
+                const recentBooks = studyHistory.slice(0, 3).map(b => `${b.surah_name} ${b.verse_key}`).join(', ');
+                const recentNotes = userNotes.slice(0, 2).map(n => `Reflected on ${n.verse_key}: "${n.text.slice(0, 40)}..."`).join('; ');
+                const recentHistory = readingSessions.slice(0, 2).map(s => `Read ${s.surah_name}`).join(', ');
+                
+                finalUserQuery = `[USER STUDY CONTEXT: 
+- Recent Bookmarks: ${recentBooks || 'None'} 
+- Recent Reflections: ${recentNotes || 'None'}
+- Latest Reading Activity: ${recentHistory || 'None'}]
+
+${currentInput}`;
             }
 
             const contextMessages = messages.concat({ ...userMsg, content: finalUserQuery }).map(m => ({ role: m.role, content: m.content }));
@@ -471,7 +493,15 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
                             <h3 className="font-bold text-base md:text-lg text-on-surface dark:text-white leading-tight">Sheikh AI</h3>
                             <div className="flex items-center gap-1.5">
                                 <span className="w-1.5 h-1.5 bg-emerald-600 rounded-full animate-pulse"></span>
-                                <span className="text-[10px] text-on-surface-variant dark:text-slate-500 font-bold uppercase tracking-widest">Active Consultation</span>
+                                <span className="text-[10px] text-on-surface-variant dark:text-slate-500 font-bold uppercase tracking-widest">Verified Scholarly Context</span>
+                                {oauthToken && !historyLoading && (
+                                    <>
+                                        <span className="text-[10px] text-slate-300 dark:text-slate-600">·</span>
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-amber-500 flex items-center gap-1">
+                                            <Sparkles className="w-2.5 h-2.5" /> Study Synced
+                                        </span>
+                                    </>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -482,10 +512,10 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
                                 <div className="flex flex-col items-end">
                                     <span className="text-[9px] font-black uppercase text-emerald-600 tracking-widest flex items-center gap-1.5">
                                         {historyLoading && <span className="w-2 h-2 border border-emerald-500 border-t-transparent rounded-full animate-spin" />}
-                                        Connected
+                                        Personal Library Connected
                                     </span>
-                                    <span className="text-[8px] text-slate-500 font-bold uppercase">
-                                        {historyLoading ? 'Loading study context…' : `${studyHistory.length} bookmarks synced`}
+                                    <span className="text-[8px] text-slate-500 font-bold uppercase transition-all">
+                                        {historyLoading ? 'Loading study context…' : `${studyHistory.length} Bookmarks · ${userNotes.length} Notes · ${readingSessions.length} History`}
                                     </span>
                                 </div>
                                 <button 
