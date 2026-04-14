@@ -30,7 +30,6 @@ export const onRequestGet = async (context: any) => {
             response_type: 'code',
             scope,
             state: secureState,
-            prompt: 'select_account', // Enables user switching
         }).toString();
 
     return Response.redirect(authUrl);
