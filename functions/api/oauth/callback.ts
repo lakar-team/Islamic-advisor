@@ -10,7 +10,8 @@ export const onRequestGet = async (context: any) => {
     const oauthBase = env.QURAN_OAUTH_BASE_URL || 'https://oauth2.quran.foundation';
 
     if (error) {
-        const params = new URLSearchParams({ error, return: returnTo });
+        const state = url.searchParams.get('state') || 'landing';
+        const params = new URLSearchParams({ error, return: state });
         return Response.redirect(`${origin}/#oauth-callback?${params.toString()}`);
     }
 
