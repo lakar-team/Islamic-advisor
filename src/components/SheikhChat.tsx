@@ -52,6 +52,7 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
 
     // OAuth & Activity States
     const [oauthToken, setOauthToken] = useState<string | null>(() => localStorage.getItem('quran_access_token'));
+    const [quranApiBase, setQuranApiBase] = useState<string>(() => localStorage.getItem('quran_api_base') || 'https://api.quran.com');
     const [studyHistory, setStudyHistory] = useState<any[]>([]);
     const [userNotes, setUserNotes] = useState<any[]>([]);
     const [readingSessions, setReadingSessions] = useState<any[]>([]);
@@ -89,25 +90,13 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
         }
     }, [input]);
 
-    // Handle OAuth Callback from Hash
+    // Sync Local Token State with Storage
     useEffect(() => {
-        const hash = window.location.hash;
-        if (hash.includes('access_token=')) {
-            const params = new URLSearchParams(hash.replace('#chat?', '').replace('#', ''));
-            const token = params.get('access_token');
-            if (token) {
-                setOauthToken(token);
-                localStorage.setItem('quran_access_token', token);
-                // Clear sensitive info from URL
-                window.location.hash = 'chat';
-            }
-        }
-        const errorParam = new URLSearchParams(window.location.hash.split('?')[1]).get('oauth_error');
-        if (errorParam) {
-            setError(`Connection Failed: ${errorParam}`);
-            window.location.hash = 'chat';
-        }
-    }, []);
+        const token = localStorage.getItem('quran_access_token');
+        const apiBase = localStorage.getItem('quran_api_base') || 'https://api.quran.com';
+        setOauthToken(token);
+        setQuranApiBase(apiBase);
+    }, [isLoggedIn]);
 
     // Fetch User Activity (Bookmarks/History/Notes) from Quran.com User API
     useEffect(() => {
@@ -119,9 +108,9 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
                 // Parallel fetch all user activity to provide rich AI context
                 // Demonstrates full utilization of Quran Foundation User APIs
                 const [bookRes, noteRes, sessionRes] = await Promise.all([
-                    fetch('https://api.quran.com/api/v4/user/bookmarks', { headers: { 'Authorization': `Bearer ${oauthToken}` } }),
-                    fetch('https://api.quran.com/api/v4/user/notes', { headers: { 'Authorization': `Bearer ${oauthToken}` } }),
-                    fetch('https://api.quran.com/api/v4/user/reading_sessions', { headers: { 'Authorization': `Bearer ${oauthToken}` } })
+                    fetch(`${quranApiBase}/api/v4/user/bookmarks`, { headers: { 'Authorization': `Bearer ${oauthToken}` } }),
+                    fetch(`${quranApiBase}/api/v4/user/notes`, { headers: { 'Authorization': `Bearer ${oauthToken}` } }),
+                    fetch(`${quranApiBase}/api/v4/user/reading_sessions`, { headers: { 'Authorization': `Bearer ${oauthToken}` } })
                 ]);
 
                 if (bookRes.ok) {
@@ -154,6 +143,8 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
         setOauthToken(null);
         setStudyHistory([]);
         localStorage.removeItem('quran_access_token');
+        localStorage.removeItem('quran_refresh_token');
+        localStorage.removeItem('quran_api_base');
     };
 
     const createNewSession = (initialQuery?: string) => {

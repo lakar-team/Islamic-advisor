@@ -85,23 +85,87 @@ function App() {
     localStorage.setItem('theme', theme);
   }, [theme]);
 
-  // Handle Reactive Login State & Hash Changes
+  // ── ONE-SHOT OAuth Callback Processor ───────────────────────────────────────
+  // Runs once on mount or hashchange. If the URL hash is '#oauth-callback', 
+  // extract tokens, save them, then navigate to the intended tab.
+  useEffect(() => {
+    const processOAuth = () => {
+      const hash = window.location.hash;
+      if (!hash.startsWith('#oauth-callback')) return;
+
+      const query = hash.split('?')[1] || '';
+      const params = new URLSearchParams(query);
+
+      const oauthError = params.get('error');
+      const returnTo   = params.get('return') || 'landing';
+
+      if (oauthError) {
+        console.error('[OAuth] Login failed:', decodeURIComponent(oauthError));
+        // Silently navigate back to where the user was
+        const cleanHash = returnTo === 'landing' ? '' : '#' + returnTo;
+        window.history.replaceState(null, '', window.location.pathname + cleanHash);
+        const tabId = returnTo.split('?')[0];
+        if (tabId === 'chat') setActiveTab('chat');
+        else if (tabId === 'library') setActiveTab('library');
+        else setActiveTab('landing');
+        return;
+      }
+
+      const accessToken  = params.get('access_token');
+      const refreshToken = params.get('refresh_token');
+      const apiBase      = params.get('api_base');
+
+      if (accessToken) {
+        localStorage.setItem('quran_access_token', accessToken);
+        if (refreshToken) localStorage.setItem('quran_refresh_token', refreshToken);
+        if (apiBase)      localStorage.setItem('quran_api_base', decodeURIComponent(apiBase));
+        setIsLoggedIn(true);
+      }
+
+      // Navigate to the intended tab and clean the URL
+      const cleanHash = returnTo === 'landing' ? '' : '#' + returnTo;
+      window.history.replaceState(null, '', window.location.pathname + cleanHash);
+      
+      const tabId = returnTo.split('?')[0];
+      if (tabId === 'chat') setActiveTab('chat');
+      else if (tabId === 'library') setActiveTab('library');
+      else setActiveTab('landing');
+    };
+
+    processOAuth();
+    window.addEventListener('hashchange', processOAuth);
+    return () => window.removeEventListener('hashchange', processOAuth);
+  }, []);
+
+  // ── Unified Navigation & State Sync ─────────────────────────────────────────
+  // Keeps the tab state in sync with the URL and reactively handles login/logout.
   useEffect(() => {
     const handleSync = () => {
-      setIsLoggedIn(!!localStorage.getItem('quran_access_token'));
-      
-      const hash = window.location.hash.replace('#', '');
-      if (hash.startsWith('chat')) setActiveTab('chat');
-      if (hash.startsWith('library?')) setActiveTab('library');
+      const token = localStorage.getItem('quran_access_token');
+      setIsLoggedIn(!!token);
+
+      const hash = window.location.hash.replace('#', '').split('?')[0];
+      if (hash === 'chat') setActiveTab('chat');
+      else if (hash === 'library') setActiveTab('library');
+      else if (hash === '' || hash === 'landing') setActiveTab('landing');
+      else if (hash === 'support') setActiveTab('support');
+    };
+
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'quran_access_token') {
+        setIsLoggedIn(!!e.newValue);
+      }
     };
 
     window.addEventListener('hashchange', handleSync);
-    // Periodically check for token in case of cross-tab login or same-page updates
-    const interval = setInterval(handleSync, 1000);
+    window.addEventListener('storage', handleStorage);
     
+    // Initial sync
+    handleSync();
+
     return () => {
       window.removeEventListener('hashchange', handleSync);
-      clearInterval(interval);
+      window.removeEventListener('storage', handleStorage);
     };
   }, []);
 
@@ -197,12 +261,15 @@ function App() {
                   if (confirm('You are connected to Quran.com. Disconnect and logout?')) {
                     localStorage.removeItem('quran_access_token');
                     localStorage.removeItem('quran_refresh_token');
+                    localStorage.removeItem('quran_api_base');
                     setIsLoggedIn(false);
                     setActiveTab('landing');
                     window.location.hash = '';
                   }
                 } else {
-                  window.location.href = '/api/oauth/login';
+                  // Capture current tab to restore context after login
+                  const currentTab = window.location.hash.replace('#', '').split('?')[0] || 'landing';
+                  window.location.href = `/api/oauth/login?state=${encodeURIComponent(currentTab)}`;
                 }
               }}
               className={`p-2 transition-all hover:scale-110 ${isLoggedIn ? 'text-amber-500 hover:text-amber-400' : 'text-on-surface-variant dark:text-slate-400 hover:text-emerald-600'}`}
@@ -230,8 +297,8 @@ function App() {
               transition={{ duration: 0.3 }}
             >
               <LandingPage 
-                onStart={() => { setActiveTab('chat'); window.scrollTo({ top: 0, behavior: 'instant' }); }} 
-                onExploreLibrary={() => { setActiveTab('library'); window.scrollTo({ top: 0, behavior: 'instant' }); }} 
+                onStart={() => { window.location.hash = 'chat'; window.scrollTo({ top: 0, behavior: 'smooth' }); }} 
+                onExploreLibrary={() => { window.location.hash = 'library'; window.scrollTo({ top: 0, behavior: 'smooth' }); }} 
               />
               <div className="pb-24">
                 <RollingReviews />

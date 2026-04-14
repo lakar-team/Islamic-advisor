@@ -4,18 +4,20 @@ export const onRequestGet = async (context: any) => {
     const { env } = context;
 
     // Quran.com OAuth2 Configuration
-    // QURAN_OAUTH_BASE_URL: prelive-oauth2.quran.foundation (stable/test) or oauth2.quran.foundation (main/prod)
+    const url = new URL(request.url);
+    const origin = url.origin;
+    const state = url.searchParams.get('state') || 'landing';
+
     const oauthBase = env.QURAN_OAUTH_BASE_URL || 'https://oauth2.quran.foundation';
     const clientId = env.QURAN_CLIENT_ID || '';
-    const redirectUri = env.QURAN_REDIRECT_URI || 'https://islamic-advisor.pages.dev/api/oauth/callback';
-    const scope = 'openid offline_access';
+    const redirectUri = env.QURAN_REDIRECT_URI || `${origin}/api/oauth/callback`;
+    
+    // Standard OIDC scopes
+    const scope = 'openid profile email';
 
     if (!clientId) {
         return new Response('OAuth not configured: missing QURAN_CLIENT_ID', { status: 500 });
     }
-
-    // Generate a random state param for CSRF protection
-    const state = crypto.randomUUID();
 
     // Standard OIDC Authorization Code flow
     const authUrl = `${oauthBase}/oauth2/auth?` +
@@ -25,6 +27,7 @@ export const onRequestGet = async (context: any) => {
             response_type: 'code',
             scope,
             state,
+            prompt: 'select_account', // Enables user switching
         }).toString();
 
     return Response.redirect(authUrl);
