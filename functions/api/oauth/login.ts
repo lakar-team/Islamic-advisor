@@ -6,10 +6,7 @@ export const onRequestGet = async (context: any) => {
     // Quran.com OAuth2 Configuration
     const url = new URL(request.url);
     const origin = url.origin;
-    // To satisfy OAuth servers that enforce entropy/length on the state param for CSRF protection,
-    // we embed our UI routing state alongside a secure random UUID.
-    const uiState = url.searchParams.get('state') || 'landing';
-    const secureState = `${uiState}___${crypto.randomUUID()}`;
+    const state = url.searchParams.get('state') || 'landing';
 
     const oauthBase = env.QURAN_OAUTH_BASE_URL || 'https://oauth2.quran.foundation';
     const clientId = env.QURAN_CLIENT_ID || '';
@@ -29,7 +26,8 @@ export const onRequestGet = async (context: any) => {
             redirect_uri: redirectUri,
             response_type: 'code',
             scope,
-            state: secureState,
+            state,
+            prompt: 'select_account', // Forces Google account selector
         }).toString();
 
     return Response.redirect(authUrl);

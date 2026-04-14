@@ -9,11 +9,10 @@ export const onRequestGet = async (context: any) => {
     const origin = new URL(request.url).origin;
     const oauthBase = env.QURAN_OAUTH_BASE_URL || 'https://oauth2.quran.foundation';
 
-    const rawState = url.searchParams.get('state') || '';
-    const uiState = rawState.split('___')[0] || 'landing';
+    const state = url.searchParams.get('state') || 'landing';
 
     if (error) {
-        const params = new URLSearchParams({ error, return: uiState });
+        const params = new URLSearchParams({ error, return: state });
         return Response.redirect(`${origin}/#oauth-callback?${params.toString()}`);
     }
 
@@ -60,7 +59,7 @@ export const onRequestGet = async (context: any) => {
             refresh_token: tokens.refresh_token || '',
             id_token: tokens.id_token || '',
             api_base: apiBase, // URLSearchParams handles encoding
-            return: uiState
+            return: state
         });
         
         redirectUrl.hash = `oauth-callback?${params.toString()}`;
@@ -69,7 +68,7 @@ export const onRequestGet = async (context: any) => {
     } catch (e: any) {
         const params = new URLSearchParams({
             error: e.message,
-            return: uiState
+            return: state
         });
         return Response.redirect(`${origin}/#oauth-callback?${params.toString()}`);
     }
