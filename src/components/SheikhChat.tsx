@@ -14,10 +14,11 @@ interface ChatSession {
 }
 
 interface SheikhChatProps {
+    isLoggedIn: boolean;
     onOpenLibrary: (tab: 'quran' | 'hadith', query: string) => void;
 }
 
-const SheikhChat: React.FC<SheikhChatProps> = ({ onOpenLibrary }) => {
+const SheikhChat: React.FC<SheikhChatProps> = ({ isLoggedIn, onOpenLibrary }) => {
     const [sessions, setSessions] = useState<ChatSession[]>(() => {
         try {
             const stored = localStorage.getItem(SESSIONS_STORAGE_KEY);

@@ -324,7 +324,7 @@ function App() {
                       Seeking <span className="gold-text">Clarity</span><br className="sm:hidden" /> in Tradition.
                     </h1>
                   </header>
-                  <SheikhChat onOpenLibrary={handleOpenLibrary} />
+                  <SheikhChat isLoggedIn={isLoggedIn} onOpenLibrary={handleOpenLibrary} />
                   
 
                 </div>
