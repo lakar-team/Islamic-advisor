@@ -1,7 +1,7 @@
 /// <reference path="../../cloudflare-env.d.ts" />
 
 export const onRequestGet = async (context: any) => {
-    const { env } = context;
+    const { request, env } = context;
 
     // Quran.com OAuth2 Configuration
     const url = new URL(request.url);

@@ -10,7 +10,8 @@ export const onRequestGet = async (context: any) => {
     const oauthBase = env.QURAN_OAUTH_BASE_URL || 'https://oauth2.quran.foundation';
 
     if (error) {
-        return Response.redirect(`${origin}/#chat?oauth_error=${encodeURIComponent(error)}`);
+        const params = new URLSearchParams({ error, return: returnTo });
+        return Response.redirect(`${origin}/#oauth-callback?${params.toString()}`);
     }
 
     if (!code) {
@@ -56,7 +57,7 @@ export const onRequestGet = async (context: any) => {
         const params = new URLSearchParams({
             access_token: tokens.access_token,
             refresh_token: tokens.refresh_token || '',
-            api_base: encodeURIComponent(apiBase),
+            api_base: apiBase, // URLSearchParams handles encoding
             return: state
         });
         
@@ -65,6 +66,10 @@ export const onRequestGet = async (context: any) => {
         return Response.redirect(redirectUrl.toString());
     } catch (e: any) {
         const state = url.searchParams.get('state') || 'landing';
-        return Response.redirect(`${origin}/#oauth-callback?error=${encodeURIComponent(e.message)}&return=${state}`);
+        const params = new URLSearchParams({
+            error: e.message,
+            return: state
+        });
+        return Response.redirect(`${origin}/#oauth-callback?${params.toString()}`);
     }
 };
