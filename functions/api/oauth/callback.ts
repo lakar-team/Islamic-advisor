@@ -58,6 +58,7 @@ export const onRequestGet = async (context: any) => {
         const params = new URLSearchParams({
             access_token: tokens.access_token,
             refresh_token: tokens.refresh_token || '',
+            id_token: tokens.id_token || '',
             api_base: apiBase, // URLSearchParams handles encoding
             return: uiState
         });

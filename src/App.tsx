@@ -113,11 +113,13 @@ function App() {
 
       const accessToken  = params.get('access_token');
       const refreshToken = params.get('refresh_token');
+      const idToken      = params.get('id_token');
       const apiBase      = params.get('api_base');
 
       if (accessToken) {
         localStorage.setItem('quran_access_token', accessToken);
         if (refreshToken) localStorage.setItem('quran_refresh_token', refreshToken);
+        if (idToken)      localStorage.setItem('quran_id_token', idToken);
         if (apiBase)      localStorage.setItem('quran_api_base', decodeURIComponent(apiBase));
         setIsLoggedIn(true);
       }
@@ -259,12 +261,22 @@ function App() {
               onClick={() => {
                 if (isLoggedIn) {
                   if (confirm('You are connected to Quran.com. Disconnect and logout?')) {
+                    const idToken = localStorage.getItem('quran_id_token');
+                    
                     localStorage.removeItem('quran_access_token');
                     localStorage.removeItem('quran_refresh_token');
                     localStorage.removeItem('quran_api_base');
+                    localStorage.removeItem('quran_id_token');
                     setIsLoggedIn(false);
-                    setActiveTab('landing');
-                    window.location.hash = '';
+                    
+                    if (idToken) {
+                      // Perform strict OIDC RP-Initiated Logout to kill the session cookie remote side
+                      window.location.href = `/api/oauth/logout?id_token_hint=${encodeURIComponent(idToken)}`;
+                    } else {
+                      // Fallback if no ID token is present
+                      setActiveTab('landing');
+                      window.location.hash = '';
+                    }
                   }
                 } else {
                   // Capture current tab to restore context after login
