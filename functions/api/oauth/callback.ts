@@ -9,9 +9,11 @@ export const onRequestGet = async (context: any) => {
     const origin = new URL(request.url).origin;
     const oauthBase = env.QURAN_OAUTH_BASE_URL || 'https://oauth2.quran.foundation';
 
+    const rawState = url.searchParams.get('state') || '';
+    const uiState = rawState.split('___')[0] || 'landing';
+
     if (error) {
-        const state = url.searchParams.get('state') || 'landing';
-        const params = new URLSearchParams({ error, return: state });
+        const params = new URLSearchParams({ error, return: uiState });
         return Response.redirect(`${origin}/#oauth-callback?${params.toString()}`);
     }
 
@@ -20,8 +22,6 @@ export const onRequestGet = async (context: any) => {
     }
 
     try {
-        const state = url.searchParams.get('state') || 'landing';
-
         // Exchange authorization code for tokens using the correct environment endpoint
         // Use client_secret_basic as required by the Quran Foundation OAuth server
         const credentials = btoa(`${env.QURAN_CLIENT_ID}:${env.QURAN_CLIENT_SECRET}`);
@@ -59,17 +59,16 @@ export const onRequestGet = async (context: any) => {
             access_token: tokens.access_token,
             refresh_token: tokens.refresh_token || '',
             api_base: apiBase, // URLSearchParams handles encoding
-            return: state
+            return: uiState
         });
         
         redirectUrl.hash = `oauth-callback?${params.toString()}`;
 
         return Response.redirect(redirectUrl.toString());
     } catch (e: any) {
-        const state = url.searchParams.get('state') || 'landing';
         const params = new URLSearchParams({
             error: e.message,
-            return: state
+            return: uiState
         });
         return Response.redirect(`${origin}/#oauth-callback?${params.toString()}`);
     }
