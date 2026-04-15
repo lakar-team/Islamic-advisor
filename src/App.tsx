@@ -8,7 +8,7 @@ import RollingReviews from './components/RollingReviews';
 import LandingPage from './components/LandingPage';
 import { MaterialSymbol } from './components/MaterialSymbol';
 import { motion, AnimatePresence } from 'framer-motion';
-import { validateState, validateNonce } from './lib/oauth-utils';
+import { validateState, validateNonce, initiateLogin } from './lib/oauth-utils';
 
 type ActiveTab = 'landing' | 'chat' | 'library' | 'support';
 
@@ -115,7 +115,10 @@ function App() {
       const code = params.get('code');
       if (code) {
         // Handle the recommended PKCE exchange flow
-        const state = params.get('state');
+        const rawState = params.get('state') || '';
+        const [state, returnToOverride] = rawState.split(':');
+        const finalReturnTo = returnToOverride || returnTo;
+
         if (!validateState(state)) {
           console.error('[OAuth] State mismatch! Possible CSRF attack.');
           window.location.hash = returnTo;
@@ -154,9 +157,9 @@ function App() {
             localStorage.removeItem('oauth_nonce');
 
             // Navigate and clean URL
-            const cleanHash = returnTo === 'landing' ? '' : '#' + returnTo;
+            const cleanHash = finalReturnTo === 'landing' ? '' : '#' + finalReturnTo;
             window.history.replaceState(null, '', window.location.pathname + cleanHash);
-            const tabId = returnTo.split('?')[0];
+            const tabId = finalReturnTo.split('?')[0];
             if (tabId === 'chat') setActiveTab('chat');
             else if (tabId === 'library') setActiveTab('library');
             else setActiveTab('landing');
@@ -344,8 +347,8 @@ function App() {
                   }
                 } else {
                   // Capture current tab to restore context after login
-                  const currentTab = window.location.hash.replace('#', '').split('?')[0] || 'landing';
-                  window.location.href = `/api/oauth/login?state=${encodeURIComponent(currentTab)}`;
+                  const currentTab = activeTab;
+                  initiateLogin(currentTab);
                 }
               }}
               className={`p-2 transition-all hover:scale-110 ${isLoggedIn ? 'text-amber-500 hover:text-amber-400' : 'text-on-surface-variant dark:text-slate-400 hover:text-emerald-600'}`}

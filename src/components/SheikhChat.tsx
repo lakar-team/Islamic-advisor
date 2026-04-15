@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Scroll, ShieldAlert, Sparkles, MessageSquare, ExternalLink, BookOpen, Hash, Trash2, Plus, Menu, X as CloseIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { generateRandomString, generateCodeChallenge } from '../lib/oauth-utils';
+import { initiateLogin } from '../lib/oauth-utils';
 import type { Message } from '../types';
 import { checkRateLimit, incrementUsage } from '../lib/rate-limit';
 
@@ -143,43 +143,8 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ isLoggedIn, onOpenLibrary }) =>
         fetchActivity();
     }, [oauthToken]);
 
-    const handleConnect = async () => {
-        try {
-            // Fetch configuration to determine environment (prelive vs prod)
-            const configRes = await fetch('/api/oauth/config');
-            const config = await configRes.json();
-
-            // Generate OAuth Parameters
-            const state = generateRandomString(16);
-            const nonce = generateRandomString(16);
-            const verifier = generateRandomString(64);
-            const challenge = await generateCodeChallenge(verifier);
-
-            // Store for validation on callback
-            localStorage.setItem('oauth_state', state);
-            localStorage.setItem('oauth_nonce', nonce);
-            localStorage.setItem('oauth_verifier', verifier);
-
-            // Construct Authorization URL
-            const scope = 'openid profile bookmark note reading_session offline_access';
-            const authUrl = `${config.oauthBase}/oauth2/auth?` +
-                new URLSearchParams({
-                    client_id: config.clientId,
-                    redirect_uri: config.redirectUri,
-                    response_type: 'code',
-                    scope,
-                    state,
-                    nonce,
-                    code_challenge: challenge,
-                    code_challenge_method: 'S256',
-                    prompt: 'select_account'
-                }).toString();
-
-            window.location.href = authUrl;
-        } catch (e) {
-            console.error('[OAuth] Failed to initiate login:', e);
-            alert('Failed to connect to Quran.com. Please try again.');
-        }
+    const handleConnect = () => {
+        initiateLogin('chat');
     };
 
     const handleDisconnect = () => {
