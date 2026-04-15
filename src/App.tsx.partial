@@ -1,0 +1,68 @@
+/**
+ * Process OAuth Callback
+ * Now supports URL-in-hash format: #oauth-callback?code=...&state=...
+ */
+const processOAuth = async () => {
+    const hash = window.location.hash;
+    if (!hash.startsWith('#oauth-callback')) return;
+
+    // Extract parameters from the hash (callback bridge uses ? as separator)
+    const searchPart = hash.includes('?') ? hash.split('?')[1] : (hash.includes('&') ? hash.substring(hash.indexOf('&') + 1) : '');
+    const urlParams = new URLSearchParams(searchPart);
+    
+    const code = urlParams.get('code');
+    const rawState = urlParams.get('state') || '';
+    const oauthError = urlParams.get('error');
+    const returnTo = urlParams.get('return') || 'landing';
+
+    if (oauthError) {
+        console.error('[OAuth] Login failed:', decodeURIComponent(oauthError));
+        const cleanHash = returnTo === 'landing' ? '' : '#' + returnTo;
+        window.history.replaceState(null, '', window.location.pathname + cleanHash);
+        setActiveTabByReturnTo(returnTo);
+        return;
+    }
+
+    if (code) {
+        const [state, returnToOverride] = rawState.split(':');
+        const finalReturnTo = returnToOverride || returnTo;
+
+        try {
+            const response = await fetch('/api/oauth/exchange', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code, state: rawState })
+            });
+
+            const tokens = await response.json();
+            if (!response.ok) throw new Error(tokens.error || 'Exchange failed');
+
+            // Success: Store tokens
+            localStorage.setItem('quran_access_token', tokens.access_token);
+            if (tokens.refresh_token) localStorage.setItem('quran_refresh_token', tokens.refresh_token);
+            if (tokens.id_token)      localStorage.setItem('quran_id_token', tokens.id_token);
+            if (tokens.api_base)      localStorage.setItem('quran_api_base', tokens.api_base);
+            if (tokens.client_id)     localStorage.setItem('quran_client_id', tokens.client_id);
+            
+            setIsLoggedIn(true);
+
+            // Cleanup URL and navigate
+            const cleanHash = finalReturnTo === 'landing' ? '' : '#' + finalReturnTo;
+            window.history.replaceState(null, '', window.location.pathname + cleanHash);
+            setActiveTabByReturnTo(finalReturnTo);
+
+        } catch (e: any) {
+            console.error('[OAuth] Exchange failed:', e.message);
+            const cleanHash = finalReturnTo === 'landing' ? '' : '#' + finalReturnTo;
+            window.history.replaceState(null, '', window.location.pathname + cleanHash);
+            setActiveTabByReturnTo(finalReturnTo);
+        }
+    }
+};
+
+const setActiveTabByReturnTo = (returnTo: string) => {
+    const tabId = returnTo.split('?')[0];
+    if (tabId === 'chat') setActiveTab('chat');
+    else if (tabId === 'library') setActiveTab('library');
+    else setActiveTab('landing');
+};

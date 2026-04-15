@@ -87,83 +87,66 @@ function App() {
   }, [theme]);
 
   // ── ONE-SHOT OAuth Callback Processor ───────────────────────────────────────
-  // Runs once on mount or hashchange. If the URL hash is '#oauth-callback', 
-  // extract tokens, save them, then navigate to the intended tab.
   useEffect(() => {
-    const processOAuth = () => {
+    const setActiveTabByReturnTo = (returnTo: string) => {
+      const tabId = returnTo.split('?')[0];
+      if (tabId === 'chat') setActiveTab('chat');
+      else if (tabId === 'library') setActiveTab('library');
+      else setActiveTab('landing');
+    };
+
+    const processOAuth = async () => {
       const hash = window.location.hash;
       if (!hash.startsWith('#oauth-callback')) return;
 
-      const query = hash.split('?')[1] || '';
-      const params = new URLSearchParams(query);
-
-      const oauthError = params.get('error');
-      const returnTo   = params.get('return') || 'landing';
+      const searchPart = hash.includes('?') ? hash.split('?')[1] : (hash.includes('&') ? hash.substring(hash.indexOf('&') + 1) : '');
+      const urlParams = new URLSearchParams(searchPart);
+      
+      const code = urlParams.get('code');
+      const rawState = urlParams.get('state') || '';
+      const oauthError = urlParams.get('error');
+      const returnTo = urlParams.get('return') || 'landing';
 
       if (oauthError) {
         console.error('[OAuth] Login failed:', decodeURIComponent(oauthError));
-        // Silently navigate back to where the user was
         const cleanHash = returnTo === 'landing' ? '' : '#' + returnTo;
         window.history.replaceState(null, '', window.location.pathname + cleanHash);
-        const tabId = returnTo.split('?')[0];
-        if (tabId === 'chat') setActiveTab('chat');
-        else if (tabId === 'library') setActiveTab('library');
-        else setActiveTab('landing');
+        setActiveTabByReturnTo(returnTo);
         return;
       }
 
-      const code = params.get('code');
       if (code) {
-        // Handle the recommended PKCE exchange flow
-        const rawState = params.get('state') || '';
         const [state, returnToOverride] = rawState.split(':');
         const finalReturnTo = returnToOverride || returnTo;
 
-        if (!validateState(state)) {
-          console.error('[OAuth] State mismatch! Possible CSRF attack.');
-          window.location.hash = returnTo;
-          return;
+        try {
+          const response = await fetch('/api/oauth/exchange', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code, state: rawState })
+          });
+
+          const tokens = await response.json();
+          if (!response.ok) throw new Error(tokens.error || 'Exchange failed');
+
+          localStorage.setItem('quran_access_token', tokens.access_token);
+          if (tokens.refresh_token) localStorage.setItem('quran_refresh_token', tokens.refresh_token);
+          if (tokens.id_token)      localStorage.setItem('quran_id_token', tokens.id_token);
+          if (tokens.api_base)      localStorage.setItem('quran_api_base', tokens.api_base);
+          if (tokens.client_id)     localStorage.setItem('quran_client_id', tokens.client_id);
+          
+          setIsLoggedIn(true);
+
+          const cleanHash = finalReturnTo === 'landing' ? '' : '#' + finalReturnTo;
+          window.history.replaceState(null, '', window.location.pathname + cleanHash);
+          setActiveTabByReturnTo(finalReturnTo);
+
+        } catch (e: any) {
+          console.error('[OAuth] Exchange failed:', e.message);
+          const cleanHash = finalReturnTo === 'landing' ? '' : '#' + finalReturnTo;
+          window.history.replaceState(null, '', window.location.pathname + cleanHash);
+          setActiveTabByReturnTo(finalReturnTo);
         }
-
-        const handleExchange = async () => {
-          try {
-            const response = await fetch('/api/oauth/exchange', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ code, state: rawState })
-            });
-
-            const tokens = await response.json();
-            if (!response.ok) throw new Error(tokens.error || 'Exchange failed');
-
-            localStorage.setItem('quran_access_token', tokens.access_token);
-            if (tokens.refresh_token) localStorage.setItem('quran_refresh_token', tokens.refresh_token);
-            if (tokens.id_token)      localStorage.setItem('quran_id_token', tokens.id_token);
-            if (tokens.api_base)      localStorage.setItem('quran_api_base', tokens.api_base);
-            if (tokens.client_id)     localStorage.setItem('quran_client_id', tokens.client_id);
-            setIsLoggedIn(true);
-
-            // Cleanup
-            localStorage.removeItem('oauth_state');
-            localStorage.removeItem('oauth_nonce');
-
-            // Navigate and clean URL
-            const cleanHash = finalReturnTo === 'landing' ? '' : '#' + finalReturnTo;
-            window.history.replaceState(null, '', window.location.pathname + cleanHash);
-            const tabId = finalReturnTo.split('?')[0];
-            if (tabId === 'chat') setActiveTab('chat');
-            else if (tabId === 'library') setActiveTab('library');
-            else setActiveTab('landing');
-
-          } catch (e: any) {
-            console.error('[OAuth] Token exchange failed:', e.message);
-            alert('Login failed: ' + e.message);
-            window.location.hash = returnTo;
-          }
-        };
-
-        handleExchange();
-        return;
       }
 
       // Fallback for legacy simple flow or direct token injection

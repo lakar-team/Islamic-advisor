@@ -86,25 +86,32 @@ export class QfOAuthService {
     // Use client_secret_basic for confidential clients
     const credentials = btoa(`${this.config.clientId}:${this.config.clientSecret}`);
     
+    const tokenParams = {
+      grant_type: 'authorization_code',
+      code: params.code,
+      redirect_uri: flowData.redirectUri,
+      code_verifier: flowData.codeVerifier,
+      client_id: this.config.clientId, // Added explicitly for better compatibility
+    };
+
     const response = await fetch(`${this.config.authBaseUrl}/oauth2/token`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
         'Authorization': `Basic ${credentials}`
       },
-      body: new URLSearchParams({
-        grant_type: 'authorization_code',
-        code: params.code,
-        redirect_uri: flowData.redirectUri,
-        code_verifier: flowData.codeVerifier,
-      }).toString(),
+      body: new URLSearchParams(tokenParams).toString(),
     });
 
-    const tokens = await response.json();
+    const tokens: any = await response.json();
 
     if (!response.ok) {
-      console.error('[QF-OAuth] Exchange failed:', tokens);
-      throw new Error('Failed to exchange authorization code for tokens');
+      console.error('[QF-OAuth] Token exchange failed Details:', {
+        status: response.status,
+        response: tokens,
+        sentParams: { ...tokenParams, code_verifier: '***' }
+      });
+      throw new Error(tokens.error_description || tokens.error || 'Failed to exchange authorization code');
     }
 
     return {
