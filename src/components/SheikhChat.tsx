@@ -98,28 +98,9 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ isLoggedIn, onOpenLibrary }) =>
         setOauthToken(token);
 
         if (token) {
-            const idToken = localStorage.getItem('quran_id_token');
-            const storedName = localStorage.getItem('quran_user_name');
-            
-            if (storedName) {
-                setUserName(storedName);
-            } else if (idToken) {
-                try {
-                    const base64Url = idToken.split('.')[1];
-                    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-                    // Add padding for atob if needed
-                    const paddedBase64 = base64.padEnd(base64.length + (4 - base64.length % 4) % 4, '=');
-                    const payload = JSON.parse(atob(paddedBase64));
-                    const name = payload.name || payload.given_name || payload.preferred_username || payload.nickname || payload.email || null;
-                    if (name) {
-                        setUserName(name);
-                        localStorage.setItem('quran_user_name', name); // Cache it
-                    }
-                } catch (e) { 
-                    console.warn('[SheikhChat] Failed to decode user name from token', e);
-                }
-            }
+            setOauthToken(token);
         } else {
+            setOauthToken(null);
             setUserName(null);
         }
     }, [isLoggedIn]);
@@ -133,9 +114,10 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ isLoggedIn, onOpenLibrary }) =>
             try {
                 // Parallel fetch all user activity using the Step 4 API Client helper
                 // This ensures automatic header injection and 401 refresh handling
-                const [bookRes, sessionRes] = await Promise.all([
+                const [bookRes, sessionRes, profileRes] = await Promise.all([
                     qfApiClient.fetch('bookmarks?mushafId=1&first=20'),
-                    qfApiClient.fetch('reading-sessions?first=20')
+                    qfApiClient.fetch('reading-sessions?first=20'),
+                    qfApiClient.fetch('users/profile')
                 ]);
 
                 if (bookRes.ok) {
@@ -145,6 +127,12 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ isLoggedIn, onOpenLibrary }) =>
                 if (sessionRes.ok) {
                     const data = await sessionRes.json();
                     setReadingSessions(data.reading_sessions || data.data || []);
+                }
+                if (profileRes.ok) {
+                    const data = await profileRes.json();
+                    const profile = data.data || data;
+                    const name = profile.full_name || profile.name || profile.first_name || profile.username || profile.email;
+                    if (name) setUserName(name);
                 }
             } catch (e) {
                 console.error('Failed to fetch user activity', e);
