@@ -3,6 +3,10 @@
  * Goal: Make OAuth2 client configuration and environment selection explicit and hard to misuse.
  */
 
+/**
+ * Step 1: OAuth Client Config + Env Selection
+ * Pattern: Backend-safe Confidential Client
+ */
 export interface QfOAuthConfig {
   env: 'prelive' | 'production';
   clientId: string;

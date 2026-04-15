@@ -106,12 +106,11 @@ export class QfOAuthService {
     const tokens: any = await response.json();
 
     if (!response.ok) {
-      console.error('[QF-OAuth] Token exchange failed Details:', {
+      console.error('[QF-OAuth] Token exchange failed', {
         status: response.status,
-        response: tokens,
-        sentParams: { ...tokenParams, code_verifier: '***' }
+        error: tokens.error
       });
-      throw new Error(tokens.error_description || tokens.error || 'Failed to exchange authorization code');
+      throw new Error('Failed to exchange authorization code for tokens');
     }
 
     return {
@@ -168,7 +167,7 @@ export class QfOAuthService {
       const tokens: any = await response.json();
 
       if (!response.ok) {
-        console.error('[QF-OAuth] Refresh failed:', tokens);
+        console.error('[QF-OAuth] Refresh failed', { status: response.status });
         throw new Error('Failed to refresh access token');
       }
 

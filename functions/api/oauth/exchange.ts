@@ -17,9 +17,19 @@ export const onRequestPost = async (context: any) => {
         const oauthService = new QfOAuthService(env);
         const result = await oauthService.exchangeAuthorizationCode({ code, state });
 
-        return new Response(JSON.stringify(result), {
-            headers: { 'Content-Type': 'application/json' }
-        });
+        // Step 5: Securely store refresh_token in httpOnly cookie
+        const { refresh_token, ...safeResult } = result;
+        
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json'
+        };
+
+        if (refresh_token) {
+            // Set-Cookie: qf_refresh_token=...; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=...
+            headers['Set-Cookie'] = `qf_refresh_token=${refresh_token}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=${60 * 60 * 24 * 30}`;
+        }
+
+        return new Response(JSON.stringify(safeResult), { headers });
 
     } catch (e: any) {
         return new Response(JSON.stringify({ error: e.message || 'Failed to exchange authorization code for tokens' }), { 

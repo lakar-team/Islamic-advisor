@@ -53,26 +53,23 @@ export class QfApiClient {
 
     // Step 4: Retry logic for 401 (exactly one refresh + one retry)
     if (response.status === 401) {
-      const refreshToken = localStorage.getItem('quran_refresh_token');
       const idToken = localStorage.getItem('quran_id_token');
       // Use sub from id_token as sessionId for stampede prevention
       const sessionId = idToken ? this.decodeJwt(idToken)?.sub : 'default';
 
-      if (refreshToken) {
-        try {
-          console.log('[QF-Client] Token expired, attempting refresh...');
-          const newTokens = await this.refresh(sessionId, refreshToken);
-          
-          // Retry once with new token
-          const retryHeaders = {
-            ...headers,
-            'x-auth-token': newTokens.access_token,
-          };
-          response = await fetch(url, { ...options, headers: retryHeaders });
-        } catch (e) {
-          console.error('[QF-Client] Refresh failed:', e);
-          // Still return the original 401 or the new failure
-        }
+      try {
+        console.log('[QF-Client] Token expired, attempting refresh...');
+        const newTokens = await this.refresh(sessionId);
+        
+        // Retry once with new token
+        const retryHeaders = {
+          ...headers,
+          'x-auth-token': newTokens.access_token,
+        };
+        response = await fetch(url, { ...options, headers: retryHeaders });
+      } catch (e) {
+        console.error('[QF-Client] Refresh failed:', e);
+        // Still return the original 401 or the new failure
       }
     }
 
@@ -80,9 +77,9 @@ export class QfApiClient {
   }
 
   /**
-   * Step 5: Refresh token handling with stampede prevention (client-side lock)
+   * Step 5: Refresh token handling (Backend uses httpOnly cookie)
    */
-  private async refresh(sessionId: string, refreshToken: string): Promise<any> {
+  private async refresh(sessionId: string): Promise<any> {
     if (this.isRefreshing) return this.refreshPromise;
 
     this.isRefreshing = true;
@@ -91,15 +88,15 @@ export class QfApiClient {
         const res = await fetch('/api/oauth/refresh', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sessionId, refreshToken })
+          body: JSON.stringify({ sessionId })
         });
 
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Failed to refresh access token');
 
-        // Update local storage
+        // Update local storage for access token
         localStorage.setItem('quran_access_token', data.access_token);
-        if (data.refresh_token) localStorage.setItem('quran_refresh_token', data.refresh_token);
+        // Result no longer includes refresh_token for frontend
         
         return data;
       } finally {

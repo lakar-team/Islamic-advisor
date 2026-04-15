@@ -127,10 +127,9 @@ function App() {
           });
 
           const tokens = await response.json();
-          if (!response.ok) throw new Error(tokens.error || 'Exchange failed');
+          if (!response.ok) throw new Error(tokens.error || 'Failed to exchange authorization code for tokens');
 
           localStorage.setItem('quran_access_token', tokens.access_token);
-          if (tokens.refresh_token) localStorage.setItem('quran_refresh_token', tokens.refresh_token);
           if (tokens.id_token)      localStorage.setItem('quran_id_token', tokens.id_token);
           if (tokens.api_base)      localStorage.setItem('quran_api_base', tokens.api_base);
           if (tokens.client_id)     localStorage.setItem('quran_client_id', tokens.client_id);
@@ -149,18 +148,17 @@ function App() {
         }
       }
 
-      // Fallback for legacy simple flow or direct token injection
-      const accessToken  = params.get('access_token');
-      const refreshToken = params.get('refresh_token');
-      const idToken      = params.get('id_token');
-      const apiBase      = params.get('api_base');
+      // Step 6: Cleanup legacy simple flow or direct token injection
+      const accessToken  = urlParams.get('access_token');
+      const idToken      = urlParams.get('id_token');
+      const apiBase      = urlParams.get('api_base');
 
       if (accessToken) {
         localStorage.setItem('quran_access_token', accessToken);
-        if (refreshToken) localStorage.setItem('quran_refresh_token', refreshToken);
-        if (idToken)      localStorage.setItem('quran_id_token', idToken);
-        if (apiBase)      localStorage.setItem('quran_api_base', decodeURIComponent(apiBase));
-        if (params.get('client_id')) localStorage.setItem('quran_client_id', params.get('client_id')!);
+        // refresh_token is no longer accepted via URL for security (Step 5)
+        if (idToken) localStorage.setItem('quran_id_token', idToken);
+        if (apiBase) localStorage.setItem('quran_api_base', decodeURIComponent(apiBase));
+        if (urlParams.get('client_id')) localStorage.setItem('quran_client_id', urlParams.get('client_id')!);
         setIsLoggedIn(true);
       }
 
