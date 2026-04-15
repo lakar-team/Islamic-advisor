@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Scroll, ShieldAlert, Sparkles, MessageSquare, ExternalLink, BookOpen, Hash, Trash2, Plus, Menu, X as CloseIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { generateRandomString, generateCodeChallenge } from '../lib/oauth-utils';
 import type { Message } from '../types';
 import { checkRateLimit, incrementUsage } from '../lib/rate-limit';
 
@@ -54,6 +55,7 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ isLoggedIn, onOpenLibrary }) =>
     // OAuth & Activity States
     const [oauthToken, setOauthToken] = useState<string | null>(() => localStorage.getItem('quran_access_token'));
     const [quranApiBase, setQuranApiBase] = useState<string>(() => localStorage.getItem('quran_api_base') || 'https://api.quran.com');
+    const [quranClientId, setQuranClientId] = useState<string | null>(() => localStorage.getItem('quran_client_id'));
     const [studyHistory, setStudyHistory] = useState<any[]>([]);
     const [userNotes, setUserNotes] = useState<any[]>([]);
     const [readingSessions, setReadingSessions] = useState<any[]>([]);
@@ -95,8 +97,10 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ isLoggedIn, onOpenLibrary }) =>
     useEffect(() => {
         const token = localStorage.getItem('quran_access_token');
         const apiBase = localStorage.getItem('quran_api_base') || 'https://api.quran.com';
+        const clientId = localStorage.getItem('quran_client_id');
         setOauthToken(token);
         setQuranApiBase(apiBase);
+        setQuranClientId(clientId);
     }, [isLoggedIn]);
 
     // Fetch User Activity (Bookmarks/History/Notes) from Quran.com User API
@@ -108,10 +112,13 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ isLoggedIn, onOpenLibrary }) =>
             try {
                 // Parallel fetch all user activity to provide rich AI context
                 // Demonstrates full utilization of Quran Foundation User APIs
+                const headers: any = { 'x-auth-token': oauthToken };
+                if (quranClientId) headers['x-client-id'] = quranClientId;
+
                 const [bookRes, noteRes, sessionRes] = await Promise.all([
-                    fetch(`${quranApiBase}/api/v4/user/bookmarks`, { headers: { 'Authorization': `Bearer ${oauthToken}` } }),
-                    fetch(`${quranApiBase}/api/v4/user/notes`, { headers: { 'Authorization': `Bearer ${oauthToken}` } }),
-                    fetch(`${quranApiBase}/api/v4/user/reading_sessions`, { headers: { 'Authorization': `Bearer ${oauthToken}` } })
+                    fetch(`${quranApiBase}/api/v4/user/bookmarks`, { headers }),
+                    fetch(`${quranApiBase}/api/v4/user/notes`, { headers }),
+                    fetch(`${quranApiBase}/api/v4/user/reading_sessions`, { headers })
                 ]);
 
                 if (bookRes.ok) {
@@ -136,8 +143,43 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ isLoggedIn, onOpenLibrary }) =>
         fetchActivity();
     }, [oauthToken]);
 
-    const handleConnect = () => {
-        window.location.href = '/api/oauth/login';
+    const handleConnect = async () => {
+        try {
+            // Fetch configuration to determine environment (prelive vs prod)
+            const configRes = await fetch('/api/oauth/config');
+            const config = await configRes.json();
+
+            // Generate OAuth Parameters
+            const state = generateRandomString(16);
+            const nonce = generateRandomString(16);
+            const verifier = generateRandomString(64);
+            const challenge = await generateCodeChallenge(verifier);
+
+            // Store for validation on callback
+            localStorage.setItem('oauth_state', state);
+            localStorage.setItem('oauth_nonce', nonce);
+            localStorage.setItem('oauth_verifier', verifier);
+
+            // Construct Authorization URL
+            const scope = 'openid profile bookmark note reading_session offline_access';
+            const authUrl = `${config.oauthBase}/oauth2/auth?` +
+                new URLSearchParams({
+                    client_id: config.clientId,
+                    redirect_uri: config.redirectUri,
+                    response_type: 'code',
+                    scope,
+                    state,
+                    nonce,
+                    code_challenge: challenge,
+                    code_challenge_method: 'S256',
+                    prompt: 'select_account'
+                }).toString();
+
+            window.location.href = authUrl;
+        } catch (e) {
+            console.error('[OAuth] Failed to initiate login:', e);
+            alert('Failed to connect to Quran.com. Please try again.');
+        }
     };
 
     const handleDisconnect = () => {
@@ -146,6 +188,7 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ isLoggedIn, onOpenLibrary }) =>
         localStorage.removeItem('quran_access_token');
         localStorage.removeItem('quran_refresh_token');
         localStorage.removeItem('quran_api_base');
+        localStorage.removeItem('quran_client_id');
     };
 
     const createNewSession = (initialQuery?: string) => {

@@ -8,6 +8,7 @@ import RollingReviews from './components/RollingReviews';
 import LandingPage from './components/LandingPage';
 import { MaterialSymbol } from './components/MaterialSymbol';
 import { motion, AnimatePresence } from 'framer-motion';
+import { validateState, validateNonce, decodeJwt } from './lib/oauth-utils';
 
 type ActiveTab = 'landing' | 'chat' | 'library' | 'support';
 
@@ -111,6 +112,67 @@ function App() {
         return;
       }
 
+      const code = params.get('code');
+      if (code) {
+        // Handle the recommended PKCE exchange flow
+        const state = params.get('state');
+        if (!validateState(state)) {
+          console.error('[OAuth] State mismatch! Possible CSRF attack.');
+          window.location.hash = returnTo;
+          return;
+        }
+
+        const handleExchange = async () => {
+          const verifier = localStorage.getItem('oauth_verifier');
+          const nonce = localStorage.getItem('oauth_nonce');
+          const redirectUri = 'https://islamic-advisor.pages.dev/api/oauth/callback';
+
+          try {
+            const response = await fetch('/api/oauth/exchange', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ code, code_verifier: verifier, redirect_uri: redirectUri })
+            });
+
+            const tokens = await response.json();
+            if (!response.ok) throw new Error(tokens.error || 'Exchange failed');
+
+            if (tokens.id_token && !validateNonce(tokens.id_token, nonce)) {
+              throw new Error('Nonce validation failed');
+            }
+
+            localStorage.setItem('quran_access_token', tokens.access_token);
+            if (tokens.refresh_token) localStorage.setItem('quran_refresh_token', tokens.refresh_token);
+            if (tokens.id_token)      localStorage.setItem('quran_id_token', tokens.id_token);
+            if (tokens.api_base)      localStorage.setItem('quran_api_base', tokens.api_base);
+            if (tokens.client_id)     localStorage.setItem('quran_client_id', tokens.client_id);
+            setIsLoggedIn(true);
+
+            // Cleanup
+            localStorage.removeItem('oauth_verifier');
+            localStorage.removeItem('oauth_state');
+            localStorage.removeItem('oauth_nonce');
+
+            // Navigate and clean URL
+            const cleanHash = returnTo === 'landing' ? '' : '#' + returnTo;
+            window.history.replaceState(null, '', window.location.pathname + cleanHash);
+            const tabId = returnTo.split('?')[0];
+            if (tabId === 'chat') setActiveTab('chat');
+            else if (tabId === 'library') setActiveTab('library');
+            else setActiveTab('landing');
+
+          } catch (e: any) {
+            console.error('[OAuth] Token exchange failed:', e.message);
+            alert('Login failed: ' + e.message);
+            window.location.hash = returnTo;
+          }
+        };
+
+        handleExchange();
+        return;
+      }
+
+      // Fallback for legacy simple flow or direct token injection
       const accessToken  = params.get('access_token');
       const refreshToken = params.get('refresh_token');
       const idToken      = params.get('id_token');
@@ -121,6 +183,7 @@ function App() {
         if (refreshToken) localStorage.setItem('quran_refresh_token', refreshToken);
         if (idToken)      localStorage.setItem('quran_id_token', idToken);
         if (apiBase)      localStorage.setItem('quran_api_base', decodeURIComponent(apiBase));
+        if (params.get('client_id')) localStorage.setItem('quran_client_id', params.get('client_id')!);
         setIsLoggedIn(true);
       }
 
@@ -266,6 +329,7 @@ function App() {
                     localStorage.removeItem('quran_access_token');
                     localStorage.removeItem('quran_refresh_token');
                     localStorage.removeItem('quran_api_base');
+                    localStorage.removeItem('quran_client_id');
                     localStorage.removeItem('quran_id_token');
                     setIsLoggedIn(false);
                     
