@@ -58,6 +58,7 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ isLoggedIn, onOpenLibrary }) =>
     const [studyHistory, setStudyHistory] = useState<any[]>([]);
     const [readingSessions, setReadingSessions] = useState<any[]>([]);
     const [historyLoading, setHistoryLoading] = useState(false);
+    const [userName, setUserName] = useState<string | null>(null);
     
     const scrollRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -95,6 +96,20 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ isLoggedIn, onOpenLibrary }) =>
     useEffect(() => {
         const token = localStorage.getItem('quran_access_token');
         setOauthToken(token);
+
+        if (token) {
+            const idToken = localStorage.getItem('quran_id_token');
+            if (idToken) {
+                try {
+                    const base64Url = idToken.split('.')[1];
+                    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                    const payload = JSON.parse(atob(base64));
+                    setUserName(payload.name || payload.given_name || payload.preferred_username || null);
+                } catch { /* ignore */ }
+            }
+        } else {
+            setUserName(null);
+        }
     }, [isLoggedIn]);
 
     // Fetch User Activity (Bookmarks/History/Notes) from Quran.com User API
@@ -469,14 +484,6 @@ ${currentInput}`;
                             <div className="flex items-center gap-1.5">
                                 <span className="w-1.5 h-1.5 bg-emerald-600 rounded-full animate-pulse"></span>
                                 <span className="text-[10px] text-on-surface-variant dark:text-slate-500 font-bold uppercase tracking-widest">Verified Scholarly Context</span>
-                                {oauthToken && !historyLoading && (
-                                    <>
-                                        <span className="text-[10px] text-slate-300 dark:text-slate-600">·</span>
-                                        <span className="text-[10px] font-black uppercase tracking-widest text-amber-500 flex items-center gap-1">
-                                            <Sparkles className="w-2.5 h-2.5" /> Study Synced
-                                        </span>
-                                    </>
-                                )}
                             </div>
                         </div>
                     </div>
@@ -487,10 +494,10 @@ ${currentInput}`;
                                 <div className="flex flex-col items-end">
                                     <span className="text-[9px] font-black uppercase text-emerald-600 tracking-widest flex items-center gap-1.5">
                                         {historyLoading && <span className="w-2 h-2 border border-emerald-500 border-t-transparent rounded-full animate-spin" />}
-                                        Personal Library Connected
+                                        {userName || 'Personal Library Connected'}
                                     </span>
                                     <span className="text-[8px] text-slate-500 font-bold uppercase transition-all">
-                                        {historyLoading ? 'Loading study context…' : `${studyHistory.length} Bookmarks · ${readingSessions.length} History`}
+                                        {historyLoading ? 'Loading study context…' : `${studyHistory.length} Bookmarks · ${readingSessions.length} Reading Sessions`}
                                     </span>
                                 </div>
                             </div>
