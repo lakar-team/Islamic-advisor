@@ -502,13 +502,6 @@ ${currentInput}`;
                                         {historyLoading ? 'Loading study context…' : `${studyHistory.length} Bookmarks · ${readingSessions.length} History`}
                                     </span>
                                 </div>
-                                <button 
-                                    onClick={handleDisconnect}
-                                    className="p-1.5 hover:bg-red-500/10 text-slate-400 hover:text-red-500 rounded-lg transition-colors"
-                                    title="Disconnect"
-                                >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                </button>
                             </div>
                         ) : (
                             <button
