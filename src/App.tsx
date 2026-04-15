@@ -134,7 +134,7 @@ function App() {
             const response = await fetch('/api/oauth/exchange', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ code, code_verifier: verifier, redirect_uri: redirectUri })
+              body: JSON.stringify({ code, state: rawState })
             });
 
             const tokens = await response.json();

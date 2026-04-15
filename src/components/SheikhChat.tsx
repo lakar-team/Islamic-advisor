@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Send, Scroll, ShieldAlert, Sparkles, MessageSquare, ExternalLink, BookOpen, Hash, Trash2, Plus, Menu, X as CloseIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { initiateLogin } from '../lib/oauth-utils';
+import { qfApiClient } from '../lib/qf-api-client';
 import type { Message } from '../types';
 import { checkRateLimit, incrementUsage } from '../lib/rate-limit';
 
@@ -96,11 +97,9 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ isLoggedIn, onOpenLibrary }) =>
     // Sync Local Token State with Storage
     useEffect(() => {
         const token = localStorage.getItem('quran_access_token');
-        const apiBase = localStorage.getItem('quran_api_base') || 'https://api.quran.com';
-        const clientId = localStorage.getItem('quran_client_id');
         setOauthToken(token);
-        setQuranApiBase(apiBase);
-        setQuranClientId(clientId);
+        setQuranApiBase(localStorage.getItem('quran_api_base') || 'https://apis-prelive.quran.foundation');
+        setQuranClientId(localStorage.getItem('quran_client_id'));
     }, [isLoggedIn]);
 
     // Fetch User Activity (Bookmarks/History/Notes) from Quran.com User API
@@ -110,28 +109,25 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ isLoggedIn, onOpenLibrary }) =>
         const fetchActivity = async () => {
             setHistoryLoading(true);
             try {
-                // Parallel fetch all user activity to provide rich AI context
-                // Demonstrates full utilization of Quran Foundation User APIs
-                const headers: any = { 'x-auth-token': oauthToken };
-                if (quranClientId) headers['x-client-id'] = quranClientId;
-
+                // Parallel fetch all user activity using the Step 4 API Client helper
+                // This ensures automatic header injection and 401 refresh handling
                 const [bookRes, noteRes, sessionRes] = await Promise.all([
-                    fetch(`${quranApiBase}/api/v4/user/bookmarks`, { headers }),
-                    fetch(`${quranApiBase}/api/v4/user/notes`, { headers }),
-                    fetch(`${quranApiBase}/api/v4/user/reading_sessions`, { headers })
+                    qfApiClient.fetch('user/bookmarks'),
+                    qfApiClient.fetch('user/notes'),
+                    qfApiClient.fetch('user/reading_sessions')
                 ]);
 
                 if (bookRes.ok) {
                     const data = await bookRes.json();
-                    setStudyHistory(data.data || []);
+                    setStudyHistory(data.bookmarks || data.data || []);
                 }
                 if (noteRes.ok) {
                     const data = await noteRes.json();
-                    setUserNotes(data.data || []);
+                    setUserNotes(data.notes || data.data || []);
                 }
                 if (sessionRes.ok) {
                     const data = await sessionRes.json();
-                    setReadingSessions(data.data || []);
+                    setReadingSessions(data.reading_sessions || data.data || []);
                 }
             } catch (e) {
                 console.error('Failed to fetch user activity', e);
