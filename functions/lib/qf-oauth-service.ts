@@ -50,7 +50,7 @@ export class QfOAuthService {
       state: stateValue
     }), { expirationTtl: 600 });
 
-    const scope = params.scopes?.join(' ') || 'openid profile bookmark reading_session offline_access';
+    const scope = params.scopes?.join(' ') || 'openid user bookmark reading_session offline_access';
     
     const url = `${this.config.authBaseUrl}/oauth2/auth?` +
       new URLSearchParams({
