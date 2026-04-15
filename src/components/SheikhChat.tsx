@@ -96,16 +96,10 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ isLoggedIn, onOpenLibrary }) =>
     useEffect(() => {
         const token = localStorage.getItem('quran_access_token');
         setOauthToken(token);
-
-        if (token) {
-            setOauthToken(token);
-        } else {
-            setOauthToken(null);
-            setUserName(null);
-        }
+        if (!token) setUserName(null);
     }, [isLoggedIn]);
 
-    // Fetch User Activity (Bookmarks/History/Notes) from Quran.com User API
+    // Fetch User Activity (Bookmarks, Reading Sessions, Profile) from Quran.com User API
     useEffect(() => {
         if (!oauthToken) return;
 
@@ -120,22 +114,42 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ isLoggedIn, onOpenLibrary }) =>
                     qfApiClient.fetch('users/profile')
                 ]);
 
+                // --- Bookmarks ---
                 if (bookRes.ok) {
                     const data = await bookRes.json();
-                    setStudyHistory(data.bookmarks || data.data || []);
+                    console.log('[QF] Bookmarks response:', JSON.stringify(data).slice(0, 300));
+                    setStudyHistory(data.data || []);
+                } else {
+                    const errText = await bookRes.text();
+                    console.error(`[QF] Bookmarks failed (${bookRes.status}):`, errText);
                 }
+
+                // --- Reading Sessions ---
                 if (sessionRes.ok) {
                     const data = await sessionRes.json();
-                    setReadingSessions(data.reading_sessions || data.data || []);
+                    console.log('[QF] Reading Sessions response:', JSON.stringify(data).slice(0, 300));
+                    setReadingSessions(data.data || []);
+                } else {
+                    const errText = await sessionRes.text();
+                    console.error(`[QF] Reading Sessions failed (${sessionRes.status}):`, errText);
                 }
+
+                // --- User Profile ---
+                // API returns: { username, firstName, lastName, ... } (camelCase, no data wrapper)
                 if (profileRes.ok) {
-                    const data = await profileRes.json();
-                    const profile = data.data || data;
-                    const name = profile.full_name || profile.name || profile.first_name || profile.username || profile.email;
-                    if (name) setUserName(name);
+                    const profile = await profileRes.json();
+                    console.log('[QF] Profile response:', JSON.stringify(profile).slice(0, 500));
+                    // Build display name from camelCase fields per QF API spec
+                    const displayName = 
+                        (profile.firstName && profile.lastName) ? `${profile.firstName} ${profile.lastName}` :
+                        profile.firstName || profile.lastName || profile.username || profile.email || null;
+                    if (displayName) setUserName(displayName);
+                } else {
+                    const errText = await profileRes.text();
+                    console.error(`[QF] Profile failed (${profileRes.status}):`, errText);
                 }
             } catch (e) {
-                console.error('Failed to fetch user activity', e);
+                console.error('[QF] Failed to fetch user activity:', e);
             } finally {
                 setHistoryLoading(false);
             }
