@@ -8,7 +8,7 @@ import RollingReviews from './components/RollingReviews';
 import LandingPage from './components/LandingPage';
 import { MaterialSymbol } from './components/MaterialSymbol';
 import { motion, AnimatePresence } from 'framer-motion';
-import { validateState, initiateLogin } from './lib/oauth-utils';
+import { initiateLogin } from './lib/oauth-utils';
 
 type ActiveTab = 'landing' | 'chat' | 'library' | 'support';
 
@@ -116,7 +116,7 @@ function App() {
       }
 
       if (code) {
-        const [state, returnToOverride] = rawState.split(':');
+        const [, returnToOverride] = rawState.split(':');
         const finalReturnTo = returnToOverride || returnTo;
 
         try {
