@@ -108,9 +108,9 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ isLoggedIn, onOpenLibrary }) =>
                 // Parallel fetch all user activity using the Step 4 API Client helper
                 // This ensures automatic header injection and 401 refresh handling
                 const [bookRes, noteRes, sessionRes] = await Promise.all([
-                    qfApiClient.fetch('bookmarks'),
-                    qfApiClient.fetch('notes'),
-                    qfApiClient.fetch('reading-sessions')
+                    qfApiClient.fetch('bookmarks?mushafId=1'),
+                    qfApiClient.fetch('notes?mushafId=1'),
+                    qfApiClient.fetch('reading-sessions?first=20')
                 ]);
 
                 if (bookRes.ok) {
