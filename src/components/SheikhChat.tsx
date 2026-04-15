@@ -55,11 +55,8 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ isLoggedIn, onOpenLibrary }) =>
 
     // OAuth & Activity States
     const [oauthToken, setOauthToken] = useState<string | null>(() => localStorage.getItem('quran_access_token'));
-    const [quranApiBase, setQuranApiBase] = useState<string>(() => localStorage.getItem('quran_api_base') || 'https://api.quran.com');
-    const [quranClientId, setQuranClientId] = useState<string | null>(() => localStorage.getItem('quran_client_id'));
     const [studyHistory, setStudyHistory] = useState<any[]>([]);
     const [userNotes, setUserNotes] = useState<any[]>([]);
-    const [readingSessions, setReadingSessions] = useState<any[]>([]);
     const [historyLoading, setHistoryLoading] = useState(false);
     
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -98,8 +95,6 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ isLoggedIn, onOpenLibrary }) =>
     useEffect(() => {
         const token = localStorage.getItem('quran_access_token');
         setOauthToken(token);
-        setQuranApiBase(localStorage.getItem('quran_api_base') || 'https://apis-prelive.quran.foundation');
-        setQuranClientId(localStorage.getItem('quran_client_id'));
     }, [isLoggedIn]);
 
     // Fetch User Activity (Bookmarks/History/Notes) from Quran.com User API

@@ -126,10 +126,6 @@ function App() {
         }
 
         const handleExchange = async () => {
-          const verifier = localStorage.getItem('oauth_verifier');
-          const nonce = localStorage.getItem('oauth_nonce');
-          const redirectUri = 'https://islamic-advisor.pages.dev/api/oauth/callback';
-
           try {
             const response = await fetch('/api/oauth/exchange', {
               method: 'POST',
@@ -140,10 +136,6 @@ function App() {
             const tokens = await response.json();
             if (!response.ok) throw new Error(tokens.error || 'Exchange failed');
 
-            if (tokens.id_token && !validateNonce(tokens.id_token, nonce)) {
-              throw new Error('Nonce validation failed');
-            }
-
             localStorage.setItem('quran_access_token', tokens.access_token);
             if (tokens.refresh_token) localStorage.setItem('quran_refresh_token', tokens.refresh_token);
             if (tokens.id_token)      localStorage.setItem('quran_id_token', tokens.id_token);
@@ -152,7 +144,6 @@ function App() {
             setIsLoggedIn(true);
 
             // Cleanup
-            localStorage.removeItem('oauth_verifier');
             localStorage.removeItem('oauth_state');
             localStorage.removeItem('oauth_nonce');
 
