@@ -57,6 +57,7 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ isLoggedIn, onOpenLibrary }) =>
     const [oauthToken, setOauthToken] = useState<string | null>(() => localStorage.getItem('quran_access_token'));
     const [studyHistory, setStudyHistory] = useState<any[]>([]);
     const [userNotes, setUserNotes] = useState<any[]>([]);
+    const [readingSessions, setReadingSessions] = useState<any[]>([]);
     const [historyLoading, setHistoryLoading] = useState(false);
     
     const scrollRef = useRef<HTMLDivElement>(null);

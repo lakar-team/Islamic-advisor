@@ -8,7 +8,7 @@ import RollingReviews from './components/RollingReviews';
 import LandingPage from './components/LandingPage';
 import { MaterialSymbol } from './components/MaterialSymbol';
 import { motion, AnimatePresence } from 'framer-motion';
-import { validateState, validateNonce, initiateLogin } from './lib/oauth-utils';
+import { validateState, initiateLogin } from './lib/oauth-utils';
 
 type ActiveTab = 'landing' | 'chat' | 'library' | 'support';
 
