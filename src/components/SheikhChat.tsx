@@ -133,15 +133,6 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ isLoggedIn, onOpenLibrary }) =>
         initiateLogin('chat');
     };
 
-    const handleDisconnect = () => {
-        setOauthToken(null);
-        setStudyHistory([]);
-        localStorage.removeItem('quran_access_token');
-        localStorage.removeItem('quran_refresh_token');
-        localStorage.removeItem('quran_api_base');
-        localStorage.removeItem('quran_client_id');
-    };
-
     const createNewSession = (initialQuery?: string) => {
         const newSession: ChatSession = {
             id: Date.now().toString(),
