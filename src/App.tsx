@@ -306,6 +306,7 @@ function App() {
                     localStorage.removeItem('quran_api_base');
                     localStorage.removeItem('quran_client_id');
                     localStorage.removeItem('quran_id_token');
+                    localStorage.removeItem('quran_user_name');
                     setIsLoggedIn(false);
                     
                     if (idToken) {

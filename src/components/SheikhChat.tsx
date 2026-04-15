@@ -99,13 +99,25 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ isLoggedIn, onOpenLibrary }) =>
 
         if (token) {
             const idToken = localStorage.getItem('quran_id_token');
-            if (idToken) {
+            const storedName = localStorage.getItem('quran_user_name');
+            
+            if (storedName) {
+                setUserName(storedName);
+            } else if (idToken) {
                 try {
                     const base64Url = idToken.split('.')[1];
                     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-                    const payload = JSON.parse(atob(base64));
-                    setUserName(payload.name || payload.given_name || payload.preferred_username || null);
-                } catch { /* ignore */ }
+                    // Add padding for atob if needed
+                    const paddedBase64 = base64.padEnd(base64.length + (4 - base64.length % 4) % 4, '=');
+                    const payload = JSON.parse(atob(paddedBase64));
+                    const name = payload.name || payload.given_name || payload.preferred_username || payload.nickname || payload.email || null;
+                    if (name) {
+                        setUserName(name);
+                        localStorage.setItem('quran_user_name', name); // Cache it
+                    }
+                } catch (e) { 
+                    console.warn('[SheikhChat] Failed to decode user name from token', e);
+                }
             }
         } else {
             setUserName(null);
