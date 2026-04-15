@@ -61,8 +61,7 @@ export class QfOAuthService {
         state,
         nonce,
         code_challenge: codeChallenge,
-        code_challenge_method: 'S256',
-        prompt: 'select_account'
+        code_challenge_method: 'S256'
       }).toString();
 
     return { url, state, nonce };
@@ -90,25 +89,26 @@ export class QfOAuthService {
       grant_type: 'authorization_code',
       code: params.code,
       redirect_uri: flowData.redirectUri,
-      code_verifier: flowData.codeVerifier,
-      client_id: this.config.clientId, // Added explicitly for better compatibility
+      code_verifier: flowData.codeVerifier
     };
 
     const response = await fetch(`${this.config.authBaseUrl}/oauth2/token`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
-        'Authorization': `Basic ${credentials}`
+        'Authorization': `Basic ${credentials}`,
+        'Accept': 'application/json'
       },
       body: new URLSearchParams(tokenParams).toString(),
     });
-
+    
     const tokens: any = await response.json();
 
     if (!response.ok) {
       console.error('[QF-OAuth] Token exchange failed', {
         status: response.status,
-        error: tokens.error
+        error: tokens.error,
+        error_description: tokens.error_description
       });
       throw new Error('Failed to exchange authorization code for tokens');
     }
@@ -156,11 +156,12 @@ export class QfOAuthService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
-          'Authorization': `Basic ${credentials}`
+          'Authorization': `Basic ${credentials}`,
+          'Accept': 'application/json'
         },
         body: new URLSearchParams({
           grant_type: 'refresh_token',
-          refresh_token: refreshToken,
+          refresh_token: refreshToken
         }).toString(),
       });
 
@@ -204,9 +205,11 @@ export class QfOAuthService {
     const encoder = new TextEncoder();
     const data = encoder.encode(verifier);
     const digest = await crypto.subtle.digest('SHA-256', data);
+    
+    // Robust Base64URL encoding for Cloudflare Workers
     return btoa(String.fromCharCode(...new Uint8Array(digest)))
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
+      .replaceAll('+', '-')
+      .replaceAll('/', '_')
       .replace(/=+$/, '');
   }
 }
