@@ -56,7 +56,6 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ isLoggedIn, onOpenLibrary }) =>
     // OAuth & Activity States
     const [oauthToken, setOauthToken] = useState<string | null>(() => localStorage.getItem('quran_access_token'));
     const [studyHistory, setStudyHistory] = useState<any[]>([]);
-    const [userNotes, setUserNotes] = useState<any[]>([]);
     const [readingSessions, setReadingSessions] = useState<any[]>([]);
     const [historyLoading, setHistoryLoading] = useState(false);
     
@@ -107,19 +106,14 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ isLoggedIn, onOpenLibrary }) =>
             try {
                 // Parallel fetch all user activity using the Step 4 API Client helper
                 // This ensures automatic header injection and 401 refresh handling
-                const [bookRes, noteRes, sessionRes] = await Promise.all([
+                const [bookRes, sessionRes] = await Promise.all([
                     qfApiClient.fetch('bookmarks?first=20'),
-                    qfApiClient.fetch('notes?first=20'),
                     qfApiClient.fetch('reading-sessions?first=20')
                 ]);
 
                 if (bookRes.ok) {
                     const data = await bookRes.json();
                     setStudyHistory(data.bookmarks || data.data || []);
-                }
-                if (noteRes.ok) {
-                    const data = await noteRes.json();
-                    setUserNotes(data.notes || data.data || []);
                 }
                 if (sessionRes.ok) {
                     const data = await sessionRes.json();
@@ -224,14 +218,12 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ isLoggedIn, onOpenLibrary }) =>
         try {
             // Inject study context (bookmarks, notes, history) if connected
             let finalUserQuery = currentInput;
-            if (oauthToken && (studyHistory.length > 0 || userNotes.length > 0 || readingSessions.length > 0)) {
+            if (oauthToken && (studyHistory.length > 0 || readingSessions.length > 0)) {
                 const recentBooks = studyHistory.slice(0, 3).map(b => `${b.surah_name} ${b.verse_key}`).join(', ');
-                const recentNotes = userNotes.slice(0, 2).map(n => `Reflected on ${n.verse_key}: "${n.text.slice(0, 40)}..."`).join('; ');
                 const recentHistory = readingSessions.slice(0, 2).map(s => `Read ${s.surah_name}`).join(', ');
                 
                 finalUserQuery = `[USER STUDY CONTEXT: 
 - Recent Bookmarks: ${recentBooks || 'None'} 
-- Recent Reflections: ${recentNotes || 'None'}
 - Latest Reading Activity: ${recentHistory || 'None'}]
 
 ${currentInput}`;
@@ -507,7 +499,7 @@ ${currentInput}`;
                                         Personal Library Connected
                                     </span>
                                     <span className="text-[8px] text-slate-500 font-bold uppercase transition-all">
-                                        {historyLoading ? 'Loading study context…' : `${studyHistory.length} Bookmarks · ${userNotes.length} Notes · ${readingSessions.length} History`}
+                                        {historyLoading ? 'Loading study context…' : `${studyHistory.length} Bookmarks · ${readingSessions.length} History`}
                                     </span>
                                 </div>
                                 <button 
