@@ -122,7 +122,7 @@ export const onRequestPost = async (context: any) => {
             console.error('Quran search failed:', e);
         }
 
-        // --- STAGE 1: Citation Hunting (Proactive suggestion) ---
+        // --- STAGE 2: Citation Hunting (Proactive suggestion) ---
         const hunterResponse = await fetch(apiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
@@ -141,7 +141,7 @@ export const onRequestPost = async (context: any) => {
         const hunterData = await hunterResponse.json();
         const huntingList = hunterData.choices?.[0]?.message?.content || '';
 
-        // --- STAGE 2: Verification Fetching (Ground Truth) ---
+        // --- STAGE 3: Verification Fetching (Ground Truth) ---
         const quranRegex = /(\d+):(\d+)/g;
         const hadithRegex = /(Sahih Bukhari|Sahih Muslim|Sunan Abu Dawud|Sunan An-Nasai|Sunan Ibn Majah|Jami At-Tirmidhi|40 Hadith Nawawi|Riyad us Saliheen|Al-Adab al-Mufrad)[^,.\d]*[\s#]*(\d+)/gi;
         
@@ -157,6 +157,11 @@ export const onRequestPost = async (context: any) => {
         };
 
         const verifiedContext: string[] = [];
+
+        // Add the direct search results first if available
+        if (quranContext) {
+            verifiedContext.push("### RELEVANT QURAN SEARCH RESULTS:\n" + quranContext);
+        }
 
         // Fetch Quran verses (up to 5)
         for (const m of qMatches.slice(0, 5)) {
@@ -186,7 +191,7 @@ export const onRequestPost = async (context: any) => {
             }
         }
 
-        // --- STAGE 3: Final Answer Generation (Grounded) ---
+        // --- STAGE 4: Final Answer Generation (Grounded) ---
         const finalResponse = await fetch(apiUrl, {
             method: 'POST',
             headers: {
