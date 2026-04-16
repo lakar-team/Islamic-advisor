@@ -61,7 +61,8 @@ export class QfOAuthService {
         state,
         nonce,
         code_challenge: codeChallenge,
-        code_challenge_method: 'S256'
+        code_challenge_method: 'S256',
+        prompt: 'login'
       }).toString();
 
     return { url, state, nonce };

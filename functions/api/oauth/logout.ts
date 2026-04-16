@@ -10,11 +10,20 @@ export const onRequestGet = async (context: any) => {
     
     // Configuration
     const oauthBase = env.QURAN_OAUTH_BASE_URL || 'https://oauth2.quran.foundation';
+
+    // Always clear the httpOnly refresh token cookie
+    const clearCookieHeader = 'qf_refresh_token=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0';
     
     if (!idTokenHint) {
         // If there's no id_token_hint, we can't do a strict OIDC logout with a redirect back.
-        // Fallback to just returning to the app.
-        return Response.redirect(`${origin}/`);
+        // Fallback to just clearing the cookie and returning to the app.
+        return new Response(null, {
+            status: 302,
+            headers: {
+                'Location': `${origin}/`,
+                'Set-Cookie': clearCookieHeader
+            }
+        });
     }
 
     // Standard OIDC RP-Initiated Logout endpoint
@@ -24,6 +33,12 @@ export const onRequestGet = async (context: any) => {
             post_logout_redirect_uri: `${origin}/`,
         }).toString();
 
-    // Redirect the user to the IDP's logout endpoint
-    return Response.redirect(logoutUrl);
+    // Clear the cookie AND redirect the user to the IDP's logout endpoint
+    return new Response(null, {
+        status: 302,
+        headers: {
+            'Location': logoutUrl,
+            'Set-Cookie': clearCookieHeader
+        }
+    });
 };
