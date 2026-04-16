@@ -294,11 +294,12 @@ ${currentInput}`;
         let references: any[] = [];
         let cleanedContent = content;
 
-        // 1. Extract from [[CITATIONS: ... prefix at the end (robust against missing brackets)
-        const citPrefix = "[[CITATIONS:";
-        const idx = cleanedContent.lastIndexOf(citPrefix);
+        // 1. Extract from [[CITATIONS: ... prefix at the end (case-insensitive, robust)
+        const citPrefixLower = "[[citations:";
+        const lowerContent = cleanedContent.toLowerCase();
+        const idx = lowerContent.lastIndexOf(citPrefixLower);
         if (idx !== -1) {
-            const rawJson = cleanedContent.substring(idx + citPrefix.length).replace(/\]+[\s<]*$/, '').trim();
+            const rawJson = cleanedContent.substring(idx + citPrefixLower.length).replace(/\]+[\s<]*$/, '').trim();
             try {
                 const parsed = JSON.parse(rawJson);
                 if (Array.isArray(parsed)) references.push(...parsed);
