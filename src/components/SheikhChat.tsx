@@ -474,7 +474,7 @@ ${currentInput}`;
                                     <p className="text-[10px] font-medium opacity-50 mt-1 uppercase tracking-wider">{new Date(s.timestamp).toLocaleDateString()}</p>
                                     <button 
                                         onClick={(e) => deleteSession(s.id, e)}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-xl text-on-surface-variant/30 hover:text-red-500 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-all font-medium"
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-xl text-on-surface-variant/30 hover:text-red-500 hover:bg-red-500/10 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-all font-medium"
                                     >
                                         <Trash2 className="w-3.5 h-3.5" />
                                     </button>
