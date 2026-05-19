@@ -63,7 +63,7 @@ function App() {
     return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   });
 
-  const [modal, setModal] = useState<'privacy' | 'terms' | 'contact' | 'commerce' | null>(null);
+  const [modal, setModal] = useState<'terms' | 'contact' | 'commerce' | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('quran_access_token'));
   const [donationStatus, setDonationStatus] = useState<'success' | 'cancel' | null>(() => {
     const params = new URLSearchParams(window.location.search);
@@ -428,10 +428,9 @@ function App() {
             
             <div className="flex flex-wrap justify-center gap-8 text-xs font-bold text-on-surface-variant dark:text-slate-400 uppercase tracking-widest">
               {[
-                { id: 'privacy', label: 'Privacy' },
+                { id: 'contact', label: 'Contact Us' },
                 { id: 'terms', label: 'Terms' },
-                { id: 'commerce', label: 'Commerce' },
-                { id: 'contact', label: 'Contact' }
+                { id: 'commerce', label: 'Commerce' }
               ].map(link => (
                 <button 
                   key={link.id} 
@@ -454,13 +453,7 @@ function App() {
       <AnimatePresence>
         {modal && (
           <Modal title={modal === 'commerce' ? "Commerce Disclosure" : modal.charAt(0).toUpperCase() + modal.slice(1)} onClose={() => setModal(null)}>
-            {modal === 'privacy' && (
-              <div className="space-y-4">
-                <p>Islamic-advisor does not store your conversations on any server. All chat history is saved locally in your browser only and never transmitted to third parties.</p>
-                <p>We use a third-party AI API to route requests. Your questions are sent to processing servers; please review their privacy policies for details.</p>
-                <p>We do not use trackers or third-party cookies for advertising.</p>
-              </div>
-            )}
+
             {modal === 'terms' && (
               <div className="space-y-4">
                 <section>
@@ -502,12 +495,12 @@ function App() {
             )}
             {modal === 'contact' && (
               <div className="space-y-6">
-                <p>This project is maintained by the <strong className="text-on-surface dark:text-white">Lakar Team</strong>. Reach out for collaboration or bug reports:</p>
+                <p className="text-lg">I truly appreciate your feedback and suggestions. Please feel free to reach out to me directly:</p>
                 <a
-                  href="mailto:lakar.team@gmail.com?subject=Contact%20Islamic-advisor"
-                  className="block text-center py-4 px-8 bg-[#34D399]/10 border border-[#34D399]/30 rounded-2xl text-[#34D399] font-black hover:bg-[#34D399]/20 transition-all"
+                  href="mailto:lakar.team@gmail.com?subject=Feedback%20for%20Islamic-advisor"
+                  className="block text-center py-6 px-8 bg-[#34D399]/10 border border-[#34D399]/30 rounded-3xl text-[#34D399] font-black text-xl hover:bg-[#34D399]/20 transition-all group"
                 >
-                  lakar.team@gmail.com
+                  <span className="group-hover:scale-105 transition-transform inline-block">lakar.team@gmail.com</span>
                 </a>
               </div>
             )}
