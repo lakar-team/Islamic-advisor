@@ -442,7 +442,49 @@ ${currentInput}`;
                 transition-all duration-300
                 absolute top-0 lg:relative z-50 lg:z-0
                 w-[85%] sm:w-80 lg:w-72 h-full flex flex-col gap-4 shrink-0
+                bg-white dark:bg-[#0D1219] p-4 lg:p-0 border border-outline-variant/30 lg:border-none shadow-2xl lg:shadow-none rounded-r-[2rem] lg:rounded-none
             `}>
+                {/* Mobile-only Context Header inside Hamburger Menu */}
+                <div className="lg:hidden flex flex-col gap-3 p-5 bg-surface-container-low dark:bg-slate-900 border border-outline-variant/20 rounded-[2rem] shadow-sm">
+                    <div className="flex items-center gap-3">
+                        <div className="bg-emerald-500/10 p-2 rounded-xl">
+                            <Scroll className="text-emerald-600 dark:text-emerald-400 w-5 h-5" />
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-sm text-on-surface dark:text-white leading-tight">Sheikh AI</h3>
+                            <div className="flex items-center gap-1.5">
+                                <span className="w-1 h-1 bg-emerald-600 rounded-full animate-pulse"></span>
+                                <span className="text-[8px] text-on-surface-variant dark:text-slate-500 font-bold uppercase tracking-widest">Scholarly Context</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="w-full border-t border-outline-variant/10 my-1" />
+
+                    {oauthToken ? (
+                        <div className="flex flex-col gap-1 bg-emerald-500/10 border border-emerald-500/20 px-4 py-3 rounded-2xl">
+                            <span className="text-[9px] font-black uppercase text-emerald-600 tracking-widest flex items-center gap-1.5 leading-none">
+                                {historyLoading && <span className="w-2 h-2 border border-emerald-500 border-t-transparent rounded-full animate-spin" />}
+                                {userName || 'Library Connected'}
+                            </span>
+                            <span className="text-[8px] text-slate-500 font-bold uppercase mt-1 leading-none">
+                                {historyLoading ? 'Loading study context…' : `${studyHistory.length} Bookmarks · ${readingSessions.length} Reading`}
+                            </span>
+                        </div>
+                    ) : (
+                        <button
+                            onClick={handleConnect}
+                            className="w-full flex items-center justify-between px-4 py-3 bg-white dark:bg-white/5 border border-outline-variant/30 hover:border-emerald-500/40 rounded-2xl transition-all group"
+                        >
+                            <div className="flex flex-col items-start leading-none">
+                                <span className="text-[9px] font-black uppercase tracking-widest text-[#34D399]">Connect Quran.com</span>
+                                <span className="text-[8px] text-slate-500 font-bold uppercase mt-1">Discuss My Study</span>
+                            </div>
+                            <Sparkles className="w-3.5 h-3.5 text-amber-500 group-hover:scale-110 transition-transform" />
+                        </button>
+                    )}
+                </div>
+
                 <button 
                     onClick={() => createNewSession()}
                     className="w-full flex items-center justify-center gap-2 py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-[2rem] font-bold shadow-lg shadow-emerald-900/20 hover:scale-[1.02] active:scale-98 transition-all uppercase tracking-widest text-[10px]"
@@ -488,7 +530,7 @@ ${currentInput}`;
             {/* Main Chat Area */}
             <div className="flex-1 flex flex-col bg-transparent lg:bg-surface dark:bg-transparent lg:dark:bg-slate-900 rounded-none lg:rounded-[3rem] shadow-none lg:shadow-2xl border-none lg:border lg:border-outline-variant/30 overflow-visible lg:overflow-hidden transition-colors duration-300 relative">
                 {/* Header */}
-                <header className="px-8 py-6 border-b border-outline-variant/30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md lg:bg-surface-container-low/50 lg:dark:bg-slate-950/20 flex items-center justify-between sticky top-16 lg:relative z-30">
+                <header className="hidden lg:flex px-8 py-6 border-b border-outline-variant/30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md lg:bg-surface-container-low/50 lg:dark:bg-slate-950/20 items-center justify-between sticky top-16 lg:relative z-30">
                     <div className="flex items-center gap-4">
                         <div className="bg-emerald-500/10 p-2.5 rounded-2xl">
                             <Scroll className="text-emerald-600 dark:text-emerald-400 w-6 h-6" />
@@ -533,7 +575,7 @@ ${currentInput}`;
                 {/* Messages Body */}
                 <div 
                     ref={scrollRef}
-                    className="flex-1 overflow-y-visible lg:overflow-y-auto p-4 md:p-8 pt-28 lg:pt-32 space-y-6 md:space-y-8 custom-scrollbar bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-fixed dark:bg-none"
+                    className="flex-1 overflow-y-visible lg:overflow-y-auto p-4 md:p-8 pt-8 lg:pt-32 space-y-6 md:space-y-8 custom-scrollbar bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-fixed dark:bg-none"
                     style={{ minHeight: '300px' }}
                 >
                     <AnimatePresence>
