@@ -51,14 +51,14 @@ export class QfApiClient {
 
     let response = await fetch(url, { ...options, headers });
 
-    // Step 4: Retry logic for 401 (exactly one refresh + one retry)
-    if (response.status === 401) {
+    // Step 4: Retry logic for 401 (Unauthorized) or 403 (Forbidden due to expired/inactive token)
+    if (response.status === 401 || response.status === 403) {
       const idToken = localStorage.getItem('quran_id_token');
       // Use sub from id_token as sessionId for stampede prevention
       const sessionId = idToken ? this.decodeJwt(idToken)?.sub : 'default';
 
       try {
-        console.log('[QF-Client] Token expired, attempting refresh...');
+        console.log('[QF-Client] Token expired or inactive, attempting refresh...');
         const newTokens = await this.refresh(sessionId);
         
         // Retry once with new token
@@ -68,8 +68,17 @@ export class QfApiClient {
         };
         response = await fetch(url, { ...options, headers: retryHeaders });
       } catch (e) {
-        console.error('[QF-Client] Refresh failed:', e);
-        // Still return the original 401 or the new failure
+        console.error('[QF-Client] Refresh failed, logging out user:', e);
+        
+        // Clear all Quran Foundation local storage keys to clean up the stale session
+        localStorage.removeItem('quran_access_token');
+        localStorage.removeItem('quran_id_token');
+        localStorage.removeItem('quran_refresh_token');
+        localStorage.removeItem('quran_api_base');
+        localStorage.removeItem('quran_client_id');
+        
+        // Dispatch storage event to alert React state of logout immediately
+        window.dispatchEvent(new StorageEvent('storage', { key: 'quran_access_token', newValue: null }));
       }
     }
 
