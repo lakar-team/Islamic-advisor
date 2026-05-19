@@ -11,7 +11,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onExploreLibrary }) 
   return (
     <main className="min-h-screen bg-surface-container-lowest dark:bg-[#0A0F14] selection:bg-emerald-500/30">
       {/* Hero & Sheikh AI Interface */}
-      <section className="relative px-8 py-12 md:py-16 max-w-screen-2xl mx-auto overflow-hidden">
+      <section className="relative px-4 sm:px-8 py-12 md:py-16 max-w-screen-2xl mx-auto overflow-hidden">
         {/* Decorative background gradients */}
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-500/5 blur-[120px] -z-10 rounded-full animate-pulse" />
         <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-amber-500/5 blur-[120px] -z-10 rounded-full animate-pulse" style={{ animationDelay: '2s' }} />
@@ -24,7 +24,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onExploreLibrary }) 
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
             >
-              <h1 className="text-6xl sm:text-7xl md:text-8xl font-black leading-[0.9] tracking-tighter text-on-surface dark:text-white mb-8">
+              <h1 className="text-4xl xs:text-5xl sm:text-7xl md:text-8xl font-black leading-[0.9] tracking-tighter text-on-surface dark:text-white mb-8">
                 Your <span className="gold-text">Personal</span><br />
                 <span className="text-emerald-600 dark:text-emerald-400">Sheikh.</span>
               </h1>

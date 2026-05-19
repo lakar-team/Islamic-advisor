@@ -40,7 +40,7 @@ const StatsDisplay: React.FC = () => {
             <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex flex-wrap justify-center sm:justify-start gap-8 py-6 px-8 bg-surface-container-low dark:bg-slate-900 border border-outline-variant/30 rounded-[2rem] shadow-sm"
+                className="flex flex-wrap justify-center sm:justify-start gap-6 py-4 px-4 sm:py-6 sm:px-8 bg-surface-container-low dark:bg-slate-900 border border-outline-variant/30 rounded-[2rem] shadow-sm"
             >
                 <div className="flex items-center gap-3">
                     <div className="bg-blue-500/10 p-2.5 rounded-xl border border-blue-500/20">
@@ -71,12 +71,12 @@ const StatsDisplay: React.FC = () => {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 }}
-                    className="flex items-center gap-4 py-4 px-8 bg-surface-container-low dark:bg-slate-900 border border-outline-variant/30 rounded-3xl shadow-sm w-full"
+                    className="flex items-center gap-3 py-3 px-4 sm:py-4 sm:px-8 bg-surface-container-low dark:bg-slate-900 border border-outline-variant/30 rounded-3xl shadow-sm w-full"
                 >
                     <div className="bg-purple-500/10 p-2 rounded-xl border border-purple-500/20 flex-shrink-0">
                         <Globe className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                     </div>
-                    <div className="flex items-center justify-center md:justify-start gap-4 flex-1 overflow-x-auto custom-scrollbar pb-1 sm:pb-0">
+                    <div className="flex items-center justify-start gap-4 flex-1 overflow-x-auto custom-scrollbar pb-1 sm:pb-0">
                         <p className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest whitespace-nowrap hidden sm:block">Top Regions</p>
                         <div className="w-px h-6 bg-outline-variant/30 hidden sm:block mx-1"></div>
                         <div className="flex gap-3">
