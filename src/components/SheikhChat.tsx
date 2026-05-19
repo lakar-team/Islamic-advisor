@@ -239,8 +239,17 @@ const SheikhChat: React.FC<SheikhChatProps> = ({ isLoggedIn, onOpenLibrary }) =>
             // Inject study context (bookmarks, notes, history) if connected
             let finalUserQuery = currentInput;
             if (oauthToken && (studyHistory.length > 0 || readingSessions.length > 0)) {
-                const recentBooks = studyHistory.slice(0, 3).map(b => `${b.surah_name} ${b.verse_key}`).join(', ');
-                const recentHistory = readingSessions.slice(0, 2).map(s => `Read ${s.surah_name}`).join(', ');
+                const recentBooks = studyHistory.slice(0, 5).map(b => {
+                    const typeStr = b.type ? `${b.type.charAt(0).toUpperCase() + b.type.slice(1)}` : 'Ayah';
+                    const keyVal = b.verseKey || b.verse_key || b.key || '';
+                    const surahStr = b.surahName || b.surah_name || (b.surahId ? `Surah ${b.surahId}` : '');
+                    return `${typeStr}: ${surahStr} ${keyVal}`.trim().replace(/\s+/g, ' ');
+                }).join(', ');
+                
+                const recentHistory = readingSessions.slice(0, 3).map(s => {
+                    const sName = s.surahName || s.surah_name || (s.surahNumber ? `Surah ${s.surahNumber}` : `Surah ${s.chapterId || s.key || ''}`);
+                    return `Read ${sName}`;
+                }).join(', ');
                 
                 finalUserQuery = `[USER STUDY CONTEXT: 
 - Recent Bookmarks: ${recentBooks || 'None'} 
