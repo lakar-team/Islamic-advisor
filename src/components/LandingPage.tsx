@@ -16,8 +16,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onExploreLibrary }) 
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-500/5 blur-[120px] -z-10 rounded-full animate-pulse" />
         <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-amber-500/5 blur-[120px] -z-10 rounded-full animate-pulse" style={{ animationDelay: '2s' }} />
 
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center relative z-10">
-          <div className="space-y-8 md:space-y-6 text-center lg:text-left">
+        <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center relative z-10 w-full max-w-full min-w-0">
+          <div className="space-y-8 md:space-y-6 text-center lg:text-left w-full max-w-full min-w-0">
             
             <motion.div
               initial={{ opacity: 0, y: 30 }}

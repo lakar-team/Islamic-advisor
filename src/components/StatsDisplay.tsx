@@ -76,7 +76,7 @@ const StatsDisplay: React.FC = () => {
                     <div className="bg-purple-500/10 p-2 rounded-xl border border-purple-500/20 flex-shrink-0">
                         <Globe className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                     </div>
-                    <div className="flex items-center justify-start gap-4 flex-1 overflow-x-auto custom-scrollbar pb-1 sm:pb-0">
+                    <div className="flex items-center justify-start gap-4 flex-1 min-w-0 overflow-x-auto custom-scrollbar pb-1 sm:pb-0">
                         <p className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest whitespace-nowrap hidden sm:block">Top Regions</p>
                         <div className="w-px h-6 bg-outline-variant/30 hidden sm:block mx-1"></div>
                         <div className="flex gap-3">
