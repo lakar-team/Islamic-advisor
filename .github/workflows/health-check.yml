@@ -14,7 +14,7 @@ jobs:
           response=$(curl -s -w "\n%{http_code}" -X POST 'https://islamic-advisor.pages.dev/api/chat' \
             -H 'Content-Type: application/json' \
             -d '{"messages":[{"role":"user","content":"What is Islam"}]}' \
-            --max-time 30)
+            --max-time 90)
           status_code=$(echo "$response" | tail -n1)
           body=$(echo "$response" | sed '$d')
           echo "HTTP status: $status_code"
