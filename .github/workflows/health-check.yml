@@ -1,0 +1,30 @@
+name: Production Health Check
+
+on:
+  schedule:
+    - cron: '0 */2 * * *'
+  workflow_dispatch: {}
+
+jobs:
+  check-chat-api:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check /api/chat responds successfully
+        run: |
+          response=$(curl -s -w "\n%{http_code}" -X POST 'https://islamic-advisor.pages.dev/api/chat' \
+            -H 'Content-Type: application/json' \
+            -d '{"messages":[{"role":"user","content":"What is Islam"}]}' \
+            --max-time 30)
+          status_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+          echo "HTTP status: $status_code"
+          echo "Response body: $body"
+
+          if [ "$status_code" -ne 200 ]; then
+            echo "::error::Chat API returned HTTP $status_code"
+            exit 1
+          fi
+          if echo "$body" | grep -q '"error"'; then
+            echo "::error::Chat API returned an error payload: $body"
+            exit 1
+          fi
