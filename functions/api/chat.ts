@@ -89,7 +89,7 @@ export const onRequestPost = async (context: any) => {
         const userQuery = messages[messages.length - 1].content;
 
         const apiUrl = env.AI_API_URL || 'https://openrouter.ai/api/v1/chat/completions';
-        const model = env.AI_MODEL || 'google/gemini-flash-latest';
+        const model = env.AI_MODEL || 'google/gemini-3.8-flash';
         const apiKey = env.AI_API_KEY;
 
         // --- STAGE 1: Keyword Extraction ---
