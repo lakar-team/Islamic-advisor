@@ -55,6 +55,10 @@ async function checkKvRateLimit(kv: KVNamespace, ip: string): Promise<{ allowed:
 export const onRequestPost = async (context: any) => {
     const { request, env } = context;
 
+    // The scheduled health check (GitHub Actions) sends this header so its
+    // pings are not counted as visitor questions in the public stats.
+    const isHealthCheck = request.headers.get('X-Health-Check') === '1';
+
     // ── Server-side rate limiting via KV ──────────────────────────────────────
     const ip =
         request.headers.get('CF-Connecting-IP') ||
@@ -240,7 +244,8 @@ export const onRequestPost = async (context: any) => {
         }
 
         // Increment questions_answered counter in RATE_LIMIT KV if bound
-        if (env.RATE_LIMIT) {
+        // (health-check pings are not visitor questions, so they are skipped)
+        if (env.RATE_LIMIT && !isHealthCheck) {
             try {
                 const current = await env.RATE_LIMIT.get('questions_answered') || '0';
                 await env.RATE_LIMIT.put('questions_answered', (parseInt(current) + 1).toString());
