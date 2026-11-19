@@ -3,10 +3,45 @@ name: Production Health Check
 on:
   schedule:
     - cron: '0 */2 * * *'
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      full_chat_check:
+        description: 'Also run the full AI chat check (makes ~3 OpenRouter calls)'
+        type: boolean
+        default: false
 
 jobs:
+  # Scheduled check: free. /api/stats reads KV only, so it proves the site and
+  # its Pages Functions are up without spending any OpenRouter credits.
+  check-site:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check /api/stats responds with valid stats
+        run: |
+          response=$(curl -s -w "\n%{http_code}" 'https://islamic-advisor.pages.dev/api/stats' \
+            --max-time 30)
+          status_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+          echo "HTTP status: $status_code"
+          echo "Response body: $body"
+
+          if [ "$status_code" -ne 200 ]; then
+            echo "::error::Stats API returned HTTP $status_code"
+            exit 1
+          fi
+          if echo "$body" | grep -q '"error"'; then
+            echo "::error::Stats API returned an error payload: $body"
+            exit 1
+          fi
+          if ! echo "$body" | grep -q '"questions_answered"'; then
+            echo "::error::Stats API response is missing questions_answered: $body"
+            exit 1
+          fi
+
+  # Manual only (Run workflow -> tick "full_chat_check"). Runs the real chat
+  # pipeline, so it costs OpenRouter credits and is not on the schedule.
   check-chat-api:
+    if: github.event_name == 'workflow_dispatch' && inputs.full_chat_check
     runs-on: ubuntu-latest
     steps:
       - name: Check /api/chat responds successfully
