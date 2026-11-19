@@ -1,8 +1,13 @@
 name: Production Health Check
 
+# Two schedules:
+#   every 2 hours  -> check-site     (free: reads /api/stats, no OpenRouter calls)
+#   once a day     -> check-chat-api (real AI pipeline, ~3 OpenRouter calls)
+# The chat check sends X-Health-Check so it is not counted as a visitor question.
 on:
   schedule:
     - cron: '0 */2 * * *'
+    - cron: '17 3 * * *'
   workflow_dispatch:
     inputs:
       full_chat_check:
@@ -11,9 +16,10 @@ on:
         default: false
 
 jobs:
-  # Scheduled check: free. /api/stats reads KV only, so it proves the site and
-  # its Pages Functions are up without spending any OpenRouter credits.
+  # /api/stats reads KV only, so it proves the site and its Pages Functions are
+  # up without spending any OpenRouter credits.
   check-site:
+    if: github.event_name != 'schedule' || github.event.schedule == '0 */2 * * *'
     runs-on: ubuntu-latest
     steps:
       - name: Check /api/stats responds with valid stats
@@ -38,16 +44,19 @@ jobs:
             exit 1
           fi
 
-  # Manual only (Run workflow -> tick "full_chat_check"). Runs the real chat
-  # pipeline, so it costs OpenRouter credits and is not on the schedule.
+  # Daily on schedule, or on demand (Run workflow -> tick "full_chat_check").
+  # Costs OpenRouter credits, so it is deliberately infrequent.
   check-chat-api:
-    if: github.event_name == 'workflow_dispatch' && inputs.full_chat_check
+    if: >-
+      (github.event_name == 'schedule' && github.event.schedule == '17 3 * * *') ||
+      (github.event_name == 'workflow_dispatch' && inputs.full_chat_check)
     runs-on: ubuntu-latest
     steps:
       - name: Check /api/chat responds successfully
         run: |
           response=$(curl -s -w "\n%{http_code}" -X POST 'https://islamic-advisor.pages.dev/api/chat' \
             -H 'Content-Type: application/json' \
+            -H 'X-Health-Check: 1' \
             -d '{"messages":[{"role":"user","content":"What is Islam"}]}' \
             --max-time 90)
           status_code=$(echo "$response" | tail -n1)
